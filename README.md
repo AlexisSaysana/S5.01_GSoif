@@ -22,3 +22,7 @@
 - Diagramme des cas d'utilisation
 - Trello contenant la méthode Scrum
 - Schéma de la Clean Architecture du projet
+
+### Ali-Shan Kassou Mamode
+- Mise en place de la base visuelle du projet
+- Réalisation des maquettes (parcours utilisateur et éléments d'interface)
