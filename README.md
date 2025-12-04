@@ -30,3 +30,8 @@
 ### Kenza Brahimi
 - Redaction du Cahier des Charger 
 - Réalisation des présentations PowerPoint pour les réunions d’équipe.
+
+### Alya Ayinde
+- Rédaction du Cahier des Charges
+- Réalisation des présentations PowerPoint pour les réunions d’équipe.
+
