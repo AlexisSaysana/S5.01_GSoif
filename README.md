@@ -26,3 +26,7 @@
 ### Ali-Shan Kassou Mamode
 - Mise en place de la base visuelle du projet
 - Réalisation des maquettes (parcours utilisateur et éléments d'interface)
+
+### Kenza Brahimi
+- Redaction du Cahier des Charger 
+- Réalisation des présentations PowerPoint pour les réunions d’équipe.
