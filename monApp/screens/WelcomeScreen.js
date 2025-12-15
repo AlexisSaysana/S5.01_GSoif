@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-na
 import { AntDesign } from '@expo/vector-icons'; // Exemple d'icône pour la flèche
 import { baseStyles, PRIMARY_BLUE, WHITE } from '../styles/baseStyles'; // Assurez-vous du chemin correct
 
-const WelcomeScreen = () => (
+const WelcomeScreen = ({ navigation }) => (
     <SafeAreaView style={{ flex: 1, backgroundColor: WHITE }}>
         {/* Partie Bleue (Haut) */}
         <View style={styles.topBlue}>
@@ -29,10 +29,13 @@ const WelcomeScreen = () => (
                     <View style={styles.dotInactive} />
                 </View>
 
-                <TouchableOpacity style={styles.arrowButton}>
-                    {/* L'icône nécessitera l'installation de react-native-vector-icons */}
-                    <AntDesign name="arrowright" size={24} color={WHITE} />
-                </TouchableOpacity>
+             <TouchableOpacity
+  style={styles.arrowButton}
+  onPress={() => navigation.navigate('Login')}
+>
+  <AntDesign name="arrowright" size={24} color={WHITE} />
+</TouchableOpacity>
+
             </View>
         </View>
     </SafeAreaView>
