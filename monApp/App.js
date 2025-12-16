@@ -11,6 +11,8 @@ import WelcomeScreen from './screens/WelcomeScreen';
 import LoginScreen from './screens/LoginScreen';
 import SignupScreen from './screens/SignupScreen';
 import HomeScreen from './screens/HomeScreen';
+import FontainesScreen from './screens/FontainesScreen';
+
 
 const Stack = createNativeStackNavigator();
 
@@ -36,6 +38,7 @@ export default function App() {
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Inscription" component={SignupScreen} />
         <Stack.Screen name="Accueil" component={HomeScreen} />
+        <Stack.Screen name="Fontaines" component={FontainesScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
