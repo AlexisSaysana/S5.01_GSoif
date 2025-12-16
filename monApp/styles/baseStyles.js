@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native';
 
-export const PRIMARY_BLUE = '#4285F4';
+export const PRIMARY_BLUE = '#5BA2FF';
 export const WHITE = '#FFFFFF';
 
 export const baseStyles = StyleSheet.create({

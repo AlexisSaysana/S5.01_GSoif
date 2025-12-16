@@ -1,10 +1,11 @@
 import React from 'react';
 import { TextInput, StyleSheet } from 'react-native';
+import { fonts } from '../styles/fonts';
 
 const CustomInput = (props) => (
     <TextInput
         style={styles.input}
-        placeholderTextColor="#AAA"
+        placeholderTextColor="#575757"
         {...props}
     />
 );
@@ -12,13 +13,14 @@ const CustomInput = (props) => (
 const styles = StyleSheet.create({
     input: {
         width: '100%',
-        padding: 15,
+        paddingVertical: 15,
+        paddingHorizontal: 30,
         borderWidth: 1,
-        borderColor: '#EEE',
-        borderRadius: 8,
-        marginBottom: 10,
-        backgroundColor: '#F9F9F9',
+        borderColor: '#D9D9D9',
+        borderRadius: 15,
+        backgroundColor: '#F5F5F5',
         fontSize: 16,
+        fontFamily: fonts.inter,
     },
 });
 

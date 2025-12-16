@@ -1,14 +1,14 @@
 {
   "expo": {
-    "name": "monApp",
-    "slug": "monApp",
+    "name": "GSoif",
+    "slug": "gsoif",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/Icon.png",
+    "icon": "./assets/icon-light-filled.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/Splash.png",
+      "image": "./assets/icon-light-filled.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -17,13 +17,13 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/icon-light-filled.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/icon-light-filled.png"
     }
   }
 }

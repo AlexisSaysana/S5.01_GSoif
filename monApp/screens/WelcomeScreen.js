@@ -1,101 +1,119 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
-import { AntDesign } from '@expo/vector-icons'; // Exemple d'icône pour la flèche
-import { baseStyles, PRIMARY_BLUE, WHITE } from '../styles/baseStyles'; // Assurez-vous du chemin correct
+import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles';
+import { fonts } from '../styles/fonts';
 
 const WelcomeScreen = ({ navigation }) => (
-    <SafeAreaView style={{ flex: 1, backgroundColor: WHITE }}>
-        {/* Partie Bleue (Haut) */}
+    <View style={{ flex: 1, backgroundColor: PRIMARY_BLUE }}>
         <View style={styles.topBlue}>
-            <Text style={baseStyles.logoText}>G</Text>
+            <Image
+				style={styles.icon}
+				source={require('../assets/icon-light.png')}
+			/>
         </View>
-
-        {/* Partie Blanche (Bas) */}
+        
         <View style={styles.bottomWhite}>
-            <View>
-                <Text style={styles.welcomeTitle}>BIENVENUE sur GSoif</Text>
-                <Text style={styles.welcomeText}>
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus.
-                </Text>
-            </View>
-
-            {/* Navigation (Passer et Flèche) */}
+            <Text style={styles.title}>
+				Bienvenue sur GSoif
+			</Text>
+			<Text style={styles.text}>
+				La nouvelle application du groupe KBSA (305.1)
+            </Text>
+			
             <View style={styles.bottomNav}>
-                <Text style={styles.passerText}>Passer</Text>
-
-                <View style={styles.dotsContainer}>
-                    <View style={styles.dotActive} />
-                    <View style={styles.dotInactive} />
-                    <View style={styles.dotInactive} />
-                </View>
-
-             <TouchableOpacity
-  style={styles.arrowButton}
-  onPress={() => navigation.navigate('Login')}
->
-  <AntDesign name="arrowright" size={24} color={WHITE} />
-</TouchableOpacity>
-
+                <Text style={
+					{
+						fontFamily: fonts.inter,
+						fontSize: 16,
+						color: '#575757'
+					}
+				}>
+					Passer
+				</Text>
+         	    <TouchableOpacity
+				 	style={styles.arrowButton}
+					onPress={() => navigation.navigate('Login')}
+				>
+					<Image
+						source={require('../assets/Arrow.png')}
+					/>
+				</TouchableOpacity>
             </View>
+			<View style={styles.dotsContainer}>
+				<View style={[styles.dot, styles.dotActive]} />
+				<View style={[styles.dot, styles.dotInactive]} />
+				<View style={[styles.dot, styles.dotInactive]} />
+			</View>
         </View>
-    </SafeAreaView>
+    </View>
 );
 
 const styles = StyleSheet.create({
     topBlue: {
         height: '50%',
-        backgroundColor: PRIMARY_BLUE,
         justifyContent: 'center',
         alignItems: 'center',
     },
     bottomWhite: {
+		backgroundColor: WHITE,
         height: '50%',
         padding: 30,
-        justifyContent: 'space-between',
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+		gap: 80,
+		borderTopLeftRadius: 50,
+		borderTopRightRadius: 50,
+		paddingTop: 50,
     },
-    welcomeTitle: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        marginBottom: 10,
-    },
-    welcomeText: {
+    title: {
+		fontFamily: fonts.bricolageGrotesque,
+		fontSize: 28,
+		fontWeight: '900',
+	},
+    text: {
+		fontFamily: fonts.Inter,
         fontSize: 16,
-        color: '#666',
+        color: '#575757',
+		textAlign: 'center',
     },
     bottomNav: {
+		width: '100%',
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-    },
-    passerText: {
-        fontSize: 16,
-        color: '#999',
+		backgroundColor: 'white',
+		paddingHorizontal: 20,
     },
     dotsContainer: {
+		position: 'absolute',
         flexDirection: 'row',
-        position: 'absolute', // Positionner les points au centre
-        left: '50%',
-        transform: [{ translateX: -20 }],
+		bottom: 20,
     },
-    dotActive: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
+	dot: {
+		width: 8,
+        height: 8,
+        borderRadius: 50,
         backgroundColor: PRIMARY_BLUE,
-        marginHorizontal: 3,
+        marginHorizontal: 4,
+	},
+    dotActive: {
+        opacity: 1
     },
     dotInactive: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
-        backgroundColor: '#CCC',
-        marginHorizontal: 3,
+        opacity: 0.3,
     },
     arrowButton: {
         backgroundColor: PRIMARY_BLUE,
-        padding: 15,
-        borderRadius: 30,
+		display: 'flex',
+		height: 65,
+		width: 65,
+        borderRadius: 25,
+		justifyContent: 'center',
+        alignItems: 'center',
     },
+	icon: {
+		width: 130,
+		height: 130,
+	}
 });
 
 export default WelcomeScreen;
