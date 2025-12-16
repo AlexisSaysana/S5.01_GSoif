@@ -1,4 +1,3 @@
-import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles'; // Assurez-vous du chemin correct
 
