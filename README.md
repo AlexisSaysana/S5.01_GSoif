@@ -20,7 +20,7 @@
 ### Alexis Saysana
 - Rédaction du Cahier des Charges
 - Diagramme des cas d'utilisation
-- Trello contenant la méthode Scrum
+- Trello contenant la méthode Scrum 
 - Schéma de la Clean Architecture du projet
 
 ### Ali-Shan Kassou Mamode
@@ -35,3 +35,13 @@
 - Rédaction du Cahier des Charges
 - Réalisation des présentations PowerPoint pour les réunions d’équipe.
 
+## Tâches depuis la dernière réunion
+### Alexis Saysana
+- Mise à jour du Schéma de la Clean Architecture
+- Trello transféré sur GitHub
+
+### Ali-Shan Kassou Mamode
+
+### Kenza Brahimi
+
+### Alya Ayinde
