@@ -41,6 +41,9 @@
 - Trello transféré sur GitHub
 
 ### Ali-Shan Kassou Mamode
+- Mise en place du projet React Native
+- Intégration des premières pages selon les maquettes réalisées plus tôt
+- Ajout des premiers éléments interactifs de l’application
 
 ### Kenza Brahimi
 
