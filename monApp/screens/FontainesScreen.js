@@ -84,7 +84,7 @@ export default function FontainesScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: PRIMARY_BLUE }}>
+    <View style={{ flex: 1, backgroundColor: WHITE }}>
 
       {/* MAP */}
       <View style={styles.topBlue}>
@@ -125,7 +125,7 @@ export default function FontainesScreen() {
         />
 
         <Text style={styles.text}>
-          {filteredFontaines.length} point(s) d'eau trouvé(s)
+          {filteredFontaines.length} point{filteredFontaines.length == 1 ? '' : 's'} d'eau trouvé{filteredFontaines.length == 1 ? '' : 's'}
         </Text>
 
         <ScrollView
@@ -140,8 +140,8 @@ export default function FontainesScreen() {
               onPress={() => focusOnFountain(f)}
             >
               <FountainTab
-                name={f.fields.nom || "Fontaine à boire"}
-                location={f.fields.voie || f.fields.commune || "Paris"}
+                name={f.fields.voie || "Fontaine à boire"}
+                location={f.fields.commune || "Paris"}
                 distance="—"
                 time="—"
                 nearest={index === 0}
@@ -156,7 +156,7 @@ export default function FontainesScreen() {
 
 const styles = StyleSheet.create({
   topBlue: {
-    height: '40%',
+    height: '50%',
   },
   map: {
     flex: 1,
@@ -171,14 +171,14 @@ const styles = StyleSheet.create({
   },
   bottomWhite: {
     backgroundColor: WHITE,
-    height: '60%',
+    marginTop: -50,
     padding: 30,
     gap: 20,
     borderTopLeftRadius: 50,
     borderTopRightRadius: 50,
   },
   text: {
-    fontFamily: fonts.Inter,
+    fontFamily: fonts.inter,
     fontSize: 16,
     color: '#575757',
     textAlign: 'center',

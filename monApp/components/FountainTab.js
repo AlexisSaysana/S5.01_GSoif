@@ -6,7 +6,7 @@ const FountainTab = ({ name, location, distance, time, nearest }) => (
       style={
         {
           backgroundColor: 'white',
-          width: '110%',
+          width: '100%',
           display: 'flex',
           flexDirection: 'row',
           justifyContent: 'space-between',
@@ -50,9 +50,14 @@ const FountainTab = ({ name, location, distance, time, nearest }) => (
             fontSize: 20,
             color: '#000000'
           }
+          
         }
       >
-        { name }
+        {
+          name.length > 23
+          ? name.substring(0,20) + '...'
+          : name
+        }
       </Text>
       </View>
       <Text
