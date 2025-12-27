@@ -13,14 +13,24 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.votre.gsoif",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "GSoif a besoin de votre position pour afficher les fontaines les plus proches de vous."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon-light-filled.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.votre.gsoif",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "FOREGROUND_SERVICE"
+      ]
     },
     "web": {
       "favicon": "./assets/icon-light-filled.png"

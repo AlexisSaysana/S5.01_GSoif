@@ -1,175 +1,261 @@
-import { View, Image, Text, StyleSheet } from 'react-native';
-import { fonts } from '../styles/fonts';
+import { View, Image, Text, StyleSheet, TouchableOpacity } from "react-native";
 
-const FountainTab = ({ name, location, distance, time, nearest }) => (
-    <View
-      style={
-        {
-          backgroundColor: 'white',
-          width: '100%',
-          display: 'flex',
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          borderRadius: 15,
-          borderWidth: 2,
-          borderColor: '#D9D9D9',
-          padding: 15,
-        }
-      }
+import { fonts } from "../styles/fonts";
+
+
+
+export default function FountainTab({
+
+  name,
+
+  location,
+
+  distance,
+
+  time,
+
+  nearest,
+
+  onPress,
+
+}) {
+
+  return (
+
+    <TouchableOpacity
+
+      style={styles.container}
+
+      activeOpacity={0.7}
+
+      onPress={onPress}
+
     >
-      <View
-      style={
-        {
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'flex-start',
-          gap: 2
-        }
-      }
-    >
-      <View
-      style={
-        {
-          display: 'flex',
-          flexDirection: 'row',
-          justifyContent: 'center',
-          alignItems: 'center',
-          gap: 10,
-        }
-      }
-      >
-        <Image
-          style={{width: 20, height: 20}}
-          source={require('../assets/circle_blue.png')}
-        />
-      
-      <Text
-        style={
-          {
-            fontFamily: fonts.bricolageGrotesque,
-            fontSize: 20,
-            color: '#000000'
-          }
-          
-        }
-      >
-        {
-          name.length > 23
-          ? name.substring(0,20) + '...'
-          : name
-        }
-      </Text>
+
+      {/* LEFT */}
+
+      <View style={styles.left}>
+
+        <View style={styles.titleRow}>
+
+          <Image
+
+            style={styles.icon}
+
+            source={require("../assets/circle_blue.png")}
+
+          />
+
+          <Text style={styles.name}>{name}</Text>
+
+        </View>
+
+
+
+        <Text style={styles.location}>{location}</Text>
+
+
+
+        {nearest && (
+
+          <View style={styles.nearestRow}>
+
+            <Image
+
+              style={styles.star}
+
+              source={require("../assets/star_filled.png")}
+
+            />
+
+            <Text style={styles.nearestText}>Le plus proche</Text>
+
+          </View>
+
+        )}
+
       </View>
-      <Text
-        style={
-          {
-            fontFamily: fonts.inter,
-            fontSize: 12,
-            color: '#4D4D4D',
-            paddingLeft: 30,
-          }
-        }
-      >
-        { location }
-      </Text>
-      { nearest &&
-      <View
-      style={
-        {
-          display: 'flex',
-          flexDirection: 'row',
-          justifyContent: 'center',
-          alignItems: 'center',
-          gap: 10,
-          marginTop: 10,
-        }
-      }
-      >
-        <Image
-          style={{width: 24, height: 24}}
-          source={require('../assets/star_filled.png')}
-        />
-      <Text
-        style={
-          {
-            fontFamily: fonts.inter,
-            fontSize: 12,
-            color: '#4D4D4D',
-            marginLeft: -4,
-            marginTop: 4,
-          }
-        }
-      >
-        Le plus proche
-      </Text>
+
+
+
+      {/* RIGHT */}
+
+      <View style={styles.right}>
+
+        <Text style={styles.distance}>{distance}</Text>
+
+        <View style={styles.timeRow}>
+
+          <Image
+
+            style={styles.walk}
+
+            source={require("../assets/directions_walk.png")}
+
+          />
+
+          <Text style={styles.time}>{time}</Text>
+
+        </View>
+
       </View>
-      }
-      </View>
-      <View
-      style={
-        {
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'flex-end',
-          gap: 2
-        }
-      }
-    >
-      <Text
-        style={
-          {
-            fontFamily: fonts.inter,
-            fontSize: 18,
-            color: '#575757',
-            fontWeight: '700'
-          }
-        }
-      >
-        { distance }
-      </Text>
-      <View
-      style={
-        {
-          display: 'flex',
-          flexDirection: 'row',
-          justifyContent: 'center',
-          alignItems: 'center',
-          gap: 1,
-        }
-      }
-      >
-        <Image
-          style={{width: 16, height: 16}}
-          source={require('../assets/directions_walk.png')}
-        />
-      <Text
-        style={
-          {
-            fontFamily: fonts.inter,
-            fontSize: 12,
-            color: '#575757'
-          }
-        }
-      >
-        { time }
-      </Text>
-      </View>
-      </View>
-    </View>
-);
+
+    </TouchableOpacity>
+
+  );
+
+}
+
+
 
 const styles = StyleSheet.create({
-    input: {
-        width: '100%',
-        paddingVertical: 15,
-        paddingHorizontal: 30,
-        borderWidth: 1,
-        borderColor: '#D9D9D9',
-        borderRadius: 15,
-        backgroundColor: '#F5F5F5',
-        fontSize: 16,
-        fontFamily: fonts.inter,
-    },
-});
 
-export default FountainTab;
+  container: {
+
+    backgroundColor: "white",
+
+    width: "100%", // ✅ PLUS DE 110%
+
+    flexDirection: "row",
+
+    justifyContent: "space-between",
+
+    borderRadius: 15,
+
+    borderWidth: 2,
+
+    borderColor: "#D9D9D9",
+
+    padding: 15,
+
+  },
+
+  left: {
+
+    flex: 1,
+
+    gap: 4,
+
+  },
+
+  titleRow: {
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    gap: 10,
+
+  },
+
+  icon: {
+
+    width: 20,
+
+    height: 20,
+
+  },
+
+  name: {
+
+    fontFamily: fonts.bricolageGrotesque,
+
+    fontSize: 18,
+
+    color: "#000",
+
+    flexShrink: 1,
+
+  },
+
+  location: {
+
+    fontFamily: fonts.inter,
+
+    fontSize: 12,
+
+    color: "#4D4D4D",
+
+    paddingLeft: 30,
+
+  },
+
+  nearestRow: {
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    gap: 6,
+
+    marginTop: 6,
+
+  },
+
+  star: {
+
+    width: 18,
+
+    height: 18,
+
+  },
+
+  nearestText: {
+
+    fontFamily: fonts.inter,
+
+    fontSize: 12,
+
+    color: "#4D4D4D",
+
+  },
+
+  right: {
+
+    alignItems: "flex-end",
+
+    justifyContent: "center",
+
+  },
+
+  distance: {
+
+    fontFamily: fonts.inter,
+
+    fontSize: 16,
+
+    fontWeight: "700",
+
+    color: "#575757",
+
+  },
+
+  timeRow: {
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    gap: 4,
+
+  },
+
+  walk: {
+
+    width: 14,
+
+    height: 14,
+
+  },
+
+  time: {
+
+    fontFamily: fonts.inter,
+
+    fontSize: 12,
+
+    color: "#575757",
+
+  },
+
+});
