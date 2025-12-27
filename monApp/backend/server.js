@@ -10,12 +10,15 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Connexion MySQL
+require('dotenv').config();
+
 const db = mysql.createConnection({
-    host: "mysql-brahimi.alwaysdata.net",
-    user: "brahimi",
-    password: "TON_MOT_DE_PASSE",
-    database: "brahimi_sae_s5"
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME
 });
+
 
 
 // Vérification connexion MySQL
