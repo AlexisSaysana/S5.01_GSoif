@@ -34,6 +34,9 @@
     },
     "web": {
       "favicon": "./assets/icon-light-filled.png"
-    }
+    },
+    "plugins": [
+      "react-native-map-link"
+    ]
   }
 }

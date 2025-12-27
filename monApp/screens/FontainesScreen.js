@@ -6,9 +6,11 @@ import {
   Text,
   ScrollView,
   Platform,
+  TouchableOpacity,
 } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import * as Location from "expo-location";
+import { showLocation } from "react-native-map-link";
 
 import { PRIMARY_BLUE, WHITE } from "../styles/baseStyles";
 import { fonts } from "../styles/fonts";
@@ -17,29 +19,31 @@ import CustomInput from "../components/CustomInput";
 import FountainTab from "../components/FountainTab";
 
 export default function FontainesScreen() {
-  const [fontaines, setFontaines] = useState([]); // Liste complète
-  const [filteredFontaines, setFilteredFontaines] = useState([]); // Liste affichée
+  const [fontaines, setFontaines] = useState([]);
+  const [filteredFontaines, setFilteredFontaines] = useState([]);
   const [searchText, setSearchText] = useState("");
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState(null);
+  const [selectedFontaine, setSelectedFontaine] = useState(null);
+  
   const mapRef = useRef(null);
 
+  // Fonction pour calculer la distance entre deux points
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371; 
+    const R = 6371;
     const dLat = (lat2 - lat1) * (Math.PI / 180);
     const dLon = (lon2 - lon1) * (Math.PI / 180);
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1 * (Math.PI / 180)) *
-        Math.cos(lat2 * (Math.PI / 180)) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
+      Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   };
 
   useEffect(() => {
     (async () => {
+      // Demande de permission de géolocalisation
       let { status } = await Location.requestForegroundPermissionsAsync();
       let currentUserLoc = null;
 
@@ -50,95 +54,66 @@ export default function FontainesScreen() {
       }
 
       try {
-        const res = await fetch(
-          "https://opendata.paris.fr/api/records/1.0/search/?dataset=fontaines-a-boire&rows=200"
-        );
+        // Récupération des données Open Data Paris
+        const res = await fetch("https://opendata.paris.fr/api/records/1.0/search/?dataset=fontaines-a-boire&rows=100");
         const data = await res.json();
+        let cleanData = (data.records || []).filter(item => item?.fields?.geo_point_2d);
 
-        let cleanData = (data.records || []).filter(
-          (item) =>
-            item?.fields?.geo_point_2d &&
-            Array.isArray(item.fields.geo_point_2d)
-        );
-
+        // Tri par distance si la localisation est disponible
         if (currentUserLoc) {
-          cleanData = cleanData
-            .map((f) => {
-              const dist = calculateDistance(
-                currentUserLoc.latitude,
-                currentUserLoc.longitude,
-                f.fields.geo_point_2d[0],
-                f.fields.geo_point_2d[1]
-              );
-              return { ...f, distanceKm: dist };
-            })
-            .sort((a, b) => a.distanceKm - b.distanceKm);
+          cleanData = cleanData.map((f) => ({
+            ...f,
+            distanceKm: calculateDistance(currentUserLoc.latitude, currentUserLoc.longitude, f.fields.geo_point_2d[0], f.fields.geo_point_2d[1])
+          })).sort((a, b) => a.distanceKm - b.distanceKm);
         }
 
         setFontaines(cleanData);
-        setFilteredFontaines(cleanData); // Initialise la liste filtrée
+        setFilteredFontaines(cleanData);
       } catch (err) {
-        console.error("Erreur Fetch:", err);
+        console.error(err);
       } finally {
         setLoading(false);
       }
     })();
   }, []);
 
-  // --- LOGIQUE DE RECHERCHE ---
+  // Gestion de la recherche
   const handleSearch = (text) => {
     setSearchText(text);
-    if (text.trim() === "") {
-      setFilteredFontaines(fontaines);
-    } else {
-      const filtered = fontaines.filter((f) => {
-        const name = (f.fields.nom || "").toLowerCase();
-        const street = (f.fields.voie || "").toLowerCase();
-        const search = text.toLowerCase();
-        return name.includes(search) || street.includes(search);
-      });
-      setFilteredFontaines(filtered);
-    }
-  };
-
-  const focusOnFontaine = (fontaine) => {
-    const coords = fontaine.fields?.geo_point_2d;
-    if (!coords || !mapRef.current) return;
-
-    mapRef.current.animateCamera(
-      {
-        center: { latitude: coords[0], longitude: coords[1] },
-        pitch: 0,
-        heading: 0,
-        altitude: 1000,
-        zoom: 17,
-      },
-      { duration: 800 }
+    const filtered = fontaines.filter(f => 
+      (f.fields.nom || "").toLowerCase().includes(text.toLowerCase()) || 
+      (f.fields.voie || "").toLowerCase().includes(text.toLowerCase())
     );
+    setFilteredFontaines(filtered);
   };
 
-  const formatDistance = (dist) => {
-    if (!dist) return "—";
-    return dist < 1 ? `${(dist * 1000).toFixed(0)} m` : `${dist.toFixed(1)} km`;
+  // Centrer la carte sur une fontaine
+  const focusOnFontaine = (f) => {
+    setSelectedFontaine(f);
+    mapRef.current?.animateCamera({
+      center: { latitude: f.fields.geo_point_2d[0], longitude: f.fields.geo_point_2d[1] },
+      zoom: 17
+    }, { duration: 800 });
   };
 
-  const formatTime = (dist) => {
-    if (!dist) return "—";
-    const time = Math.round(dist * 12);
-    return `${time} min`;
+  // Ouvrir l'application de navigation externe
+  const openExternalMaps = () => {
+    if (!selectedFontaine) return;
+    showLocation({
+      latitude: selectedFontaine.fields.geo_point_2d[0],
+      longitude: selectedFontaine.fields.geo_point_2d[1],
+      title: selectedFontaine.fields.nom || "Fontaine",
+      appsWhiteList: ['google-maps', 'apple-maps', 'waze']
+    });
   };
 
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#FFFFFF" />
-        <Text style={{color: 'white', marginTop: 10, fontFamily: fonts.inter}}>Chargement des fontaines...</Text>
-      </View>
-    );
-  }
+  if (loading) return (
+    <View style={styles.center}><ActivityIndicator size="large" color="#FFF" /></View>
+  );
 
   return (
     <View style={{ flex: 1, backgroundColor: PRIMARY_BLUE }}>
+      {/* PARTIE CARTE */}
       <View style={styles.topBlue}>
         <MapView
           ref={mapRef}
@@ -146,80 +121,108 @@ export default function FontainesScreen() {
           style={StyleSheet.absoluteFillObject}
           showsUserLocation={true}
           initialRegion={{
-            latitude: userLocation?.latitude || 48.8566,
-            longitude: userLocation?.longitude || 2.3522,
-            latitudeDelta: 0.05,
-            longitudeDelta: 0.05,
+            latitude: 48.8566, longitude: 2.3522,
+            latitudeDelta: 0.05, longitudeDelta: 0.05,
           }}
+          onPress={() => setSelectedFontaine(null)} // Ferme les détails au clic sur la carte
         >
-          {/* On n'affiche que les markers filtrés sur la carte aussi ? 
-              Ou tous ? Ici on garde tous les markers pour la visibilité */}
-          {fontaines.map((f) => (
+          {filteredFontaines.map((f) => (
             <Marker
               key={f.recordid}
-              coordinate={{
-                latitude: f.fields.geo_point_2d[0],
-                longitude: f.fields.geo_point_2d[1],
-              }}
-              title={f.fields.nom || "Fontaine"}
+              coordinate={{ latitude: f.fields.geo_point_2d[0], longitude: f.fields.geo_point_2d[1] }}
+              onPress={() => setSelectedFontaine(f)}
             />
           ))}
         </MapView>
       </View>
 
+      {/* PARTIE BLANCHE (LISTE OU DÉTAILS) */}
       <View style={styles.bottomWhite}>
-        <CustomInput 
-          placeholder="Rechercher une rue ou un nom" 
-          value={searchText}
-          onChangeText={handleSearch}
-        />
-        
-        <Text style={styles.countText}>
-          {filteredFontaines.length} points d’eau trouvés
-        </Text>
-
-        <ScrollView
-          contentContainerStyle={styles.listContainer}
-          showsVerticalScrollIndicator={false}
-        >
-          {filteredFontaines.map((f, index) => (
-            <FountainTab
-              key={f.recordid}
-              name={f.fields.nom || f.fields.type_objet || "Fontaine"}
-              location={f.fields.voie || "Paris"}
-              distance={formatDistance(f.distanceKm)}
-              time={formatTime(f.distanceKm)}
-              nearest={index === 0 && searchText === "" && userLocation !== null}
-              onPress={() => focusOnFontaine(f)}
+        {!selectedFontaine ? (
+          /* AFFICHAGE DE LA LISTE */
+          <>
+            <CustomInput 
+              placeholder="Rechercher un point d'eau" 
+              value={searchText} 
+              onChangeText={handleSearch} 
             />
-          ))}
-        </ScrollView>
+            <Text style={styles.countText}>{filteredFontaines.length} points d’eau trouvés</Text>
+            <ScrollView contentContainerStyle={styles.listContainer} showsVerticalScrollIndicator={false}>
+              {filteredFontaines.map((f, index) => (
+                <FountainTab
+                  key={f.recordid}
+                  name={f.fields.nom || f.fields.type_objet || "Fontaine"}
+                  location={f.fields.voie || "Paris"}
+                  distance={f.distanceKm ? (f.distanceKm < 1 ? `${(f.distanceKm * 1000).toFixed(0)} m` : `${f.distanceKm.toFixed(1)} km`) : "—"}
+                  time={f.distanceKm ? `${Math.round(f.distanceKm * 12)} min` : "—"}
+                  nearest={index === 0 && !searchText}
+                  onPress={() => focusOnFontaine(f)}
+                />
+              ))}
+            </ScrollView>
+          </>
+        ) : (
+          /* AFFICHAGE DES DÉTAILS DE LA FONTAINE SÉLECTIONNÉE */
+          <View style={styles.detailContainer}>
+            <View style={styles.handle} />
+            <Text style={styles.detailTitle}>{selectedFontaine.fields.nom || "Fontaine à boire"}</Text>
+            <Text style={styles.detailSub}>{selectedFontaine.fields.voie}, Paris</Text>
+            
+            {/* Rectangle gris pour l'image */}
+            <View style={styles.imagePlaceholder} />
+            
+            <TouchableOpacity style={styles.mainButton} onPress={openExternalMaps}>
+              <Text style={styles.mainButtonText}>Faire l'itinéraire</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity onPress={() => setSelectedFontaine(null)} style={{marginTop: 15}}>
+              <Text style={{color: '#999', fontFamily: fonts.inter}}>Retour à la liste</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  topBlue: { height: "40%" },
-  bottomWhite: {
-    height: "60%",
-    backgroundColor: WHITE || "#FFFFFF",
-    padding: 20,
-    borderTopLeftRadius: 40,
-    borderTopRightRadius: 40,
-    gap: 15,
+  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: PRIMARY_BLUE },
+  topBlue: { height: "45%" },
+  bottomWhite: { 
+    height: "55%", 
+    backgroundColor: WHITE, 
+    padding: 20, 
+    borderTopLeftRadius: 40, 
+    borderTopRightRadius: 40, 
+    gap: 15 
   },
-  listContainer: { paddingBottom: 40, gap: 15 },
-  countText: {
-    fontSize: 14,
-    color: "#575757",
-    textAlign: "center",
-    fontFamily: fonts.inter,
+  listContainer: { paddingBottom: 100, gap: 15 },
+  countText: { fontSize: 14, color: "#575757", textAlign: "center", fontFamily: fonts.inter },
+  
+  // Styles pour la vue détails
+  detailContainer: { alignItems: 'center', width: '100%' },
+  handle: { width: 40, height: 5, backgroundColor: '#EEE', borderRadius: 10, marginBottom: 15 },
+  detailTitle: { fontFamily: fonts.bricolageGrotesque, fontSize: 22, fontWeight: '800', textAlign: 'center' },
+  detailSub: { fontFamily: fonts.inter, color: '#666', marginBottom: 20 },
+  imagePlaceholder: { 
+    width: '100%', 
+    height: 150, 
+    backgroundColor: '#F2F2F2', 
+    borderRadius: 20, 
+    marginBottom: 20 
   },
-  center: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: PRIMARY_BLUE || "#0000FF",
+  mainButton: { 
+    backgroundColor: PRIMARY_BLUE, 
+    width: '100%', 
+    height: 55, 
+    borderRadius: 15, 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    shadowColor: PRIMARY_BLUE,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 5,
   },
+  mainButtonText: { color: WHITE, fontFamily: fonts.inter, fontSize: 18, fontWeight: '700' }
 });
