@@ -58,6 +58,7 @@ app.post('/utilisateurs', async (req, res) => {
         const sql = "INSERT INTO utilisateur (email, nom, prenom, mot_de_passe) VALUES (?, ?, ?, ?)";
         db.query(sql, [email, nom, prenom, hash], (err, result) => {
             if (err) {
+                console.error("Erreur SQL :", err);
                 if (err.code === 'ER_DUP_ENTRY') {
                     return res.status(409).json({ error: "Email déjà utilisé" });
                 }
