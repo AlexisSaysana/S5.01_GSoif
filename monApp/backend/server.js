@@ -48,8 +48,18 @@ app.get('/utilisateurs', (req, res) => {
 app.post('/utilisateurs', async (req, res) => {
     const { email, nom, prenom, mot_de_passe } = req.body;
 
-    if (!email || !nom || !prenom || !mot_de_passe) {
-        return res.status(400).json({ error: "Champs manquants" });
+    // Vérification des champs manquants
+    const champsManquants = [];
+    if (!email?.trim()) champsManquants.push("email");
+    if (!nom?.trim()) champsManquants.push("nom");
+    if (!prenom?.trim()) champsManquants.push("prenom");
+    if (!mot_de_passe?.trim()) champsManquants.push("mot_de_passe");
+
+    if (champsManquants.length > 0) {
+        return res.status(400).json({
+            error: "Champs manquants",
+            details: champsManquants
+        });
     }
 
     try {
@@ -59,15 +69,19 @@ app.post('/utilisateurs', async (req, res) => {
         db.query(sql, [email, nom, prenom, hash], (err, result) => {
             if (err) {
                 console.error("Erreur SQL :", err);
+
                 if (err.code === 'ER_DUP_ENTRY') {
                     return res.status(409).json({ error: "Email déjà utilisé" });
                 }
+
                 return res.status(500).json({ error: "Erreur serveur" });
             }
+
             return res.status(201).json({ message: "Utilisateur ajouté avec succès" });
         });
 
     } catch (error) {
+        console.error("Erreur hachage :", error);
         return res.status(500).json({ error: "Erreur lors du hachage du mot de passe" });
     }
 });
@@ -76,13 +90,24 @@ app.post('/utilisateurs', async (req, res) => {
 app.post('/login', (req, res) => {
     const { email, mot_de_passe } = req.body;
 
-    if (!email || !mot_de_passe) {
-        return res.status(400).json({ error: "Champs manquants" });
+    // Vérification des champs manquants
+    const champsManquants = [];
+    if (!email?.trim()) champsManquants.push("email");
+    if (!mot_de_passe?.trim()) champsManquants.push("mot_de_passe");
+
+    if (champsManquants.length > 0) {
+        return res.status(400).json({
+            error: "Champs manquants",
+            details: champsManquants
+        });
     }
 
     const sql = "SELECT * FROM utilisateur WHERE email = ?";
     db.query(sql, [email], async (err, data) => {
-        if (err) return res.status(500).json({ error: "Erreur serveur" });
+        if (err) {
+            console.error("Erreur SQL :", err);
+            return res.status(500).json({ error: "Erreur serveur" });
+        }
 
         if (data.length === 0) {
             return res.status(404).json({ error: "Utilisateur non trouvé" });
@@ -99,7 +124,7 @@ app.post('/login', (req, res) => {
         return res.json({
             message: "Connexion réussie",
             utilisateur: {
-                id: utilisateur.id,
+                id: utilisateur.id_utilisateur,
                 email: utilisateur.email,
                 nom: utilisateur.nom,
                 prenom: utilisateur.prenom

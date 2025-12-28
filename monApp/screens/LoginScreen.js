@@ -1,94 +1,126 @@
-import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { useState } from 'react';
+import { View, Text, Image, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles';
 import { fonts } from '../styles/fonts';
 
 import CustomInput from '../components/CustomInput';
 import CustomButton from '../components/CustomButton';
 
-// On ajoute "onLogin" dans les paramètres récupérés par le composant
-const LoginScreen = ({ navigation, onLogin }) => (
-    <View style={{ flex: 1, backgroundColor: PRIMARY_BLUE }}>
-        <View style={styles.topBlue}>
-            <Image
-                style={styles.icon}
-                source={require('../assets/icon-light.png')}
-            />
-        </View>
-        
-        <View style={styles.bottomWhite}>
-            <Text style={styles.title}>
-                Se connecter
-            </Text>
-            <View
-                style={
-                    {
-                        width: '100%',
-                        fontFamily: fonts.inter,
-                        display: 'flex',
-                        gap: 60
-                    }
+const BASE_URL = "https://s5-01-gsoif.onrender.com";
+
+const LoginScreen = ({ navigation }) => {
+
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+
+    // -------------------------
+    //   CONNEXION
+    // -------------------------
+    const handleLogin = async () => {
+
+        if (!email.trim() || !password.trim()) {
+            return Alert.alert("Erreur", "Veuillez remplir tous les champs");
+        }
+
+        try {
+            const response = await fetch(`${BASE_URL}/login`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    email: email,
+                    mot_de_passe: password
+                })
+            });
+
+            const data = await response.json();
+
+            // Gestion des erreurs backend
+            if (!response.ok) {
+                if (data.error === "Champs manquants") {
+                    return Alert.alert("Erreur", `Champs manquants : ${data.details.join(", ")}`);
                 }
-            >
-                <View
-                    style={
-                        {
-                            width: '100%',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            gap: 30,
-                        }
-                    }
-                >
-                    <CustomInput
-                        placeholder="E-mail"
-                        keyboardType="email-address"
-                    />
-                    <CustomInput
-                        placeholder="Mot de passe"
-                        secureTextEntry={true}
-                    />
-                    <TouchableOpacity onPress={() => console.log('Mot de passe oublié')} style={{width: '100%'}}>
-                        <Text
-                            style={
-                                {
-                                    textDecorationLine: 'underline',
-                                    alignSelf: 'flex-end',
-                                    fontSize: 14,
-                                    color: '#575757',
-                                    marginTop: -10,
-                                }
-                            }
-                        >
-                            Mot de passe oublié ?
-                        </Text>
-                    </TouchableOpacity> 
-                </View>
-                <View
-                    style={
-                        {
-                            width: '100%',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            gap: 80,
-                        }
-                    }
-                >
-                    {/* ICI : On appelle onLogin() au clic */}
-                    <CustomButton 
-                        title="Se connecter" 
-                        onPress={() => onLogin()} 
-                    />
-                    
-                    <TouchableOpacity onPress={() => navigation.navigate('Inscription')}>
-                        <Text style={styles.smallLink}>
-                            Je n'ai pas de compte
-                        </Text>
-                    </TouchableOpacity>
+                if (data.error === "Utilisateur non trouvé") {
+                    return Alert.alert("Erreur", "Aucun compte trouvé avec cet email");
+                }
+                if (data.error === "Mot de passe incorrect") {
+                    return Alert.alert("Erreur", "Mot de passe incorrect");
+                }
+                return Alert.alert("Erreur", "Une erreur est survenue");
+            }
+
+            // Succès
+            Alert.alert("Succès", "Connexion réussie !");
+            navigation.navigate("Fontaines"); // ou autre écran
+
+        } catch (error) {
+            console.log(error);
+            Alert.alert("Erreur", "Impossible de se connecter au serveur");
+        }
+    };
+
+    return (
+        <View style={{ flex: 1, backgroundColor: PRIMARY_BLUE }}>
+            <View style={styles.topBlue}>
+                <Image
+                    style={styles.icon}
+                    source={require('../assets/icon-light.png')}
+                />
+            </View>
+            
+            <View style={styles.bottomWhite}>
+                <Text style={styles.title}>
+                    Se connecter
+                </Text>
+
+                <View style={{ width: '100%', fontFamily: fonts.inter, display: 'flex', gap: 60 }}>
+
+                    <View style={{ width: '100%', justifyContent: 'center', alignItems: 'center', gap: 30 }}>
+                        <CustomInput
+                            placeholder="E-mail"
+                            keyboardType="email-address"
+                            value={email}
+                            onChangeText={setEmail}
+                        />
+                        <CustomInput
+                            placeholder="Mot de passe"
+                            secureTextEntry={true}
+                            value={password}
+                            onChangeText={setPassword}
+                        />
+
+                        <TouchableOpacity onPress={() => console.log('Mot de passe oublié')} style={{width: '100%'}}>
+                            <Text style={{
+                                textDecorationLine: 'underline',
+                                alignSelf: 'flex-end',
+                                fontSize: 14,
+                                color: '#575757',
+                                marginTop: -10,
+                            }}>
+                                Mot de passe oublié ?
+                            </Text>
+                        </TouchableOpacity> 
+                    </View>
+
+                    <View style={{ width: '100%', justifyContent: 'center', alignItems: 'center', gap: 80 }}>
+                        <CustomButton 
+                            title="Se connecter" 
+                            onPress={handleLogin}
+                        />
+                        
+                        <TouchableOpacity onPress={() => navigation.navigate('Inscription')}>
+                            <Text style={styles.smallLink}>
+                                Je n'ai pas de compte
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+
                 </View>
             </View>
         </View>
-    </View>
-);
+    );
+};
 
 const styles = StyleSheet.create({
     topBlue: {
