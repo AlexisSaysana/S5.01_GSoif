@@ -76,7 +76,9 @@ export default function App() {
             <Stack.Screen name="Login">
                {(props) => <LoginScreen {...props} onLogin={() => setIsLoggedIn(true)} />}
             </Stack.Screen>
-            <Stack.Screen name="Inscription" component={SignupScreen} />
+            <Stack.Screen name="Inscription">
+              {(props) => <SignupScreen {...props} onLogin={() => setIsLoggedIn(true)} />}
+            </Stack.Screen>
           </Stack.Group>
         ) : (
           // SI CONNECTÉ : Groupe App

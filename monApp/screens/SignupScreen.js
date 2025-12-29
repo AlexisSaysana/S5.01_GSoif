@@ -8,7 +8,7 @@ import CustomButton from '../components/CustomButton';
 
 const BASE_URL = "https://s5-01-gsoif.onrender.com";
 
-const SignupScreen = ({ navigation }) => {
+const SignupScreen = ({ navigation, onLogin }) => {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -50,7 +50,8 @@ const SignupScreen = ({ navigation }) => {
       }
 
       Alert.alert("Succès", "Compte créé avec succès !");
-      navigation.navigate("Login");
+      onLogin();
+
 
     } catch (error) {
       console.log(error);
@@ -121,11 +122,10 @@ const SignupScreen = ({ navigation }) => {
                 J'ai déjà un compte
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => navigation.navigate("Main", { screen: "Rechercher" })}>
-              <Text style={styles.smallLink}>
-                Poursuivre en tant qu'invité
-              </Text>
-            </TouchableOpacity> 
+            <TouchableOpacity onPress={onLogin}>
+              <Text style={styles.smallLink}>Poursuivre en tant qu'invité</Text>
+            </TouchableOpacity>
+
           </View>
         </View>
       </View>

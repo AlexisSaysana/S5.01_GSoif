@@ -8,7 +8,7 @@ import CustomButton from '../components/CustomButton';
 
 const BASE_URL = "https://s5-01-gsoif.onrender.com";
 
-const LoginScreen = ({ navigation }) => {
+const LoginScreen = ({ navigation, onLogin  }) => {
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -18,52 +18,57 @@ const LoginScreen = ({ navigation }) => {
     // -------------------------
     const handleLogin = async () => {
 
-        if (!email.trim() || !password.trim()) {
-            return Alert.alert("Erreur", "Veuillez remplir tous les champs");
-        }
+    if (!email.trim() || !password.trim()) {
+        return Alert.alert("Erreur", "Veuillez remplir tous les champs");
+    }
 
-        try {
-            const response = await fetch(`${BASE_URL}/login`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    email: email,
-                    mot_de_passe: password
-                })
-            });
+    try {
+        console.log("📤 Envoi au backend :", {
+            email: email,
+            mot_de_passe: password
+        });
 
-            const data = await response.json();
-            console.log(error);
-            console.log("Réponse backend:", data);
-            console.log("Statut HTTP:", response.status);
+        const response = await fetch(`${BASE_URL}/login`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                email: email,
+                mot_de_passe: password
+            })
+        });
 
+        const data = await response.json();
 
+        console.log("📥 Réponse brute backend :", data);
+        console.log("📡 Statut HTTP :", response.status);
 
-            // Gestion des erreurs backend
-            if (!response.ok) {
-                if (data.error === "Champs manquants") {
-                    return Alert.alert("Erreur", `Champs manquants : ${data.details.join(", ")}`);
-                }
-                if (data.error === "Utilisateur non trouvé") {
-                    return Alert.alert("Erreur", "Aucun compte trouvé avec cet email");
-                }
-                if (data.error === "Mot de passe incorrect") {
-                    return Alert.alert("Erreur", "Mot de passe incorrect");
-                }
-                return Alert.alert("Erreur", "Une erreur est survenue");
+        if (!response.ok) {
+            console.log("❌ Erreur backend :", data.error);
+
+            if (data.error === "Champs manquants") {
+                return Alert.alert("Erreur", `Champs manquants : ${data.details.join(", ")}`);
+            }
+            if (data.error === "Utilisateur non trouvé") {
+                return Alert.alert("Erreur", "Aucun compte trouvé avec cet email");
+            }
+            if (data.error === "Mot de passe incorrect") {
+                return Alert.alert("Erreur", "Mot de passe incorrect");
             }
 
-            // Succès
-            Alert.alert("Succès", "Connexion réussie !");
-            navigation.navigate("Rechercher"); // ou autre écran
-
-        } catch (error) {
-            console.log(error);
-            Alert.alert("Erreur", "Impossible de se connecter au serveur");
+            return Alert.alert("Erreur", "Une erreur est survenue");
         }
-    };
+
+        Alert.alert("Succès", "Connexion réussie !");
+        onLogin();
+        
+
+    } catch (error) {
+        console.log("🔥 Erreur FETCH :", error);
+        Alert.alert("Erreur", "Impossible de se connecter au serveur");
+    }
+};
 
     return (
         <View style={{ flex: 1, backgroundColor: PRIMARY_BLUE }}>
