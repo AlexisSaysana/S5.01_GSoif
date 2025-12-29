@@ -121,7 +121,7 @@ const SignupScreen = ({ navigation }) => {
                 J'ai déjà un compte
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => navigation.navigate('Fontaines')}>
+            <TouchableOpacity onPress={() => navigation.navigate("Main", { screen: "Rechercher" })}>
               <Text style={styles.smallLink}>
                 Poursuivre en tant qu'invité
               </Text>

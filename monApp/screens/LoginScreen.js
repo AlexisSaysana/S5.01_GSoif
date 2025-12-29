@@ -35,6 +35,11 @@ const LoginScreen = ({ navigation }) => {
             });
 
             const data = await response.json();
+            console.log(error);
+            console.log("Réponse backend:", data);
+            console.log("Statut HTTP:", response.status);
+
+
 
             // Gestion des erreurs backend
             if (!response.ok) {
@@ -52,7 +57,7 @@ const LoginScreen = ({ navigation }) => {
 
             // Succès
             Alert.alert("Succès", "Connexion réussie !");
-            navigation.navigate("Fontaines"); // ou autre écran
+            navigation.navigate("Rechercher"); // ou autre écran
 
         } catch (error) {
             console.log(error);
