@@ -55,12 +55,13 @@ export default function FontainesScreen() {
 
       try {
         // Récupération des données Open Data Paris
-        const res = await fetch("https://opendata.paris.fr/api/records/1.0/search/?dataset=fontaines-a-boire&rows=100");
+        const res = await fetch("https://opendata.paris.fr/api/records/1.0/search/?dataset=fontaines-a-boire&rows=50");
         const data = await res.json();
         let cleanData = (data.records || []).filter(item => item?.fields?.geo_point_2d);
 
         // Tri par distance si la localisation est disponible
         if (currentUserLoc) {
+
           cleanData = cleanData.map((f) => ({
             ...f,
             distanceKm: calculateDistance(currentUserLoc.latitude, currentUserLoc.longitude, f.fields.geo_point_2d[0], f.fields.geo_point_2d[1])
