@@ -58,7 +58,7 @@ const SignupScreen = ({ navigation, onLogin }) => {
       }
 
       Alert.alert("Succès", "Compte créé avec succès !");
-      onLogin();
+      onLogin(email);
 
     } catch (error) {
       console.log(error);

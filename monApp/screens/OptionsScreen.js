@@ -11,7 +11,8 @@ const OptionItem = ({ title, onPress }) => (
   </TouchableOpacity>
 );
 
-export default function OptionsScreen({navigation, onLogout }) {
+export default function OptionsScreen({navigation, onLogout, userEmail }) {
+  
   return (
     <View style={styles.container}>
       {/* HEADER */}
@@ -27,7 +28,13 @@ export default function OptionsScreen({navigation, onLogout }) {
       </View>
 
       <ScrollView style={styles.content}>
-        <OptionItem title="Mon compte" onPress={() => {}} />
+<OptionItem 
+  title="Mon compte" 
+  onPress={() => {
+    console.log("➡️ CLICK Mon compte — userEmail =", userEmail);
+    navigation.navigate("MonCompte", { userEmail });
+  }} 
+/>
         <OptionItem title="Historique" onPress={() => {}} />
         <OptionItem title="Paramètres" onPress={() => {}} />
         <OptionItem title="Points d’eau enregistrés" onPress={() => {}} />

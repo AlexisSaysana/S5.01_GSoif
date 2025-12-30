@@ -1,5 +1,5 @@
 const express = require('express');
-const mysql = require('mysql2'); // ✔️ mysql2 = stable
+const mysql = require('mysql2');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
@@ -11,7 +11,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // --------------------------------------
-// 🔥 Connexion MySQL via POOL (anti-ECONNRESET)
+// 🔥 Connexion MySQL via POOL
 // --------------------------------------
 const db = mysql.createPool({
     host: process.env.DB_HOST,
@@ -142,6 +142,49 @@ app.post('/login', (req, res) => {
             console.error("Erreur bcrypt :", error);
             return res.status(500).json({ error: "Erreur serveur" });
         }
+    });
+});
+
+// --------------------------------------
+// ⭐ AJOUT DES ROUTES MANQUANTES
+// --------------------------------------
+
+// Récupérer un utilisateur par email
+app.get('/utilisateurs/:email', (req, res) => {
+    const email = req.params.email;
+
+    const sql = "SELECT * FROM utilisateur WHERE email = ?";
+    db.query(sql, [email], (err, data) => {
+        if (err) {
+            console.error("Erreur SQL :", err);
+            return res.status(500).json({ error: "Erreur serveur" });
+        }
+
+        if (data.length === 0) {
+            return res.status(404).json({ error: "Utilisateur non trouvé" });
+        }
+
+        return res.json(data[0]);
+    });
+});
+
+// Modifier un utilisateur
+app.put('/utilisateurs/:email', (req, res) => {
+    const email = req.params.email;
+    const { nom, prenom, email: newEmail } = req.body;
+
+    const sql = "UPDATE utilisateur SET nom = ?, prenom = ?, email = ? WHERE email = ?";
+    db.query(sql, [nom, prenom, newEmail, email], (err, result) => {
+        if (err) {
+            console.error("Erreur SQL :", err);
+            return res.status(500).json({ error: "Erreur serveur" });
+        }
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Utilisateur non trouvé" });
+        }
+
+        return res.json({ message: "Utilisateur mis à jour avec succès" });
     });
 });
 

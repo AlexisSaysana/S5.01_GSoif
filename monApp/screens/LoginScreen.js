@@ -61,7 +61,7 @@ const LoginScreen = ({ navigation, onLogin  }) => {
         }
 
         Alert.alert("Succès", "Connexion réussie !");
-        onLogin();
+        onLogin(email);
         
 
     } catch (error) {
