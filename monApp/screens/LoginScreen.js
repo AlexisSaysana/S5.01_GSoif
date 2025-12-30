@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles';
 import { fonts } from '../styles/fonts';
@@ -8,16 +8,12 @@ import CustomButton from '../components/CustomButton';
 
 const BASE_URL = "https://s5-01-gsoif.onrender.com";
 
-const LoginScreen = ({ navigation }) => {
+const LoginScreen = ({ navigation, onLogin }) => { // Récupération de onLogin ici
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
 
-    // -------------------------
-    //   CONNEXION
-    // -------------------------
     const handleLogin = async () => {
-
         if (!email.trim() || !password.trim()) {
             return Alert.alert("Erreur", "Veuillez remplir tous les champs");
         }
@@ -36,8 +32,8 @@ const LoginScreen = ({ navigation }) => {
 
             const data = await response.json();
 
-            // Gestion des erreurs backend
             if (!response.ok) {
+                // Gestion des erreurs spécifiques
                 if (data.error === "Champs manquants") {
                     return Alert.alert("Erreur", `Champs manquants : ${data.details.join(", ")}`);
                 }
@@ -47,12 +43,12 @@ const LoginScreen = ({ navigation }) => {
                 if (data.error === "Mot de passe incorrect") {
                     return Alert.alert("Erreur", "Mot de passe incorrect");
                 }
-                return Alert.alert("Erreur", "Une erreur est survenue");
+                return Alert.alert("Erreur",data.error|| "Une erreur est survenue");
             }
 
-            // Succès
-            Alert.alert("Succès", "Connexion réussie !");
-            navigation.navigate("Fontaines"); // ou autre écran
+            // --- SUCCÈS ---
+            // On appelle onLogin() qui vient de App.js pour changer l'état global
+            onLogin();
 
         } catch (error) {
             console.log(error);
@@ -68,14 +64,11 @@ const LoginScreen = ({ navigation }) => {
                     source={require('../assets/icon-light.png')}
                 />
             </View>
-            
+
             <View style={styles.bottomWhite}>
-                <Text style={styles.title}>
-                    Se connecter
-                </Text>
+                <Text style={styles.title}>Se connecter</Text>
 
-                <View style={{ width: '100%', fontFamily: fonts.inter, display: 'flex', gap: 60 }}>
-
+                <View style={{ width: '100%', display: 'flex', gap: 60 }}>
                     <View style={{ width: '100%', justifyContent: 'center', alignItems: 'center', gap: 30 }}>
                         <CustomInput
                             placeholder="E-mail"
@@ -90,32 +83,21 @@ const LoginScreen = ({ navigation }) => {
                             onChangeText={setPassword}
                         />
 
-                        <TouchableOpacity onPress={() => console.log('Mot de passe oublié')} style={{width: '100%'}}>
-                            <Text style={{
-                                textDecorationLine: 'underline',
-                                alignSelf: 'flex-end',
-                                fontSize: 14,
-                                color: '#575757',
-                                marginTop: -10,
-                            }}>
-                                Mot de passe oublié ?
-                            </Text>
-                        </TouchableOpacity> 
-                    </View>
-
-                    <View style={{ width: '100%', justifyContent: 'center', alignItems: 'center', gap: 80 }}>
-                        <CustomButton 
-                            title="Se connecter" 
-                            onPress={handleLogin}
-                        />
-                        
-                        <TouchableOpacity onPress={() => navigation.navigate('Inscription')}>
-                            <Text style={styles.smallLink}>
-                                Je n'ai pas de compte
-                            </Text>
+                        <TouchableOpacity onPress={() => console.log('Oubli')} style={{width: '100%'}}>
+                            <Text style={styles.forgotText}>Mot de passe oublié ?</Text>
                         </TouchableOpacity>
                     </View>
 
+                    <View style={{ width: '100%', justifyContent: 'center', alignItems: 'center', gap: 80 }}>
+                        <CustomButton
+                            title="Se connecter"
+                            onPress={handleLogin} // Appelle la fonction asynchrone
+                        />
+
+                        <TouchableOpacity onPress={() => navigation.navigate('Inscription')}>
+                            <Text style={styles.smallLink}>Je n'ai pas de compte</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </View>
         </View>
@@ -132,34 +114,36 @@ const styles = StyleSheet.create({
         backgroundColor: WHITE,
         height: '75%',
         padding: 30,
-        justifyContent: 'flex-start',
-        alignItems: 'center',
-        gap: 60,
         borderTopLeftRadius: 50,
         borderTopRightRadius: 50,
         paddingTop: 50,
+        alignItems: 'center',
     },
     title: {
         fontFamily: fonts.bricolageGrotesque,
         fontSize: 28,
         fontWeight: '900',
-    },
-    text: {
-        fontFamily: fonts.Inter,
-        fontSize: 16,
-        color: '#575757',
-        textAlign: 'center',
+        marginBottom: 40
     },
     icon: {
         width: 90,
         height: 90,
         marginTop: 40,
     },
+    forgotText: {
+        textDecorationLine: 'underline',
+        alignSelf: 'flex-end',
+        fontSize: 14,
+        color: '#575757',
+        marginTop: -10,
+        fontFamily: fonts.inter
+    },
     smallLink: {
         color: PRIMARY_BLUE,
         fontSize: 14,
         marginTop: 5,
-        fontWeight: '600'
+        fontWeight: '600',
+        fontFamily: fonts.inter
     }
 });
 
