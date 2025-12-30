@@ -15,12 +15,13 @@ import HomeScreen from './screens/HomeScreen';
 import FontainesScreen from './screens/FontainesScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import OptionsScreen from './screens/OptionsScreen';
+import MonCompteScreen from './screens/MonCompteScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 // --- NAVIGATION BASSE (ONGLETS) ---
-function TabNavigator() {
+function TabNavigator({ navigation, onLogout,  userEmail }) {
   return (
     <Tab.Navigator
       screenOptions={{
@@ -33,7 +34,19 @@ function TabNavigator() {
       <Tab.Screen name="Ajouter" component={HomeScreen} options={{ tabBarIcon: ({ color }) => <Plus color={color} size={28} /> }} />
       <Tab.Screen name="Rechercher" component={FontainesScreen} options={{ tabBarIcon: ({ color }) => <Map color={color} size={28} /> }} />
       <Tab.Screen name="Profil" component={ProfileScreen} options={{ tabBarIcon: ({ color }) => <User color={color} size={28} /> }} />
-      <Tab.Screen name="Options" component={OptionsScreen} options={{ tabBarIcon: ({ color }) => <Settings color={color} size={28} /> }} />
+
+      <Tab.Screen 
+        name="Options"
+        children={(props) => (
+          <OptionsScreen 
+            {...props}
+            onLogout={onLogout}
+            userEmail={userEmail}   // ⭐ AJOUT IMPORTANT
+          />
+        )}
+        options={{ tabBarIcon: ({ color }) => <Settings color={color} size={28} /> }}
+      />
+
     </Tab.Navigator>
   );
 }
@@ -41,9 +54,9 @@ function TabNavigator() {
 // --- COMPOSANT PRINCIPAL ---
 export default function App() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
-  
-  // 1. ÉTAT DE CONNEXION : false par défaut
+
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userEmail, setUserEmail] = useState(null);   // ⭐ OBLIGATOIRE
 
   useEffect(() => {
     async function loadFonts() {
@@ -66,21 +79,59 @@ export default function App() {
       <StatusBar style="auto" />
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         
-        {/* 2. CONDITION DE NAVIGATION */}
         {!isLoggedIn ? (
-          // SI PAS CONNECTÉ : Groupe Auth
           <Stack.Group>
             <Stack.Screen name="Welcome">
-               {(props) => <WelcomeScreen {...props} onLogin={() => setIsLoggedIn(true)} />}
+              {(props) => (
+                <WelcomeScreen 
+                  {...props} 
+                  onLogin={(email) => { setUserEmail(email); setIsLoggedIn(true); }}  // ⭐ MODIFIÉ
+                />
+              )}
             </Stack.Screen>
+
             <Stack.Screen name="Login">
-               {(props) => <LoginScreen {...props} onLogin={() => setIsLoggedIn(true)} />}
+              {(props) => (
+                <LoginScreen 
+                  {...props} 
+                  onLogin={(email) => { setUserEmail(email); setIsLoggedIn(true); }}  // ⭐ MODIFIÉ
+                />
+              )}
             </Stack.Screen>
-            <Stack.Screen name="Inscription" component={SignupScreen} />
+
+            <Stack.Screen name="Inscription">
+              {(props) => (
+                <SignupScreen 
+                  {...props} 
+                  onLogin={(email) => { setUserEmail(email); setIsLoggedIn(true); }}  // ⭐ MODIFIÉ
+                />
+              )}
+            </Stack.Screen>
           </Stack.Group>
         ) : (
-          // SI CONNECTÉ : Groupe App
-          <Stack.Screen name="Main" component={TabNavigator} />
+          <Stack.Group>
+            <Stack.Screen name="Main">
+              {(props) => (
+                <TabNavigator 
+                  navigation={props.navigation} 
+                  userEmail={userEmail}   // ⭐ AJOUT
+                  onLogout={() => {
+                    setIsLoggedIn(false);
+                    setUserEmail(null);
+                  }}
+                />
+              )}
+            </Stack.Screen>
+
+            <Stack.Screen name="MonCompte">
+              {(props) => (
+                <MonCompteScreen 
+                  {...props} 
+                  userEmail={userEmail}   // ⭐ AJOUT
+                />
+              )}
+            </Stack.Screen>
+          </Stack.Group>
         )}
         
       </Stack.Navigator>

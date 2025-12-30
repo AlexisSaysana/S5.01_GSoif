@@ -1,34 +1,41 @@
 const express = require('express');
-const mysql = require('mysql');
+const mysql = require('mysql2');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
+require('dotenv').config();
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 app.use(bodyParser.json());
 
-// Connexion MySQL
-require('dotenv').config();
-
-const db = mysql.createConnection({
+// --------------------------------------
+// 🔥 Connexion MySQL via POOL
+// --------------------------------------
+const db = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME
+    database: process.env.DB_NAME,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
 });
 
-
-
-// Vérification connexion MySQL
-db.connect((err) => {
+// Test de connexion
+db.getConnection((err, connection) => {
     if (err) {
-        console.error("Erreur de connexion MySQL :", err);
-        return;
+        console.error("❌ Erreur de connexion MySQL :", err);
+    } else {
+        console.log("✅ Connexion MySQL réussie !");
+        connection.release();
     }
-    console.log("Connexion MySQL réussie !");
 });
+
+// --------------------------------------
+// ROUTES
+// --------------------------------------
 
 // Route test
 app.get('/', (req, res) => {
@@ -39,7 +46,7 @@ app.get('/', (req, res) => {
 app.get('/utilisateurs', (req, res) => {
     const sql = "SELECT * FROM utilisateur";
     db.query(sql, (err, data) => {
-        if (err) return res.status(500).json(err);
+        if (err) return res.status(500).json({ error: "Erreur SQL", details: err });
         return res.json(data);
     });
 });
@@ -48,7 +55,6 @@ app.get('/utilisateurs', (req, res) => {
 app.post('/utilisateurs', async (req, res) => {
     const { email, nom, prenom, mot_de_passe } = req.body;
 
-    // Vérification des champs manquants
     const champsManquants = [];
     if (!email?.trim()) champsManquants.push("email");
     if (!nom?.trim()) champsManquants.push("nom");
@@ -90,7 +96,6 @@ app.post('/utilisateurs', async (req, res) => {
 app.post('/login', (req, res) => {
     const { email, mot_de_passe } = req.body;
 
-    // Vérification des champs manquants
     const champsManquants = [];
     if (!email?.trim()) champsManquants.push("email");
     if (!mot_de_passe?.trim()) champsManquants.push("mot_de_passe");
@@ -104,6 +109,7 @@ app.post('/login', (req, res) => {
 
     const sql = "SELECT * FROM utilisateur WHERE email = ?";
     db.query(sql, [email], async (err, data) => {
+
         if (err) {
             console.error("Erreur SQL :", err);
             return res.status(500).json({ error: "Erreur serveur" });
@@ -115,28 +121,79 @@ app.post('/login', (req, res) => {
 
         const utilisateur = data[0];
 
-        const match = await bcrypt.compare(mot_de_passe, utilisateur.mot_de_passe);
+        try {
+            const match = await bcrypt.compare(mot_de_passe, utilisateur.mot_de_passe);
 
-        if (!match) {
-            return res.status(401).json({ error: "Mot de passe incorrect" });
-        }
-
-        return res.json({
-            message: "Connexion réussie",
-            utilisateur: {
-                id: utilisateur.id_utilisateur,
-                email: utilisateur.email,
-                nom: utilisateur.nom,
-                prenom: utilisateur.prenom
+            if (!match) {
+                return res.status(401).json({ error: "Mot de passe incorrect" });
             }
-        });
+
+            return res.json({
+                message: "Connexion réussie",
+                utilisateur: {
+                    id: utilisateur.id_utilisateur,
+                    email: utilisateur.email,
+                    nom: utilisateur.nom,
+                    prenom: utilisateur.prenom
+                }
+            });
+
+        } catch (error) {
+            console.error("Erreur bcrypt :", error);
+            return res.status(500).json({ error: "Erreur serveur" });
+        }
     });
 });
 
-// Lancer le serveur
-const PORT = process.env.PORT || 8080;
+// --------------------------------------
+// ⭐ AJOUT DES ROUTES MANQUANTES
+// --------------------------------------
 
-app.listen(PORT, () => {
-  console.log("Serveur lancé sur le port " + PORT);
+// Récupérer un utilisateur par email
+app.get('/utilisateurs/:email', (req, res) => {
+    const email = req.params.email;
+
+    const sql = "SELECT * FROM utilisateur WHERE email = ?";
+    db.query(sql, [email], (err, data) => {
+        if (err) {
+            console.error("Erreur SQL :", err);
+            return res.status(500).json({ error: "Erreur serveur" });
+        }
+
+        if (data.length === 0) {
+            return res.status(404).json({ error: "Utilisateur non trouvé" });
+        }
+
+        return res.json(data[0]);
+    });
 });
 
+// Modifier un utilisateur
+app.put('/utilisateurs/:email', (req, res) => {
+    const email = req.params.email;
+    const { nom, prenom, email: newEmail } = req.body;
+
+    const sql = "UPDATE utilisateur SET nom = ?, prenom = ?, email = ? WHERE email = ?";
+    db.query(sql, [nom, prenom, newEmail, email], (err, result) => {
+        if (err) {
+            console.error("Erreur SQL :", err);
+            return res.status(500).json({ error: "Erreur serveur" });
+        }
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Utilisateur non trouvé" });
+        }
+
+        return res.json({ message: "Utilisateur mis à jour avec succès" });
+    });
+});
+
+// --------------------------------------
+// LANCEMENT SERVEUR
+// --------------------------------------
+const PORT = process.env.PORT || 8080;
+console.log("PORT utilisé :", PORT);
+
+app.listen(PORT, () => {
+    console.log("🚀 Serveur lancé sur le port " + PORT);
+});

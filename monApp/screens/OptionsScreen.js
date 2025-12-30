@@ -11,19 +11,30 @@ const OptionItem = ({ title, onPress }) => (
   </TouchableOpacity>
 );
 
-export default function OptionsScreen({ onLogout }) {
+export default function OptionsScreen({navigation, onLogout, userEmail }) {
+  
   return (
     <View style={styles.container}>
       {/* HEADER */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton}>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}   // ← AJOUT OBLIGATOIRE
+        >
           <ChevronLeft color="white" size={30} />
         </TouchableOpacity>
+
         <Text style={styles.headerTitle}>Options</Text>
       </View>
 
       <ScrollView style={styles.content}>
-        <OptionItem title="Mon compte" onPress={() => {}} />
+<OptionItem 
+  title="Mon compte" 
+  onPress={() => {
+    console.log("➡️ CLICK Mon compte — userEmail =", userEmail);
+    navigation.navigate("MonCompte", { userEmail });
+  }} 
+/>
         <OptionItem title="Historique" onPress={() => {}} />
         <OptionItem title="Paramètres" onPress={() => {}} />
         <OptionItem title="Points d’eau enregistrés" onPress={() => {}} />
