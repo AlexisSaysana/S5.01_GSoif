@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles';
 import { fonts } from '../styles/fonts';
 
@@ -10,12 +10,20 @@ const BASE_URL = "https://s5-01-gsoif.onrender.com";
 
 const SignupScreen = ({ navigation, onLogin }) => {
 
+  const [prenom, setPrenom] = useState("");
+  const [nom, setNom] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const handleSignup = async () => {
-    if (!email.trim() || !password.trim() || !confirmPassword.trim()) {
+    if (
+      !prenom.trim() ||
+      !nom.trim() ||
+      !email.trim() ||
+      !password.trim() ||
+      !confirmPassword.trim()
+    ) {
       return Alert.alert("Erreur", "Veuillez remplir tous les champs");
     }
 
@@ -31,8 +39,8 @@ const SignupScreen = ({ navigation, onLogin }) => {
         },
         body: JSON.stringify({
           email: email,
-          nom: "Nom",       // à adapter si tu ajoutes les champs
-          prenom: "Prénom", // idem
+          nom: nom,
+          prenom: prenom,
           mot_de_passe: password
         })
       });
@@ -52,7 +60,6 @@ const SignupScreen = ({ navigation, onLogin }) => {
       Alert.alert("Succès", "Compte créé avec succès !");
       onLogin();
 
-
     } catch (error) {
       console.log(error);
       Alert.alert("Erreur", "Impossible de se connecter au serveur");
@@ -61,6 +68,8 @@ const SignupScreen = ({ navigation, onLogin }) => {
 
   return (
     <View style={{ flex: 1, backgroundColor: PRIMARY_BLUE }}>
+      
+      {/* TOP BLUE */}
       <View style={styles.topBlue}>
         <Image
           style={styles.icon}
@@ -68,66 +77,100 @@ const SignupScreen = ({ navigation, onLogin }) => {
         />
       </View>
       
+      {/* BOTTOM WHITE */}
       <View style={styles.bottomWhite}>
-        <Text style={styles.title}>
-          S'inscrire
-        </Text>
-        <View
-          style={{
-            width: '100%',
-            fontFamily: fonts.inter,
-            display: 'flex',
-            gap: 60
-          }}
-        >
-          <View
-            style={{
-              width: '100%',
-              justifyContent: 'center',
-              alignItems: 'center',
-              gap: 30,
-            }}
-          >
-            <CustomInput
-              placeholder="E-mail"
-              keyboardType="email-address"
-              value={email}
-              onChangeText={setEmail}
-            />
-            <CustomInput
-              placeholder="Mot de passe"
-              secureTextEntry={true}
-              value={password}
-              onChangeText={setPassword}
-            />
-            <CustomInput
-              placeholder="Confirmer le mot de passe"
-              secureTextEntry={true}
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-            />  
-          </View>
-          <View
-            style={{
-              width: '100%',
-              justifyContent: 'center',
-              alignItems: 'center',
-              gap: 30,
-            }}
-          >
-            <CustomButton title="S'inscrire" onPress={handleSignup}/>
-            
-            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-              <Text style={styles.smallLink}>
-                J'ai déjà un compte
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={onLogin}>
-              <Text style={styles.smallLink}>Poursuivre en tant qu'invité</Text>
-            </TouchableOpacity>
 
+        <ScrollView
+          style={{ width: '100%' }}
+          contentContainerStyle={{
+            alignItems: 'center',
+            gap: 60,
+            paddingBottom: 80
+          }}
+          showsVerticalScrollIndicator={false}
+        >
+
+          <Text style={styles.title}>
+            S'inscrire
+          </Text>
+
+          <View
+            style={{
+              width: '100%',
+              fontFamily: fonts.inter,
+              display: 'flex',
+              gap: 60
+            }}
+          >
+            {/* INPUTS */}
+            <View
+              style={{
+                width: '100%',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: 30,
+              }}
+            >
+              <CustomInput
+                placeholder="Prénom"
+                value={prenom}
+                onChangeText={setPrenom}
+              />
+
+              <CustomInput
+                placeholder="Nom"
+                value={nom}
+                onChangeText={setNom}
+              />
+
+              <CustomInput
+                placeholder="E-mail"
+                keyboardType="email-address"
+                value={email}
+                onChangeText={setEmail}
+              />
+
+              <CustomInput
+                placeholder="Mot de passe"
+                secureTextEntry={true}
+                value={password}
+                onChangeText={setPassword}
+              />
+
+              <CustomInput
+                placeholder="Confirmer le mot de passe"
+                secureTextEntry={true}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+              />  
+            </View>
+
+            {/* BUTTONS */}
+            <View
+              style={{
+                width: '100%',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: 30,
+              }}
+            >
+              <CustomButton title="S'inscrire" onPress={handleSignup}/>
+              
+              <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+                <Text style={styles.smallLink}>
+                  J'ai déjà un compte
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={onLogin}>
+                <Text style={styles.smallLink}>Poursuivre en tant qu'invité</Text>
+              </TouchableOpacity>
+
+            </View>
           </View>
-        </View>
+
+        </ScrollView>
+
       </View>
     </View>
   );

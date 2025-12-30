@@ -11,14 +11,18 @@ const OptionItem = ({ title, onPress }) => (
   </TouchableOpacity>
 );
 
-export default function OptionsScreen({ onLogout }) {
+export default function OptionsScreen({navigation, onLogout }) {
   return (
     <View style={styles.container}>
       {/* HEADER */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton}>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}   // ← AJOUT OBLIGATOIRE
+        >
           <ChevronLeft color="white" size={30} />
         </TouchableOpacity>
+
         <Text style={styles.headerTitle}>Options</Text>
       </View>
 

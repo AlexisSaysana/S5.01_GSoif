@@ -20,7 +20,7 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 // --- NAVIGATION BASSE (ONGLETS) ---
-function TabNavigator() {
+function TabNavigator({ onLogout }) {
   return (
     <Tab.Navigator
       screenOptions={{
@@ -33,7 +33,12 @@ function TabNavigator() {
       <Tab.Screen name="Ajouter" component={HomeScreen} options={{ tabBarIcon: ({ color }) => <Plus color={color} size={28} /> }} />
       <Tab.Screen name="Rechercher" component={FontainesScreen} options={{ tabBarIcon: ({ color }) => <Map color={color} size={28} /> }} />
       <Tab.Screen name="Profil" component={ProfileScreen} options={{ tabBarIcon: ({ color }) => <User color={color} size={28} /> }} />
-      <Tab.Screen name="Options" component={OptionsScreen} options={{ tabBarIcon: ({ color }) => <Settings color={color} size={28} /> }} />
+
+      <Tab.Screen 
+        name="Options"
+        children={(props) => <OptionsScreen {...props} onLogout={onLogout} />}
+        options={{ tabBarIcon: ({ color }) => <Settings color={color} size={28} /> }}
+      />
     </Tab.Navigator>
   );
 }
@@ -82,7 +87,9 @@ export default function App() {
           </Stack.Group>
         ) : (
           // SI CONNECTÉ : Groupe App
-          <Stack.Screen name="Main" component={TabNavigator} />
+          <Stack.Screen name="Main">
+            {(props) => <TabNavigator {...props} onLogout={() => setIsLoggedIn(false)} />}
+          </Stack.Screen>
         )}
         
       </Stack.Navigator>
