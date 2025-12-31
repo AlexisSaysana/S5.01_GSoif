@@ -15,6 +15,7 @@ import HomeScreen from './screens/HomeScreen';
 import FontainesScreen from './screens/FontainesScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import OptionsScreen from './screens/OptionsScreen';
+import AccountScreen from './screens/AccountScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -80,7 +81,10 @@ export default function App() {
           </Stack.Group>
         ) : (
           // SI CONNECTÉ : Groupe App
-          <Stack.Screen name="Main" component={TabNavigator} />
+          <Stack.Group>
+            <Stack.Screen name="Main" component={TabNavigator} />
+            <Stack.Screen name="Account" component={AccountScreen} />
+          </Stack.Group>
         )}
         
       </Stack.Navigator>

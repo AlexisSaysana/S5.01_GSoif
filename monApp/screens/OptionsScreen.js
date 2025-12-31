@@ -11,19 +11,19 @@ const OptionItem = ({ title, onPress }) => (
   </TouchableOpacity>
 );
 
-export default function OptionsScreen({ onLogout }) {
+export default function OptionsScreen({ navigation, onLogout }) {
   return (
     <View style={styles.container}>
       {/* HEADER */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <ChevronLeft color="white" size={30} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Options</Text>
       </View>
 
       <ScrollView style={styles.content}>
-        <OptionItem title="Mon compte" onPress={() => {}} />
+        <OptionItem title="Mon compte" onPress={() => navigation.getParent()?.navigate('Account')} />
         <OptionItem title="Historique" onPress={() => {}} />
         <OptionItem title="Paramètres" onPress={() => {}} />
         <OptionItem title="Points d’eau enregistrés" onPress={() => {}} />
@@ -34,7 +34,7 @@ export default function OptionsScreen({ onLogout }) {
         <View style={styles.footer}>
           <TouchableOpacity 
             style={styles.logoutButton} 
-            onPress={onLogout} // Utilise la fonction passée en prop
+            onPress={onLogout}
           >
             <Text style={styles.logoutText}>Se déconnecter</Text>
           </TouchableOpacity>
@@ -46,14 +46,7 @@ export default function OptionsScreen({ onLogout }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: WHITE },
-  header: { 
-    backgroundColor: PRIMARY_BLUE, 
-    height: 120, 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'center',
-    paddingTop: 40
-  },
+  header: { backgroundColor: PRIMARY_BLUE, height: 120, justifyContent: 'center', alignItems: 'center', paddingTop: 40 },
   backButton: { position: 'absolute', left: 20, paddingTop: 40 },
   headerTitle: { color: 'white', fontSize: 22, fontFamily: fonts.bricolageGrotesque, fontWeight: '700' },
   content: { flex: 1 },
@@ -74,15 +67,14 @@ const styles = StyleSheet.create({
   footer: {
     marginTop: 50,
     paddingHorizontal: 40,
-    paddingBottom: 100, // Pour ne pas être caché par la barre d'onglets
+    paddingBottom: 100,
   },
   logoutButton: {
-    backgroundColor: '#FF4747', // Rouge de ton image
+    backgroundColor: '#FF4747',
     borderRadius: 15,
     height: 55,
     justifyContent: 'center',
     alignItems: 'center',
-    // Ombre
     shadowColor: "#FF4747",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -94,5 +86,5 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     fontFamily: fonts.inter,
-  }
+  },
 });
