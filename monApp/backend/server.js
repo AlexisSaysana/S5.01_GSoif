@@ -231,6 +231,23 @@ app.put('/utilisateurs/:email/motdepasse', (req, res) => {
     });
   });
 });
+app.get('/notification/random/:id_utilisateur', (req, res) => {
+  const id = req.params.id_utilisateur;
+
+  const sql = `
+    SELECT message 
+    FROM notification 
+    WHERE id_utilisateur = ? OR id_utilisateur IS NULL
+    ORDER BY RAND()
+    LIMIT 1
+  `;
+
+  db.query(sql, [id], (err, data) => {
+    if (err) return res.status(500).json({ error: "Erreur SQL" });
+    if (data.length === 0) return res.status(404).json({ error: "Aucun message trouvé" });
+    return res.json(data[0]);
+  });
+});
 
 // --------------------------------------
 // LANCEMENT SERVEUR

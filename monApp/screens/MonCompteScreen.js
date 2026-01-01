@@ -9,6 +9,9 @@ import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles';
 import { fonts } from '../styles/fonts';
 import CustomButton from '../components/CustomButton';
 
+// 🔔 IMPORT NOTIFICATIONS
+import { scheduleHydrationNotification } from "../utils/notifications";
+
 const BASE_URL = "https://s5-01-gsoif.onrender.com";
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -95,6 +98,45 @@ export default function MonCompteScreen({ navigation, route }) {
   }, []);
 
   // ----------------------------
+  // 🔔 CONFIGURATION NOTIFICATIONS
+  // ----------------------------
+  const handleNotificationSetup = async () => {
+    try {
+      const encodedEmail = encodeURIComponent(userEmail);
+
+      // Récupérer un message aléatoire depuis ta base
+      const res = await fetch(`${BASE_URL}/notification/random/${encodedEmail}`);
+      const raw = await res.text();
+
+      let data;
+      try {
+        data = JSON.parse(raw);
+      } catch (e) {
+        console.log("❌ Impossible de parser JSON notif :", e);
+        return;
+      }
+
+      const message = data.message || "Pense à boire un verre d’eau !";
+
+      // Intervalle par défaut : toutes les 60 minutes
+      const intervalleMinutes = 60;
+
+      await scheduleHydrationNotification(intervalleMinutes, message);
+
+      console.log("🔔 Notification programmée !");
+    } catch (error) {
+      console.log("❌ Erreur notif :", error);
+    }
+  };
+
+  // Quand on active le switch → on programme les notifications
+  useEffect(() => {
+    if (notificationsEnabled) {
+      handleNotificationSetup();
+    }
+  }, [notificationsEnabled]);
+
+  // ----------------------------
   // 💾 MISE À JOUR INFOS
   // ----------------------------
   const handleUpdate = async () => {
@@ -130,49 +172,41 @@ export default function MonCompteScreen({ navigation, route }) {
   // 💾 MISE À JOUR MOT DE PASSE
   // ----------------------------
   const handlePasswordUpdate = async () => {
-  try {
-    const encodedEmail = encodeURIComponent(userEmail);
-
-    // 🔵 LOG POUR VÉRIFIER CE QUI EST ENVOYÉ
-    console.log("🔐 Envoi changement MDP :", {
-      email: userEmail,
-      oldPassword,
-      newPassword
-    });
-
-    const res = await fetch(`${BASE_URL}/utilisateurs/${encodedEmail}/motdepasse`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ oldPassword, newPassword })
-    });
-
-    const raw = await res.text();
-    console.log("🔵 RAW RESPONSE MDP :", raw);
-
-    let data;
     try {
-      data = JSON.parse(raw);
-    } catch (e) {
-      console.log("❌ Impossible de parser JSON :", e);
-      return;
+      const encodedEmail = encodeURIComponent(userEmail);
+
+      const res = await fetch(`${BASE_URL}/utilisateurs/${encodedEmail}/motdepasse`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ oldPassword, newPassword })
+      });
+
+      const raw = await res.text();
+      console.log("🔵 RAW RESPONSE MDP :", raw);
+
+      let data;
+      try {
+        data = JSON.parse(raw);
+      } catch (e) {
+        console.log("❌ Impossible de parser JSON :", e);
+        return;
+      }
+
+      if (!res.ok) {
+        return Alert.alert("Erreur", data.error);
+      }
+
+      Alert.alert("Succès", "Mot de passe mis à jour !");
+      togglePasswordMode();
+
+    } catch (error) {
+      console.log("❌ ERREUR MDP :", error);
+      Alert.alert("Erreur", "Impossible de modifier le mot de passe");
     }
-
-    if (!res.ok) {
-      return Alert.alert("Erreur", data.error);
-    }
-
-    Alert.alert("Succès", "Mot de passe mis à jour !");
-    togglePasswordMode();
-
-  } catch (error) {
-    console.log("❌ ERREUR MDP :", error);
-    Alert.alert("Erreur", "Impossible de modifier le mot de passe");
-  }
-};
-
+  };
 
   // ----------------------------
-  // 🎨 UI EXACTE DE TON POTE
+  // 🎨 UI EXACTE
   // ----------------------------
   return (
     <View style={styles.container}>
