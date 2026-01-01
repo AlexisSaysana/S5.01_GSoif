@@ -38,8 +38,7 @@ export default function OptionsScreen({navigation, onLogout, userEmail }) {
         <OptionItem title="Historique" onPress={() => {}} />
         <OptionItem title="Paramètres" onPress={() => {}} />
         <OptionItem title="Points d’eau enregistrés" onPress={() => {}} />
-        <OptionItem title="Lorem ipsum" onPress={() => {}} />
-        <OptionItem title="Dolor sit amet" onPress={() => {}} />
+
 
         {/* BOUTON DECONNEXION */}
         <View style={styles.footer}>
