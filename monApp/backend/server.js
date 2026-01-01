@@ -317,7 +317,7 @@ app.post('/notification/preferences/:userId', (req, res) => {
 
   // Préparation SQL
   const sql = `
-    INSERT INTO preferences (id_utilisateur, mode, interval_minutes, fixed_times)
+    INSERT INTO preferences_notification (id_utilisateur, mode, interval_minutes, fixed_times)
     VALUES (?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE
       mode = VALUES(mode),
