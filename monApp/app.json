@@ -36,7 +36,8 @@
       "favicon": "./assets/icon-light-filled.png"
     },
     "plugins": [
-      "react-native-map-link"
+      "react-native-map-link",
+      "@react-native-community/datetimepicker"
     ]
   }
 }

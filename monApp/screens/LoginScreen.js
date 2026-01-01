@@ -61,7 +61,8 @@ const LoginScreen = ({ navigation, onLogin  }) => {
         }
 
         Alert.alert("Succès", "Connexion réussie !");
-        onLogin(email);
+        const userId = data.utilisateur.id;
+        onLogin(email, userId);
         
 
     } catch (error) {

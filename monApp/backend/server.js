@@ -248,6 +248,105 @@ app.get('/notification/random/:id_utilisateur', (req, res) => {
     return res.json(data[0]);
   });
 });
+// --------------------------------------
+// ⭐ ROUTE : Enregistrer les horaires fixes
+// --------------------------------------
+app.post('/preferences/horaires', (req, res) => {
+  const { id_utilisateur, horaires } = req.body;
+
+  if (!id_utilisateur || !Array.isArray(horaires)) {
+    return res.status(400).json({ error: "Champs manquants ou format invalide" });
+  }
+
+  const values = horaires.map(h => [
+    id_utilisateur,
+    null,              // intervalle_heures
+    h.heure,           // heure_debut
+    h.heure,           // heure_fin
+    1                  // actif
+  ]);
+
+  const sql = `
+    INSERT INTO preferences (id_utilisateur, intervalle_heures, heure_debut, heure_fin, actif)
+    VALUES ?
+  `;
+
+  db.query(sql, [values], (err, result) => {
+    if (err) {
+      console.error("❌ Erreur SQL insertion horaires :", err);
+      return res.status(500).json({ error: "Erreur SQL" });
+    }
+
+    return res.json({ message: "Horaires enregistrés", inserted: result.affectedRows });
+  });
+});
+// --------------------------------------
+// ⭐ ROUTE : Récupérer les horaires fixes
+// --------------------------------------
+app.get('/preferences/horaires/:id_utilisateur', (req, res) => {
+  const id = req.params.id_utilisateur;
+
+  const sql = `
+    SELECT heure_debut 
+    FROM preferences 
+    WHERE id_utilisateur = ? AND actif = 1 AND heure_debut = heure_fin
+    ORDER BY heure_debut ASC
+  `;
+
+  db.query(sql, [id], (err, data) => {
+    if (err) {
+      console.error("❌ Erreur SQL récupération horaires :", err);
+      return res.status(500).json({ error: "Erreur SQL" });
+    }
+
+    return res.json(data);
+  });
+});
+// --------------------------------------
+// ⭐ ROUTE : Enregistrer les préférences notifications (interval + horaires)
+// --------------------------------------
+app.post('/notification/preferences/:userId', (req, res) => {
+  const userId = req.params.userId;
+  const { mode, intervalMinutes, fixedTimes } = req.body;
+
+  if (!mode) {
+    return res.status(400).json({ error: "Mode manquant" });
+  }
+
+  console.log("📥 Données reçues :", { userId, mode, intervalMinutes, fixedTimes });
+
+  // Préparation SQL
+  const sql = `
+    INSERT INTO preferences (id_utilisateur, mode, interval_minutes, fixed_times)
+    VALUES (?, ?, ?, ?)
+    ON DUPLICATE KEY UPDATE
+      mode = VALUES(mode),
+      interval_minutes = VALUES(interval_minutes),
+      fixed_times = VALUES(fixed_times)
+  `;
+
+  db.query(
+    sql,
+    [
+      userId,
+      mode,
+      intervalMinutes || null,
+      JSON.stringify(fixedTimes || [])
+    ],
+    (err, result) => {
+      if (err) {
+        console.error("❌ Erreur SQL :", err);
+        return res.status(500).json({ error: "Erreur SQL", details: err });
+      }
+
+      return res.json({
+        message: "Préférences enregistrées avec succès",
+        saved: true
+      });
+    }
+  );
+});
+
 
 // --------------------------------------
 // LANCEMENT SERVEUR

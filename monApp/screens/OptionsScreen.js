@@ -11,15 +11,14 @@ const OptionItem = ({ title, onPress }) => (
   </TouchableOpacity>
 );
 
-export default function OptionsScreen({navigation, onLogout, userEmail }) {
-  
+export default function OptionsScreen({ navigation, userEmail, userId, onLogout }) {
   return (
     <View style={styles.container}>
       {/* HEADER */}
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton}
-          onPress={() => navigation.goBack()}   // ← AJOUT OBLIGATOIRE
+          onPress={() => navigation.goBack()}
         >
           <ChevronLeft color="white" size={30} />
         </TouchableOpacity>
@@ -28,27 +27,32 @@ export default function OptionsScreen({navigation, onLogout, userEmail }) {
       </View>
 
       <ScrollView style={styles.content}>
-<OptionItem 
-  title="Mon compte" 
-  onPress={() => {
-    console.log("➡️ CLICK Mon compte — userEmail =", userEmail);
-    navigation.navigate("MonCompte", { userEmail });
-  }} 
-/>
+
+        <OptionItem 
+          title="Mon compte" 
+          onPress={() => navigation.navigate("MonCompte", { userEmail })}
+        />
+
+        {/* 👉 NOUVELLE LIGNE NOTIFICATIONS */}
+        <OptionItem 
+          title="Notifications" 
+          onPress={() => navigation.navigate("Notifications", { userId, userEmail })}
+        />
+
         <OptionItem title="Historique" onPress={() => {}} />
         <OptionItem title="Paramètres" onPress={() => {}} />
         <OptionItem title="Points d’eau enregistrés" onPress={() => {}} />
-
 
         {/* BOUTON DECONNEXION */}
         <View style={styles.footer}>
           <TouchableOpacity 
             style={styles.logoutButton} 
-            onPress={onLogout} // Utilise la fonction passée en prop
+            onPress={onLogout}
           >
             <Text style={styles.logoutText}>Se déconnecter</Text>
           </TouchableOpacity>
         </View>
+
       </ScrollView>
     </View>
   );
@@ -84,15 +88,14 @@ const styles = StyleSheet.create({
   footer: {
     marginTop: 50,
     paddingHorizontal: 40,
-    paddingBottom: 100, // Pour ne pas être caché par la barre d'onglets
+    paddingBottom: 100,
   },
   logoutButton: {
-    backgroundColor: '#FF4747', // Rouge de ton image
+    backgroundColor: '#FF4747',
     borderRadius: 15,
     height: 55,
     justifyContent: 'center',
     alignItems: 'center',
-    // Ombre
     shadowColor: "#FF4747",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,

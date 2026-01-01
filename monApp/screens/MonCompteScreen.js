@@ -1,16 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { 
   View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView,
-  KeyboardAvoidingView, Platform, TextInput, Switch, Modal,
+  KeyboardAvoidingView, Platform, TextInput, Modal,
   LayoutAnimation, UIManager
 } from 'react-native';
 import { ChevronLeft, User, Mail, Lock, Droplet, Bell, X } from 'lucide-react-native';
 import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles';
 import { fonts } from '../styles/fonts';
 import CustomButton from '../components/CustomButton';
-
-// 🔔 IMPORT NOTIFICATIONS
-import { scheduleHydrationNotification } from "../utils/notifications";
 
 const BASE_URL = "https://s5-01-gsoif.onrender.com";
 
@@ -25,7 +22,8 @@ export default function MonCompteScreen({ navigation, route }) {
   const [nom, setNom] = useState("");
   const [email, setEmail] = useState("");
 
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [userId, setUserId] = useState(null);
+
   const [dailyGoal, setDailyGoal] = useState("2000");
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [tempGoal, setTempGoal] = useState(dailyGoal);
@@ -89,6 +87,7 @@ export default function MonCompteScreen({ navigation, route }) {
         setPrenom(data.prenom);
         setNom(data.nom);
         setEmail(data.email);
+        setUserId(data.id_utilisateur);
       } catch (error) {
         Alert.alert("Erreur", "Impossible de charger vos informations");
       }
@@ -96,45 +95,6 @@ export default function MonCompteScreen({ navigation, route }) {
 
     loadUser();
   }, []);
-
-  // ----------------------------
-  // 🔔 CONFIGURATION NOTIFICATIONS
-  // ----------------------------
-  const handleNotificationSetup = async () => {
-    try {
-      const encodedEmail = encodeURIComponent(userEmail);
-
-      // Récupérer un message aléatoire depuis ta base
-      const res = await fetch(`${BASE_URL}/notification/random/${encodedEmail}`);
-      const raw = await res.text();
-
-      let data;
-      try {
-        data = JSON.parse(raw);
-      } catch (e) {
-        console.log("❌ Impossible de parser JSON notif :", e);
-        return;
-      }
-
-      const message = data.message || "Pense à boire un verre d’eau !";
-
-      // Intervalle par défaut : toutes les 60 minutes
-      const intervalleMinutes = 60;
-
-      await scheduleHydrationNotification(intervalleMinutes, message);
-
-      console.log("🔔 Notification programmée !");
-    } catch (error) {
-      console.log("❌ Erreur notif :", error);
-    }
-  };
-
-  // Quand on active le switch → on programme les notifications
-  useEffect(() => {
-    if (notificationsEnabled) {
-      handleNotificationSetup();
-    }
-  }, [notificationsEnabled]);
 
   // ----------------------------
   // 💾 MISE À JOUR INFOS
@@ -357,20 +317,20 @@ export default function MonCompteScreen({ navigation, route }) {
               </View>
             </View>
 
-            {/* Notifications */}
+            {/* BOUTON NOTIFICATIONS */}
             <View style={styles.inputGroup}>
               <View style={[styles.iconContainer, { backgroundColor: '#FFF3E0' }]}>
                 <Bell size={20} color="#FF9800" />
               </View>
-              <View style={styles.inputWrapper}>
+              <TouchableOpacity
+                style={styles.inputWrapper}
+                onPress={() => navigation.navigate("Notifications", { userId })}
+              >
                 <Text style={styles.label}>Notifications</Text>
-                <Switch
-                  trackColor={{ false: "#E0E0E0", true: PRIMARY_BLUE }}
-                  thumbColor={WHITE}
-                  value={notificationsEnabled}
-                  onValueChange={() => setNotificationsEnabled(prev => !prev)}
-                />
-              </View>
+                <Text style={[styles.input, { color: PRIMARY_BLUE, fontWeight: "600" }]}>
+                  Gérer les notifications →
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
 
