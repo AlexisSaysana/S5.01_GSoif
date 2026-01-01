@@ -187,6 +187,50 @@ app.put('/utilisateurs/:email', (req, res) => {
         return res.json({ message: "Utilisateur mis à jour avec succès" });
     });
 });
+// 🔐 Route pour changer le mot de passe
+app.put('/utilisateurs/:email/motdepasse', (req, res) => {
+  const email = req.params.email;
+  const { oldPassword, newPassword } = req.body;
+
+  if (!oldPassword || !newPassword) {
+    return res.status(400).json({ error: "Champs manquants" });
+  }
+
+  // ✔ TABLE = utilisateur
+  // ✔ COLONNE = mot_de_passe
+  const sqlCheck = "SELECT mot_de_passe FROM utilisateur WHERE email = ?";
+  db.query(sqlCheck, [email], async (err, results) => {
+    if (err) {
+      console.error("Erreur SQL :", err);
+      return res.status(500).json({ error: "Erreur serveur" });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: "Utilisateur introuvable" });
+    }
+
+    const currentPasswordHash = results[0].mot_de_passe;
+
+    // ✔ Vérification bcrypt
+    const match = await bcrypt.compare(oldPassword, currentPasswordHash);
+    if (!match) {
+      return res.status(400).json({ error: "Ancien mot de passe incorrect" });
+    }
+
+    // ✔ Hash du nouveau mot de passe
+    const newHash = await bcrypt.hash(newPassword, 10);
+
+    const sqlUpdate = "UPDATE utilisateur SET mot_de_passe = ? WHERE email = ?";
+    db.query(sqlUpdate, [newHash, email], (err) => {
+      if (err) {
+        console.error("Erreur SQL :", err);
+        return res.status(500).json({ error: "Erreur lors de la mise à jour" });
+      }
+
+      return res.json({ message: "Mot de passe mis à jour !" });
+    });
+  });
+});
 
 // --------------------------------------
 // LANCEMENT SERVEUR
