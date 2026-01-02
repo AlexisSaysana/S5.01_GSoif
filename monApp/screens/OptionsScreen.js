@@ -1,19 +1,21 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { ChevronRight, ChevronLeft } from 'lucide-react-native';
 import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles';
 import { fonts } from '../styles/fonts';
+import { ThemeContext } from '../context/ThemeContext';
 
-const OptionItem = ({ title, onPress }) => (
-  <TouchableOpacity style={styles.item} onPress={onPress}>
-    <Text style={styles.itemText}>{title}</Text>
-    <ChevronRight color="#CCC" size={20} />
+const OptionItem = ({ title, onPress, colors }) => (
+  <TouchableOpacity style={[styles.item, { borderBottomColor: colors.border }]} onPress={onPress}>
+    <Text style={[styles.itemText, { color: colors.text }]}>{title}</Text>
+    <ChevronRight color={colors.textSecondary} size={20} />
   </TouchableOpacity>
 );
 
 export default function OptionsScreen({ navigation, onLogout }) {
+  const { colors } = useContext(ThemeContext);
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* HEADER */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
@@ -23,12 +25,12 @@ export default function OptionsScreen({ navigation, onLogout }) {
       </View>
 
       <ScrollView style={styles.content}>
-        <OptionItem title="Mon compte" onPress={() => navigation.getParent()?.navigate('Account')} />
-        <OptionItem title="Historique" onPress={() => {}} />
-        <OptionItem title="Paramètres" onPress={() => {}} />
-        <OptionItem title="Points d’eau enregistrés" onPress={() => {}} />
-        <OptionItem title="Lorem ipsum" onPress={() => {}} />
-        <OptionItem title="Dolor sit amet" onPress={() => {}} />
+        <OptionItem title="Mon compte" colors={colors} onPress={() => navigation.getParent()?.navigate('Account')} />
+        <OptionItem title="Historique" colors={colors} onPress={() => {}} />
+        <OptionItem title="Paramètres" colors={colors} onPress={() => navigation.getParent()?.navigate('Setting')} />
+        <OptionItem title="Points d'eau enregistrés" colors={colors} onPress={() => {}} />
+        <OptionItem title="Lorem ipsum" colors={colors} onPress={() => {}} />
+        <OptionItem title="Dolor sit amet" colors={colors} onPress={() => {}} />
 
         {/* BOUTON DECONNEXION */}
         <View style={styles.footer}>
@@ -45,7 +47,7 @@ export default function OptionsScreen({ navigation, onLogout }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: WHITE },
+  container: { flex: 1 },
   header: { backgroundColor: PRIMARY_BLUE, height: 120, justifyContent: 'center', alignItems: 'center', paddingTop: 40 },
   backButton: { position: 'absolute', left: 20, paddingTop: 40 },
   headerTitle: { color: 'white', fontSize: 22, fontFamily: fonts.bricolageGrotesque, fontWeight: '700' },
@@ -57,12 +59,10 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 25,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
   },
   itemText: {
     fontSize: 16,
     fontFamily: fonts.inter,
-    color: '#4D4D4D',
   },
   footer: {
     marginTop: 50,

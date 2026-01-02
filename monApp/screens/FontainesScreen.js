@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useContext } from "react";
 import {
   View,
   StyleSheet,
@@ -14,11 +14,13 @@ import { showLocation } from "react-native-map-link";
 
 import { PRIMARY_BLUE, WHITE } from "../styles/baseStyles";
 import { fonts } from "../styles/fonts";
+import { ThemeContext } from "../context/ThemeContext";
 
 import CustomInput from "../components/CustomInput";
 import FountainTab from "../components/FountainTab";
 
 export default function FontainesScreen() {
+  const { colors } = useContext(ThemeContext);
   const [fontaines, setFontaines] = useState([]);
   const [filteredFontaines, setFilteredFontaines] = useState([]);
   const [searchText, setSearchText] = useState("");
@@ -138,7 +140,7 @@ export default function FontainesScreen() {
       </View>
 
       {/* PARTIE BLANCHE (LISTE OU DÉTAILS) */}
-      <View style={styles.bottomWhite}>
+      <View style={[styles.bottomWhite, { backgroundColor: colors.background }]}>
         {!selectedFontaine ? (
           /* AFFICHAGE DE LA LISTE */
           <>
@@ -147,7 +149,7 @@ export default function FontainesScreen() {
               value={searchText} 
               onChangeText={handleSearch} 
             />
-            <Text style={styles.countText}>{filteredFontaines.length} points d’eau trouvés</Text>
+            <Text style={[styles.countText, { color: colors.text }]}>{filteredFontaines.length} points d'eau trouvés</Text>
             <ScrollView contentContainerStyle={styles.listContainer} showsVerticalScrollIndicator={false}>
               {filteredFontaines.map((f, index) => (
                 <FountainTab
@@ -164,10 +166,10 @@ export default function FontainesScreen() {
           </>
         ) : (
           /* AFFICHAGE DES DÉTAILS DE LA FONTAINE SÉLECTIONNÉE */
-          <View style={styles.detailContainer}>
+          <View style={[styles.detailContainer, { backgroundColor: colors.surface }]}>
             <View style={styles.handle} />
-            <Text style={styles.detailTitle}>{selectedFontaine.fields.nom || "Fontaine à boire"}</Text>
-            <Text style={styles.detailSub}>{selectedFontaine.fields.voie}, Paris</Text>
+            <Text style={[styles.detailTitle, { color: colors.text }]}>{selectedFontaine.fields.nom || "Fontaine à boire"}</Text>
+            <Text style={[styles.detailSub, { color: colors.textSecondary }]}>{selectedFontaine.fields.voie}, Paris</Text>
             
             {/* Rectangle gris pour l'image */}
             <View style={styles.imagePlaceholder} />
@@ -177,7 +179,7 @@ export default function FontainesScreen() {
             </TouchableOpacity>
             
             <TouchableOpacity onPress={() => setSelectedFontaine(null)} style={{marginTop: 15}}>
-              <Text style={{color: '#999', fontFamily: fonts.inter}}>Retour à la liste</Text>
+              <Text style={{color: colors.textSecondary, fontFamily: fonts.inter}}>Retour à la liste</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -191,20 +193,19 @@ const styles = StyleSheet.create({
   topBlue: { height: "45%" },
   bottomWhite: { 
     height: "55%", 
-    backgroundColor: WHITE, 
     padding: 20, 
     borderTopLeftRadius: 40, 
     borderTopRightRadius: 40, 
     gap: 15 
   },
   listContainer: { paddingBottom: 100, gap: 15 },
-  countText: { fontSize: 14, color: "#575757", textAlign: "center", fontFamily: fonts.inter },
+  countText: { fontSize: 14, textAlign: "center", fontFamily: fonts.inter },
   
   // Styles pour la vue détails
   detailContainer: { alignItems: 'center', width: '100%' },
   handle: { width: 40, height: 5, backgroundColor: '#EEE', borderRadius: 10, marginBottom: 15 },
   detailTitle: { fontFamily: fonts.bricolageGrotesque, fontSize: 22, fontWeight: '800', textAlign: 'center' },
-  detailSub: { fontFamily: fonts.inter, color: '#666', marginBottom: 20 },
+  detailSub: { fontFamily: fonts.inter, marginBottom: 20 },
   imagePlaceholder: { 
     width: '100%', 
     height: 150, 

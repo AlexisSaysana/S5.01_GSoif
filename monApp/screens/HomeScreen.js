@@ -1,23 +1,27 @@
+import React, { useContext } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles';
 import { fonts } from '../styles/fonts';
+import { ThemeContext } from '../context/ThemeContext';
 
 import CustomInput from '../components/CustomInput';
 import FountainTab from '../components/FountainTab';
 
 
-const HomeScreen = ({ navigation }) => (
+const HomeScreen = ({ navigation }) => {
+  const { colors } = useContext(ThemeContext);
+  return (
     <View style={{ flex: 1, backgroundColor: PRIMARY_BLUE }}>
     	<View style={styles.topBlue}>
     	    <Image
     			source={require('../assets/map_ex.png')}
     		/>
         </View>
-        <View style={styles.bottomWhite}>
+        <View style={[styles.bottomWhite, { backgroundColor: colors.background }]}>
         	<CustomInput
 				placeholder="Rechercher un point d'eau"
 			/>
-      		<Text style={styles.text}>
+      		<Text style={[styles.text, { color: colors.text }]}>
         		2 points d'eau à proximité
             </Text>
 			<View
@@ -48,7 +52,8 @@ const HomeScreen = ({ navigation }) => (
 			</View>
         </View>
 	</View>
-);
+  );
+};
 
 const styles = StyleSheet.create({
     topBlue: {
@@ -57,15 +62,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     bottomWhite: {
-    backgroundColor: WHITE,
         height: '60%',
         padding: 30,
         justifyContent: 'flex-start',
         alignItems: 'center',
-    gap: 40,
-    borderTopLeftRadius: 50,
-    borderTopRightRadius: 50,
-    paddingTop: 30,
+        gap: 40,
+        borderTopLeftRadius: 50,
+        borderTopRightRadius: 50,
+        paddingTop: 30,
     },
     title: {
     fontFamily: fonts.bricolageGrotesque,
@@ -73,10 +77,9 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
     text: {
-    fontFamily: fonts.Inter,
+        fontFamily: fonts.Inter,
         fontSize: 16,
-        color: '#575757',
-    textAlign: 'center',
+        textAlign: 'center',
     },
     bottomNav: {
     width: '100%',

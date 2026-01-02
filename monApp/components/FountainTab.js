@@ -1,30 +1,23 @@
 import { View, Image, Text, StyleSheet, TouchableOpacity } from "react-native";
-
+import { useContext } from "react";
 import { fonts } from "../styles/fonts";
-
-
+import { ThemeContext } from "../context/ThemeContext";
 
 export default function FountainTab({
-
   name,
-
   location,
-
   distance,
-
   time,
-
   nearest,
-
   onPress,
-
 }) {
+  const { colors } = useContext(ThemeContext);
 
   return (
 
     <TouchableOpacity
 
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.surface, borderColor: colors.border }]}
 
       activeOpacity={0.7}
 
@@ -46,13 +39,13 @@ export default function FountainTab({
 
           />
 
-          <Text style={styles.name}>{name}</Text>
+          <Text style={[styles.name, { color: colors.text }]}>{name}</Text>
 
         </View>
 
 
 
-        <Text style={styles.location}>{location}</Text>
+        <Text style={[styles.location, { color: colors.textSecondary }]}>{location}</Text>
 
 
 
@@ -68,7 +61,7 @@ export default function FountainTab({
 
             />
 
-            <Text style={styles.nearestText}>Le plus proche</Text>
+            <Text style={[styles.nearestText, { color: colors.textSecondary }]}>Le plus proche</Text>
 
           </View>
 
@@ -82,7 +75,7 @@ export default function FountainTab({
 
       <View style={styles.right}>
 
-        <Text style={styles.distance}>{distance}</Text>
+        <Text style={[styles.distance, { color: colors.text }]}>{distance}</Text>
 
         <View style={styles.timeRow}>
 
@@ -94,7 +87,7 @@ export default function FountainTab({
 
           />
 
-          <Text style={styles.time}>{time}</Text>
+          <Text style={[styles.time, { color: colors.textSecondary }]}>{time}</Text>
 
         </View>
 
@@ -112,9 +105,7 @@ const styles = StyleSheet.create({
 
   container: {
 
-    backgroundColor: "white",
-
-    width: "100%", // ✅ PLUS DE 110%
+    width: "100%",
 
     flexDirection: "row",
 
@@ -123,8 +114,6 @@ const styles = StyleSheet.create({
     borderRadius: 15,
 
     borderWidth: 2,
-
-    borderColor: "#D9D9D9",
 
     padding: 15,
 
@@ -162,8 +151,6 @@ const styles = StyleSheet.create({
 
     fontSize: 18,
 
-    color: "#000",
-
     flexShrink: 1,
 
   },
@@ -173,8 +160,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.inter,
 
     fontSize: 12,
-
-    color: "#4D4D4D",
 
     paddingLeft: 30,
 
@@ -206,8 +191,6 @@ const styles = StyleSheet.create({
 
     fontSize: 12,
 
-    color: "#4D4D4D",
-
   },
 
   right: {
@@ -225,8 +208,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
 
     fontWeight: "700",
-
-    color: "#575757",
 
   },
 
@@ -253,8 +234,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.inter,
 
     fontSize: 12,
-
-    color: "#575757",
 
   },
 

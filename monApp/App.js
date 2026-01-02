@@ -16,6 +16,8 @@ import FontainesScreen from './screens/FontainesScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import OptionsScreen from './screens/OptionsScreen';
 import AccountScreen from './screens/AccountScreen';
+import SettingScreen from './screens/SettingScreen';
+import { ThemeProvider } from './context/ThemeContext';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -63,32 +65,35 @@ export default function App() {
   if (!fontsLoaded) return null;
 
   return (
-    <NavigationContainer>
-      <StatusBar style="auto" />
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        
-        {/* 2. CONDITION DE NAVIGATION */}
-        {!isLoggedIn ? (
-          // SI PAS CONNECTÉ : Groupe Auth
-          <Stack.Group>
-            <Stack.Screen name="Welcome">
-               {(props) => <WelcomeScreen {...props} onLogin={() => setIsLoggedIn(true)} />}
-            </Stack.Screen>
-            <Stack.Screen name="Login">
-               {(props) => <LoginScreen {...props} onLogin={() => setIsLoggedIn(true)} />}
-            </Stack.Screen>
-            <Stack.Screen name="Inscription" component={SignupScreen} />
-          </Stack.Group>
-        ) : (
-          // SI CONNECTÉ : Groupe App
-          <Stack.Group>
-            <Stack.Screen name="Main" component={TabNavigator} />
-            <Stack.Screen name="Account" component={AccountScreen} />
-          </Stack.Group>
-        )}
-        
-      </Stack.Navigator>
-    </NavigationContainer>
+    <ThemeProvider>
+      <NavigationContainer>
+        <StatusBar style="auto" />
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          
+          {/* 2. CONDITION DE NAVIGATION */}
+          {!isLoggedIn ? (
+            // SI PAS CONNECTÉ : Groupe Auth
+            <Stack.Group>
+              <Stack.Screen name="Welcome">
+                 {(props) => <WelcomeScreen {...props} onLogin={() => setIsLoggedIn(true)} />}
+              </Stack.Screen>
+              <Stack.Screen name="Login">
+                 {(props) => <LoginScreen {...props} onLogin={() => setIsLoggedIn(true)} />}
+              </Stack.Screen>
+              <Stack.Screen name="Inscription" component={SignupScreen} />
+            </Stack.Group>
+          ) : (
+            // SI CONNECTÉ : Groupe App
+            <Stack.Group>
+              <Stack.Screen name="Main" component={TabNavigator} />
+              <Stack.Screen name="Account" component={AccountScreen} />
+              <Stack.Screen name="Setting" component={SettingScreen} />
+            </Stack.Group>
+          )}
+          
+        </Stack.Navigator>
+      </NavigationContainer>
+    </ThemeProvider>
   );
 }
 
