@@ -17,6 +17,7 @@ import ProfileScreen from './screens/ProfileScreen';
 import OptionsScreen from './screens/OptionsScreen';
 import AccountScreen from './screens/AccountScreen';
 import SettingScreen from './screens/SettingScreen';
+import HistoryScreen from './screens/HistoryScreen';
 import { ThemeProvider } from './context/ThemeContext';
 
 const Stack = createNativeStackNavigator();
@@ -88,6 +89,7 @@ export default function App() {
               <Stack.Screen name="Main" component={TabNavigator} />
               <Stack.Screen name="Account" component={AccountScreen} />
               <Stack.Screen name="Setting" component={SettingScreen} />
+              <Stack.Screen name="History" component={HistoryScreen} />
             </Stack.Group>
           )}
           

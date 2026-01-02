@@ -1,5 +1,6 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles';
 import { fonts } from '../styles/fonts';
 import { ChevronLeft } from 'lucide-react-native';
@@ -7,6 +8,23 @@ import { ThemeContext } from '../context/ThemeContext';
 
 export default function ProfileScreen() {
   const { colors, isDarkMode } = useContext(ThemeContext);
+  const [history, setHistory] = useState([]);
+
+  useEffect(() => {
+    loadHistory();
+  }, []);
+
+  const loadHistory = async () => {
+    try {
+      const saved = await AsyncStorage.getItem('@fountainHistory');
+      if (saved) {
+        setHistory(JSON.parse(saved));
+      }
+    } catch (error) {
+      console.log('Error loading history:', error);
+    }
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* HEADER BLUE */}
@@ -35,21 +53,19 @@ export default function ProfileScreen() {
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Historique des points d'eau</Text>
 
         {/* LISTE HISTORIQUE */}
-        <View style={[styles.historyItem, { backgroundColor: colors.surface }]}>
-          <View style={styles.blueDot} />
-          <View>
-            <Text style={[styles.locationName, { color: colors.text }]}>Parc Nelson Mandela</Text>
-            <Text style={[styles.locationCity, { color: colors.textSecondary }]}>Paris 17ème Arr.</Text>
-          </View>
-        </View>
-
-        <View style={[styles.historyItem, { backgroundColor: colors.surface }]}>
-          <View style={styles.blueDot} />
-          <View>
-            <Text style={[styles.locationName, { color: colors.text }]}>Parc Sainte-Périne</Text>
-            <Text style={[styles.locationCity, { color: colors.textSecondary }]}>Paris 16ème Arr.</Text>
-          </View>
-        </View>
+        {history.length > 0 ? (
+          history.map((item, index) => (
+            <View key={index} style={[styles.historyItem, { backgroundColor: colors.surface }]}>
+              <View style={styles.blueDot} />
+              <View>
+                <Text style={[styles.locationName, { color: colors.text }]}>{item.name}</Text>
+                <Text style={[styles.locationCity, { color: colors.textSecondary }]}>{item.location}</Text>
+              </View>
+            </View>
+          ))
+        ) : (
+          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Aucun historique pour le moment</Text>
+        )}
       </ScrollView>
     </View>
   );
@@ -87,5 +103,6 @@ const styles = StyleSheet.create({
   },
   blueDot: { width: 15, height: 15, borderRadius: 10, backgroundColor: '#64B5F6', marginRight: 15 },
   locationName: { fontSize: 16, fontWeight: '600', fontFamily: fonts.inter },
-  locationCity: { fontSize: 12, fontFamily: fonts.inter }
+  locationCity: { fontSize: 12, fontFamily: fonts.inter },
+  emptyText: { fontSize: 14, fontFamily: fonts.inter, marginTop: 10 }
 });

@@ -26,7 +26,7 @@ export default function OptionsScreen({ navigation, onLogout }) {
 
       <ScrollView style={styles.content}>
         <OptionItem title="Mon compte" colors={colors} onPress={() => navigation.getParent()?.navigate('Account')} />
-        <OptionItem title="Historique" colors={colors} onPress={() => {}} />
+        <OptionItem title="Historique" colors={colors} onPress={() => navigation.getParent()?.navigate('History')} />
         <OptionItem title="Paramètres" colors={colors} onPress={() => navigation.getParent()?.navigate('Setting')} />
         <OptionItem title="Points d'eau enregistrés" colors={colors} onPress={() => {}} />
         <OptionItem title="Lorem ipsum" colors={colors} onPress={() => {}} />

@@ -11,6 +11,7 @@ import {
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import * as Location from "expo-location";
 import { showLocation } from "react-native-map-link";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { PRIMARY_BLUE, WHITE } from "../styles/baseStyles";
 import { fonts } from "../styles/fonts";
@@ -100,8 +101,32 @@ export default function FontainesScreen() {
   };
 
   // Ouvrir l'application de navigation externe
-  const openExternalMaps = () => {
+  const openExternalMaps = async () => {
     if (!selectedFontaine) return;
+    
+    // Sauvegarder dans l'historique
+    try {
+      const historyItem = {
+        name: selectedFontaine.fields.nom || 'Fontaine à boire',
+        location: selectedFontaine.fields.voie || 'Paris',
+        date: new Date().toISOString(),
+        latitude: selectedFontaine.fields.geo_point_2d[0],
+        longitude: selectedFontaine.fields.geo_point_2d[1],
+      };
+      
+      const saved = await AsyncStorage.getItem('@fountainHistory');
+      let history = saved ? JSON.parse(saved) : [];
+      
+      // Éviter les doublons : ne garder que les 50 derniers
+      history = history.filter(h => h.name !== historyItem.name || h.location !== historyItem.location);
+      history.unshift(historyItem);
+      history = history.slice(0, 50);
+      
+      await AsyncStorage.setItem('@fountainHistory', JSON.stringify(history));
+    } catch (e) {
+      console.log('Erreur sauvegarde historique', e);
+    }
+    
     showLocation({
       latitude: selectedFontaine.fields.geo_point_2d[0],
       longitude: selectedFontaine.fields.geo_point_2d[1],
