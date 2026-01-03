@@ -69,7 +69,8 @@ const LoginScreen = ({ navigation, onLogin }) => (
                             width: '100%',
                             justifyContent: 'center',
                             alignItems: 'center',
-                            gap: 80,
+                            gap: 40,
+                            marginTop: 40,
                         }
                     }
                 >

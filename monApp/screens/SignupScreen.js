@@ -4,8 +4,9 @@ import { fonts } from '../styles/fonts';
 
 import CustomInput from '../components/CustomInput';
 import CustomButton from '../components/CustomButton';
+
 const SignupScreen = ({ navigation }) => (
-	<View style={{ flex: 1, backgroundColor: PRIMARY_BLUE }}>
+  <View style={{ flex: 1, backgroundColor: PRIMARY_BLUE }}>
     	<View style={styles.topBlue}>
         	<Image
             	style={styles.icon}
@@ -67,7 +68,7 @@ const SignupScreen = ({ navigation }) => (
 							J'ai déjà un compte
 						</Text>
 					</TouchableOpacity>
-					<TouchableOpacity onPress={() => navigation.navigate('Fontaines')}>
+					<TouchableOpacity onPress={() => (console.log('Poursuivre en tant qu\'invité'))}>
 						<Text style={styles.smallLink}>
 							Poursuivre en tant qu'invité
 						</Text>

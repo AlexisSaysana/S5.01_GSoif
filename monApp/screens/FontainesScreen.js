@@ -215,15 +215,20 @@ export default function FontainesScreen() {
 
 const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: PRIMARY_BLUE },
-  topBlue: { height: "45%" },
+  topBlue: { height: "55%" },
   bottomWhite: { 
     height: "55%", 
     padding: 20, 
     borderTopLeftRadius: 40, 
     borderTopRightRadius: 40, 
-    gap: 15 
+    gap: 15, 
+    marginTop: -40,
   },
-  listContainer: { paddingBottom: 100, gap: 15 },
+  listContainer: {
+    paddingBottom: 100,
+    gap: 15,
+    width: '100%'
+  },
   countText: { fontSize: 14, textAlign: "center", fontFamily: fonts.inter },
   
   // Styles pour la vue détails

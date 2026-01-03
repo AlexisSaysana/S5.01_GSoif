@@ -29,9 +29,6 @@ export default function ProfileScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* HEADER BLUE */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton}>
-          <ChevronLeft color="white" size={30} />
-        </TouchableOpacity>
         <Text style={styles.headerTitle}>Mon profil</Text>
       </View>
 
