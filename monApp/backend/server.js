@@ -349,6 +349,7 @@ app.get('/notification/preferences/:userId', (req, res) => {
     SELECT fixed_times
     FROM horaires_notifications
     WHERE id_utilisateur = ?
+    ORDER BY id DESC
     LIMIT 1
   `;
 
