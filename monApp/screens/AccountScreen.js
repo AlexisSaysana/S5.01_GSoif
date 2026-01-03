@@ -25,10 +25,10 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 export default function AccountScreen({ navigation }) {
-  const { colors, unit } = useContext(ThemeContext);
+  const { colors, unit, dailyGoal, changeDailyGoal } = useContext(ThemeContext);
   const [name, setName] = useState("Alya Ayinde");
   const [email, setEmail] = useState("alyayinde@gmail.com");
-  const [dailyGoal, setDailyGoal] = useState("2000"); 
+  
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   
   const [isChangingPassword, setIsChangingPassword] = useState(false);
@@ -36,16 +36,11 @@ export default function AccountScreen({ navigation }) {
   const [newPassword, setNewPassword] = useState("");
   
   const [showGoalModal, setShowGoalModal] = useState(false);
-  const [tempGoal, setTempGoal] = useState(dailyGoal);
+  const [tempGoal, setTempGoal] = useState('');
 
   useEffect(() => {
     (async () => {
       try {
-        const saved = await AsyncStorage.getItem('@dailyGoal');
-        if (saved) {
-          setDailyGoal(saved);
-          setTempGoal(saved);
-        }
         const savedNotif = await AsyncStorage.getItem('@notificationsEnabled');
         if (savedNotif !== null) {
           setNotificationsEnabled(savedNotif === 'true');
@@ -66,44 +61,36 @@ export default function AccountScreen({ navigation }) {
   };
 
   const handleSave = () => {
-    const val = parseInt(dailyGoal);
+    // Ensure current global dailyGoal is within valid range
+    const val = Number(dailyGoal);
     if (isNaN(val) || val < 1500 || val > 4000) {
       Alert.alert('Erreur', 'L\'objectif doit être un nombre entre 1500 et 4000 mL');
       return;
     }
-    const s = String(val);
-    setDailyGoal(s);
-    AsyncStorage.setItem('@dailyGoal', s).catch(e => console.log('save err', e));
     navigation.goBack();
   };
 
   const handleGoalConfirm = () => {
-    let val = parseFloat(tempGoal);
-    let minVal = 1500, maxVal = 4000, unitLabel = 'mL';
-    
-    if (unit === 'L') {
-      minVal = 1.5; maxVal = 4; unitLabel = 'L';
-      val = val * 1000;
-    } else if (unit === 'cL') {
-      minVal = 150; maxVal = 400; unitLabel = 'cL';
-      val = val * 10;
-    } else if (unit === 'oz') {
-      minVal = 50.7; maxVal = 135.3; unitLabel = 'oz';
-      val = val * 29.5735;
+    const input = parseFloat(String(tempGoal).replace(',', '.'));
+    if (isNaN(input)) {
+      Alert.alert('Erreur', 'Valeur invalide');
+      return;
     }
-    
-    // Vérification simplifiée pour l'exemple
-    const limitMin = 1500; 
-    const limitMax = 4000;
-    // Conversion de la valeur actuelle en mL pour comparer aux limites fixes
-    let valInMl = val; // Suppose val is mL by default logic block above needs precise mapping but this is logic fix context.
-    
-    // Note: Dans votre code original la logique de validation était un peu complexe inline, 
-    // je garde la structure mais assurez-vous que la conversion est correcte.
-    
-    const s = String(Math.round(val)); // Sauvegarde brute (en mL si c'est votre logique)
-    setDailyGoal(s);
-    AsyncStorage.setItem('@dailyGoal', s).catch(e => console.log('save err', e));
+    let valMl = 0;
+    if (unit === 'L') valMl = input * 1000;
+    else if (unit === 'cL') valMl = input * 10;
+    else if (unit === 'oz') valMl = input * 29.5735;
+    else valMl = input;
+
+    // Validate against mL limits
+    if (valMl < 1500 || valMl > 4000) {
+      Alert.alert('Erreur', 'L\'objectif doit être entre 1500 mL et 4000 mL (équivalent selon l\'unité choisie)');
+      return;
+    }
+
+    const rounded = Math.round(valMl);
+    // Use context setter so all screens update immediately
+    changeDailyGoal(rounded).catch ? changeDailyGoal(rounded) : changeDailyGoal(rounded);
     setShowGoalModal(false);
   };
 
@@ -242,16 +229,17 @@ export default function AccountScreen({ navigation }) {
               <View style={styles.inputWrapper}>
                 <Text style={[styles.label, { color: colors.textSecondary }]}>Objectif quotidien (ml)</Text>
                 <View style={styles.goalRow}>
-                  <Text style={[styles.goalValue, { color: colors.text }]}>
-                    {unit === 'L' ? (parseInt(dailyGoal) / 1000).toFixed(1) : 
-                     unit === 'cL' ? (parseInt(dailyGoal) / 10).toFixed(0) : 
-                     unit === 'oz' ? (parseInt(dailyGoal) / 29.5735).toFixed(1) : 
-                     dailyGoal} {unit}
+                  <Text style={[styles.goalValue, { color: colors.text }]}> 
+                    {unit === 'L' ? (Number(dailyGoal) / 1000).toFixed(1) : 
+                     unit === 'cL' ? (Number(dailyGoal) / 10).toFixed(0) : 
+                     unit === 'oz' ? (Number(dailyGoal) / 29.5735).toFixed(1) : 
+                     String(Number(dailyGoal))} {unit}
                   </Text>
                   <TouchableOpacity
                     style={[styles.modifierButton, { backgroundColor: colors.border }]}
                     onPress={() => {
-                      setTempGoal(dailyGoal);
+                      // Open modal empty so user inputs a fresh value (avoid showing mL raw value)
+                      setTempGoal('');
                       setShowGoalModal(true);
                     }}
                   >

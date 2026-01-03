@@ -1,23 +1,49 @@
+import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles'; // Assurez-vous du chemin correct
+import { useContext } from 'react';
+import { ThemeContext } from '../context/ThemeContext';
 
-const QuickAddButton = ({ title, onPress }) => (
-    <TouchableOpacity style={styles.button} onPress={onPress}>
-        <Text style={styles.buttonText}>{title}</Text>
-    </TouchableOpacity>
-);
+const QuickAddButton = ({ title, onPress, style }) => {
+    const { colors, isDarkMode } = useContext(ThemeContext);
+    const backgroundColor = isDarkMode ? colors.iconBg : colors.primary;
+    const textColor = isDarkMode ? colors.text : colors.surface;
+    const borderStyle = isDarkMode ? { borderWidth: 1, borderColor: colors.border } : { borderWidth: 0 };
+
+    return (
+        <TouchableOpacity
+            style={[
+                styles.button,
+                { backgroundColor, ...borderStyle },
+                !isDarkMode && styles.lightElevated,
+                style
+            ]}
+            onPress={onPress}
+        >
+            <Text style={[styles.buttonText, { color: textColor }]}>{title}</Text>
+        </TouchableOpacity>
+    );
+};
 
 const styles = StyleSheet.create({
     button: {
-        padding: 15,
-                      backgroundColor: '#c8e0e8',
-                borderRadius: 15,
-                alignItems: 'center',
+        paddingVertical: 10,
+        paddingHorizontal: 14,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        minWidth: 72,
+        borderWidth: 1,
     },
     buttonText: {
-        color: '#000',
-                fontSize: 16,
-                fontWeight: 'bold',
+        fontSize: 14,
+        fontWeight: '700',
+    },
+    lightElevated: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.12,
+        shadowRadius: 2,
+        elevation: 2,
     },
 });
 

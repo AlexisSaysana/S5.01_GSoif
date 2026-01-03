@@ -9,6 +9,7 @@ export const ThemeProvider = ({ children }) => {
   // --- États globaux ---
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [unit, setUnit] = useState('mL'); // mL, cL, L
+  const [dailyGoal, setDailyGoal] = useState(2000); // stored in mL
 
   // --- Chargement initial ---
   useEffect(() => {
@@ -19,9 +20,11 @@ export const ThemeProvider = ({ children }) => {
     try {
       const storedTheme = await AsyncStorage.getItem('appTheme');
       const storedUnit = await AsyncStorage.getItem('appUnit');
-      
+      const storedGoal = await AsyncStorage.getItem('@dailyGoal');
+
       if (storedTheme !== null) setIsDarkMode(storedTheme === 'dark');
       if (storedUnit !== null) setUnit(storedUnit);
+      if (storedGoal !== null) setDailyGoal(parseInt(storedGoal, 10));
     } catch (e) {
       console.error("Erreur chargement préférences", e);
     }
@@ -37,6 +40,11 @@ export const ThemeProvider = ({ children }) => {
   const changeUnit = async (newUnit) => {
     setUnit(newUnit);
     await AsyncStorage.setItem('appUnit', newUnit);
+  };
+
+  const changeDailyGoal = async (goalMl) => {
+    setDailyGoal(goalMl);
+    await AsyncStorage.setItem('@dailyGoal', String(goalMl));
   };
 
   // --- Définition des couleurs dynamiques ---
@@ -56,6 +64,8 @@ export const ThemeProvider = ({ children }) => {
     },
     toggleTheme,
     unit,
+    dailyGoal,
+    changeDailyGoal,
     changeUnit
   };
 

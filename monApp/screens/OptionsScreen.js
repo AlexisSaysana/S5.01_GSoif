@@ -17,7 +17,7 @@ export default function OptionsScreen({ navigation, onLogout }) {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* HEADER */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.primary }] }>
         <Text style={styles.headerTitle}>Options</Text>
       </View>
 
@@ -32,10 +32,10 @@ export default function OptionsScreen({ navigation, onLogout }) {
         {/* BOUTON DECONNEXION */}
         <View style={styles.footer}>
           <TouchableOpacity 
-            style={styles.logoutButton} 
+            style={[styles.logoutButton, { backgroundColor: colors.dangerBg }]} 
             onPress={onLogout}
           >
-            <Text style={styles.logoutText}>Se déconnecter</Text>
+            <Text style={[styles.logoutText, { color: colors.dangerText }]}>Se déconnecter</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

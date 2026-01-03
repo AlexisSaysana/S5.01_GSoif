@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
+import { Keyboard } from 'react-native';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles';
@@ -11,15 +12,15 @@ import CustomButton from '../components/CustomButton';
 import QuickAddButton from '../components/QuickAddButton';
 
 export default function ProfileScreen() {
-  const { colors, isDarkMode } = useContext(ThemeContext);
+  const { colors, isDarkMode, unit, dailyGoal } = useContext(ThemeContext);
   const [history, setHistory] = useState([]);
-
-  const [completed, setCompleted] = useState(400);
-  const [target, setTarget] = useState(2000);
-  const progression = completed / target
+  const [completed, setCompleted] = useState(0);
+  const [customAmount, setCustomAmount] = useState('');
+  const progression = (dailyGoal && dailyGoal > 0) ? completed / dailyGoal : 0;
 
   useEffect(() => {
     loadHistory();
+    loadDailyValues();
   }, []);
 
   const loadHistory = async () => {
@@ -33,19 +34,35 @@ export default function ProfileScreen() {
     }
   };
 
+  const loadDailyValues = async () => {
+    try {
+      const savedCompleted = await AsyncStorage.getItem('@dailyCompleted');
+      if (savedCompleted) setCompleted(parseInt(savedCompleted, 10));
+    } catch (e) {
+      console.log('Error loading daily values', e);
+    }
+  };
+
+  const displayForUnit = (valueMl) => {
+    if (unit === 'L') return `${(valueMl/1000).toFixed(1)} L`;
+    if (unit === 'cL') return `${Math.round(valueMl/10)} cL`;
+    if (unit === 'oz') return `${(valueMl/29.5735).toFixed(1)} oz`;
+    return `${valueMl} mL`;
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* HEADER BLUE */}
-      <View style={styles.header}>
+      {/* HEADER */}
+      <View style={[styles.header, { backgroundColor: colors.primary }] }>
         <Text style={styles.headerTitle}>Votre progression</Text>
       </View>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.progressContainer}>
           <ProgressCircle
-            size={250}
-            strokeWidth={15}
-            color={'#2bcbed'}
-            backgroundColor={'#c8e0e8'}
+            size={210}
+            strokeWidth={12}
+            color={colors.primary}
+            backgroundColor={colors.iconBg}
             progress={progression > 1 ? 1 : progression}
           >
             <Image 
@@ -54,53 +71,45 @@ export default function ProfileScreen() {
             />
             <Text style={[styles.percentage, { color: colors.text }]}>{Math.round(progression * 100)}%</Text>
           </ProgressCircle>
-          <Text style={[styles.subText, { color: colors.textSecondary }]}>Vous avez bu {completed}ml sur {target} aujourd'hui !</Text>          
+            <Text style={[styles.subText, { color: colors.textSecondary }]}>{`Vous avez bu ${displayForUnit(completed)} sur ${displayForUnit(dailyGoal)} aujourd'hui !`}</Text>          
         </View>
-        <View style={[styles.divider, { backgroundColor: colors.border }]} />
-        <View
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <View
             style={
               {
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'center',
                 alignItems: 'center',
-                width: 300,
-                gap: 10,
+                  width: '100%',
+                  paddingHorizontal: 20,
+                  gap: 12,
               }
             }
         >
           <Text style={{ color: colors.textSecondary, marginBottom: 10, }}>
             Ajoutez votre consommation d'eau
           </Text>  
-          <View
-            style={
-              {
-                display: 'flex',
-                flexDirection: 'row',
-                gap: 10,
-              }
-            }
-          >
-            <QuickAddButton
-              title={'+100mL'}
-              onPress={() => setCompleted(completed + 100)}
-            />
-            <QuickAddButton
-              title={'+250mL'}
-              onPress={() => setCompleted(completed + 250)}
-            />
-            <QuickAddButton
-              title={'+500mL'}
-              onPress={() => setCompleted(completed + 500)}
-            />
-          </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 10 }}>
+              {([100, 250, 500]).map((amt) => (
+                <QuickAddButton
+                  key={String(amt)}
+                  title={`${displayForUnit(amt).replace(' ', '')}`}
+                  onPress={async () => {
+                    const newVal = completed + amt; // amt is in mL
+                    setCompleted(newVal);
+                    await AsyncStorage.setItem('@dailyCompleted', String(newVal));
+                  }}
+                />
+              ))}
+            </View>
           <View style={
           {
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            gap: 10,
-            marginBottom: 10,
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: 10,
+              marginTop: 8,
           }
         }>
           <View
@@ -110,7 +119,7 @@ export default function ProfileScreen() {
                 flexDirection: 'row',
                 justifyContent: 'center',
                 alignItems: 'center',
-                gap: 10,
+                  gap: 8,
               }
             }
           >
@@ -128,9 +137,9 @@ export default function ProfileScreen() {
               <Text
                 style={
                   {
-                    color: '#000',
-                    fontSize: 16,
-                    fontWeight: 'bold',
+                      color: colors.text,
+                      fontSize: 18,
+                      fontWeight: '700',
                   }
                 }
               >
@@ -138,10 +147,32 @@ export default function ProfileScreen() {
               </Text>
             </View>
             <CustomInput
-              placeholder="Quatité personnalisée"
-              width={220}
-              keyboardType='numeric'
+              placeholder="Quantité"
+              width={160}
+                keyboardType='numeric'
+                value={customAmount}
+                onChangeText={setCustomAmount}
+                onSubmitEditing={() => Keyboard.dismiss()}
             />
+              <TouchableOpacity
+                onPress={async () => {
+                  // Convert customAmount (assumed in current unit) to mL
+                  let val = parseFloat(customAmount.replace(',', '.')) || 0;
+                  let toAdd = 0;
+                  if (unit === 'L') toAdd = Math.round(val * 1000);
+                  else if (unit === 'cL') toAdd = Math.round(val * 10);
+                  else if (unit === 'oz') toAdd = Math.round(val * 29.5735);
+                  else toAdd = Math.round(val);
+                  const newVal = completed + toAdd;
+                  setCompleted(newVal);
+                  await AsyncStorage.setItem('@dailyCompleted', String(newVal));
+                  setCustomAmount('');
+                  Keyboard.dismiss();
+                }}
+                style={{ marginLeft: 6, backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, justifyContent: 'center' }}
+              >
+                <Text style={{ color: '#fff', fontWeight: '700' }}>OK</Text>
+              </TouchableOpacity>
           <View
               style={
                 {
@@ -156,20 +187,26 @@ export default function ProfileScreen() {
               <Text
                 style={
                   {
-                    color: '#000',
+                    color: colors.text,
                     fontSize: 16,
                     fontWeight: 'bold',
                   }
                 }
               >
-                mL
+                {unit}
               </Text>
             </View>
           </View>
         </View>
-        <CustomButton
+          <View style={{ width: '100%', paddingHorizontal: 20 }}>
+            <CustomButton
               title={'Ajouter'}
+              onPress={async () => {
+                await AsyncStorage.setItem('@dailyCompleted', String(completed));
+              }}
+              style={{ paddingVertical: 12 }}
             />
+          </View>
         </View>
       </ScrollView>
     </View>
@@ -184,21 +221,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row', 
     alignItems: 'center', 
     justifyContent: 'center',
-    paddingTop: 40
+    paddingTop: 36
   },
   backButton: { position: 'absolute', left: 20, paddingTop: 40 },
   headerTitle: { color: 'white', fontSize: 22, fontFamily: fonts.bricolageGrotesque, fontWeight: '700' },
   content: { padding: 20, alignItems: 'center' },
   progressContainer: { marginTop: 20, alignItems: 'center' },
   circlePlaceholder: { 
-    width: 150, height: 150, borderRadius: 75, 
-    borderWidth: 10, borderColor: '#E0F2F1', // Gris clair
-    borderTopColor: '#00BCD4', // Cyan pour le progrès
+    width: 140, height: 140, borderRadius: 70, 
+    borderWidth: 8, 
     justifyContent: 'center', alignItems: 'center' 
   },
   bottleIcon: { width: 60, height: 80, resizeMode: 'contain' },
   percentage: { fontSize: 40, fontWeight: 'bold', fontFamily: fonts.bricolageGrotesque },
-  subText: { marginTop: 15, fontFamily: fonts.inter },
+  subText: { marginTop: 12, fontFamily: fonts.inter },
   divider: { width: '100%', height: 1, marginVertical: 30 },
   sectionTitle: { alignSelf: 'flex-start', fontSize: 18, fontWeight: '700', marginBottom: 20, fontFamily: fonts.bricolageGrotesque },
   historyItem: { 

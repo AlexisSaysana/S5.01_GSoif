@@ -7,11 +7,13 @@ import { ChevronLeft, User } from 'lucide-react-native';
 import { ThemeContext } from '../context/ThemeContext';
 
 export default function ProfileScreen() {
-  const { colors, isDarkMode } = useContext(ThemeContext);
+  const { colors, isDarkMode, unit, dailyGoal } = useContext(ThemeContext);
   const [history, setHistory] = useState([]);
+  const [completed, setCompleted] = useState(0);
 
   useEffect(() => {
     loadHistory();
+    loadDailyValues();
   }, []);
 
   const loadHistory = async () => {
@@ -25,20 +27,37 @@ export default function ProfileScreen() {
     }
   };
 
+  const loadDailyValues = async () => {
+    try {
+      const savedCompleted = await AsyncStorage.getItem('@dailyCompleted');
+      if (savedCompleted) setCompleted(parseInt(savedCompleted, 10));
+    } catch (e) {
+      console.log('Error loading daily values', e);
+    }
+  };
+
+  const displayForUnit = (valueMl) => {
+    if (unit === 'L') return `${(valueMl/1000).toFixed(1)} L`;
+    if (unit === 'cL') return `${Math.round(valueMl/10)} cL`;
+    if (unit === 'oz') return `${(valueMl/29.5735).toFixed(1)} oz`;
+    return `${valueMl} mL`;
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* HEADER BLUE */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.primary }] }>
         <Text style={styles.headerTitle}>Mon profil</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        {/* PROGRESS CIRCLE (Simulé ici) */}
+        {/* PROGRESS CIRCLE */}
         <View style={styles.progressContainer}>
-          <View style={styles.circlePlaceholder}>
-             <User size={140} color={PRIMARY_BLUE} />
+          <View style={[styles.circlePlaceholder, { borderColor: colors.primary }]}>
+             <User size={140} color={colors.primary} />
           </View>
-          <Text style={[styles.percentage, { color: colors.text }]}>Alya Ayinde</Text>
+          <Text style={[styles.percentage, { color: colors.text }]}>{Math.round((completed/ (dailyGoal || 1)) * 100)}%</Text>
+          <Text style={[styles.subText, { color: colors.textSecondary }]}>{`Vous avez bu ${displayForUnit(completed)} sur ${displayForUnit(dailyGoal)} aujourd'hui !`}</Text>
         </View>
 
         <View style={[styles.divider, { backgroundColor: colors.border }]} />

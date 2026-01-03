@@ -57,8 +57,11 @@ export default function FontainesScreen() {
       }
 
       try {
-        // Récupération des données Open Data Paris
-        const res = await fetch("https://opendata.paris.fr/api/records/1.0/search/?dataset=fontaines-a-boire&rows=50");
+        // Récupération des données Open Data Paris avec timeout et moins de lignes pour accélérer
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        const res = await fetch("https://opendata.paris.fr/api/records/1.0/search/?dataset=fontaines-a-boire&rows=30", { signal: controller.signal });
+        clearTimeout(timeout);
         const data = await res.json();
         let cleanData = (data.records || []).filter(item => item?.fields?.geo_point_2d);
 
@@ -74,7 +77,7 @@ export default function FontainesScreen() {
         setFontaines(cleanData);
         setFilteredFontaines(cleanData);
       } catch (err) {
-        console.error(err);
+        console.error('Fontaines fetch error', err);
       } finally {
         setLoading(false);
       }
@@ -135,12 +138,10 @@ export default function FontainesScreen() {
     });
   };
 
-  if (loading) return (
-    <View style={styles.center}><ActivityIndicator size="large" color="#FFF" /></View>
-  );
+  // Always render the main UI immediately; show an overlay spinner while loading
 
   return (
-    <View style={{ flex: 1, backgroundColor: PRIMARY_BLUE }}>
+    <View style={{ flex: 1, backgroundColor: colors.primary }}>
       {/* PARTIE CARTE */}
       <View style={styles.topBlue}>
         <MapView
@@ -191,30 +192,36 @@ export default function FontainesScreen() {
           </>
         ) : (
           /* AFFICHAGE DES DÉTAILS DE LA FONTAINE SÉLECTIONNÉE */
-          <View style={[styles.detailContainer, { backgroundColor: colors.surface }]}>
-            <View style={styles.handle} />
+          <View style={[styles.detailContainer, { backgroundColor: colors.background }]}>
+            <View style={[styles.handle, { backgroundColor: colors.border }]} />
             <Text style={[styles.detailTitle, { color: colors.text }]}>{selectedFontaine.fields.nom || "Fontaine à boire"}</Text>
             <Text style={[styles.detailSub, { color: colors.textSecondary }]}>{selectedFontaine.fields.voie}, Paris</Text>
             
             {/* Rectangle gris pour l'image */}
-            <View style={styles.imagePlaceholder} />
+            <View style={[styles.imagePlaceholder, { backgroundColor: colors.surface }]} />
             
-            <TouchableOpacity style={styles.mainButton} onPress={openExternalMaps}>
-              <Text style={styles.mainButtonText}>Faire l'itinéraire</Text>
+            <TouchableOpacity style={[styles.mainButton, { backgroundColor: colors.primary, shadowColor: colors.primary }]} onPress={openExternalMaps}>
+              <Text style={[styles.mainButtonText, { color: colors.surface }]}>Faire l'itinéraire</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity onPress={() => setSelectedFontaine(null)} style={{marginTop: 15}}>
-              <Text style={{color: colors.textSecondary, fontFamily: fonts.inter}}>Retour à la liste</Text>
+            <TouchableOpacity onPress={() => setSelectedFontaine(null)} style={{marginTop: 15, paddingVertical: 8}}>
+              <Text style={{color: colors.primary, fontFamily: fonts.inter, fontWeight: '600'}}>Retour à la liste</Text>
             </TouchableOpacity>
           </View>
         )}
       </View>
+      {/* Loading overlay (non bloquant) */}
+      {loading && (
+        <View style={styles.loadingOverlay} pointerEvents="none">
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: PRIMARY_BLUE },
+  center: { flex: 1, justifyContent: "center", alignItems: "center" },
   topBlue: { height: "55%" },
   bottomWhite: { 
     height: "55%", 
@@ -233,13 +240,12 @@ const styles = StyleSheet.create({
   
   // Styles pour la vue détails
   detailContainer: { alignItems: 'center', width: '100%' },
-  handle: { width: 40, height: 5, backgroundColor: '#EEE', borderRadius: 10, marginBottom: 15 },
+  handle: { width: 40, height: 5, borderRadius: 10, marginBottom: 15 },
   detailTitle: { fontFamily: fonts.bricolageGrotesque, fontSize: 22, fontWeight: '800', textAlign: 'center' },
   detailSub: { fontFamily: fonts.inter, marginBottom: 20 },
   imagePlaceholder: { 
     width: '100%', 
     height: 150, 
-    backgroundColor: '#F2F2F2', 
     borderRadius: 20, 
     marginBottom: 20 
   },
@@ -257,4 +263,15 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   mainButtonText: { color: WHITE, fontFamily: fonts.inter, fontSize: 18, fontWeight: '700' }
+  ,
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.25)'
+  }
 });

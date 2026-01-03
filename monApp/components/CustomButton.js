@@ -1,24 +1,27 @@
+import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles'; // Assurez-vous du chemin correct
+import { useContext } from 'react';
+import { ThemeContext } from '../context/ThemeContext';
 
-const CustomButton = ({ title, onPress }) => (
-    <TouchableOpacity style={styles.button} onPress={onPress}>
-        <Text style={styles.buttonText}>{title}</Text>
-    </TouchableOpacity>
-);
+const CustomButton = ({ title, onPress, style }) => {
+    const { colors } = useContext(ThemeContext);
+    return (
+        <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary }, style]} onPress={onPress}>
+            <Text style={[styles.buttonText, { color: colors.surface }]}>{title}</Text>
+        </TouchableOpacity>
+    );
+};
 
 const styles = StyleSheet.create({
     button: {
         width: '100%',
         padding: 15,
-        backgroundColor: PRIMARY_BLUE,
         borderRadius: 15,
         alignItems: 'center',
     },
     buttonText: {
-        color: WHITE,
         fontSize: 16,
-        fontWeight: 'bold',
+        fontWeight: '700',
     },
 });
 
