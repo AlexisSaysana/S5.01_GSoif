@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity } from 'rea
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles';
 import { fonts } from '../styles/fonts';
-import { ChevronLeft } from 'lucide-react-native';
+import { ChevronLeft, User } from 'lucide-react-native';
 import { ThemeContext } from '../context/ThemeContext';
 
 export default function ProfileScreen() {
@@ -36,18 +36,14 @@ export default function ProfileScreen() {
         {/* PROGRESS CIRCLE (Simulé ici) */}
         <View style={styles.progressContainer}>
           <View style={styles.circlePlaceholder}>
-             <Image 
-                source={isDarkMode ? require('../assets/bottle_icon_white.png') : require('../assets/bottle_icon.png')}
-                style={styles.bottleIcon} 
-             />
+             <User size={140} color={PRIMARY_BLUE} />
           </View>
-          <Text style={[styles.percentage, { color: colors.text }]}>20%</Text>
-          <Text style={[styles.subText, { color: colors.textSecondary }]}>Vous avez bu 400ml sur 2000 !</Text>
+          <Text style={[styles.percentage, { color: colors.text }]}>Alya Ayinde</Text>
         </View>
 
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Historique des points d'eau</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Points d'eau utilisés récemment</Text>
 
         {/* LISTE HISTORIQUE */}
         {history.length > 0 ? (
@@ -84,8 +80,7 @@ const styles = StyleSheet.create({
   progressContainer: { marginTop: 20, alignItems: 'center' },
   circlePlaceholder: { 
     width: 150, height: 150, borderRadius: 75, 
-    borderWidth: 10, borderColor: '#E0F2F1', // Gris clair
-    borderTopColor: '#00BCD4', // Cyan pour le progrès
+    borderWidth: 10, borderColor: PRIMARY_BLUE, // Gris clair
     justifyContent: 'center', alignItems: 'center' 
   },
   bottleIcon: { width: 60, height: 80, resizeMode: 'contain' },
