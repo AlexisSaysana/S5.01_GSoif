@@ -4,19 +4,67 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  ScrollView,
+  Switch,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { Plus, Trash2 } from "lucide-react-native";
+import { Plus, Trash2, ChevronLeft, Bell } from "lucide-react-native";
 import { PRIMARY_BLUE, WHITE } from "../styles/baseStyles";
 import * as Notifications from "expo-notifications";
+import { fonts } from "../styles/fonts";
 
 const BASE_URL = "https://s5-01-gsoif.onrender.com";
 
+// -----------------------------------------------------
+// Vérification permissions système
+// -----------------------------------------------------
+async function checkSystemNotificationStatus() {
+  const settings = await Notifications.getPermissionsAsync();
+  if (settings.status !== "granted") {
+    alert(
+      "Les notifications sont désactivées pour cette application.\n\n" +
+        "Active-les dans : Paramètres > Notifications."
+    );
+    return false;
+  }
+  return true;
+}
 
 // -----------------------------------------------------
-// Fonction : programmer une notification à une heure précise
+// Notification via JavaScript (fallback)
 // -----------------------------------------------------
-const scheduleNotificationAtTime = async (hour, minute, message) => {
+const scheduleNotificationJS = async (hour, minute, message) => {
+  const now = new Date();
+  const target = new Date();
+
+  target.setHours(hour);
+  target.setMinutes(minute);
+  target.setSeconds(0);
+  target.setMilliseconds(0);
+
+  if (target <= now) {
+    target.setDate(target.getDate() + 1);
+  }
+
+  const diffMs = target.getTime() - now.getTime();
+
+  setTimeout(async () => {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "Hydratation 💧",
+        body: message,
+        sound: "default",
+        channelId: "default",
+      },
+      trigger: null,
+    });
+  }, diffMs);
+};
+
+// -----------------------------------------------------
+// Notification Android (si autorisée)
+// -----------------------------------------------------
+const scheduleNotificationAndroid = async (hour, minute, message) => {
   const now = new Date();
   const target = new Date(now);
 
@@ -36,35 +84,55 @@ const scheduleNotificationAtTime = async (hour, minute, message) => {
       sound: "default",
       channelId: "default",
     },
-    trigger: {
-      date: target,
-    },
+    trigger: { date: target },
   });
-
-  console.log("🔔 Notification programmée pour :", target.toString());
 };
-
 
 // -----------------------------------------------------
 // Écran principal
 // -----------------------------------------------------
-export default function NotificationsScreen({ userId, navigation }) {
+export default function NotificationsScreen({ route, navigation }) {
+  const userId = route?.params?.userId;
+
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [fixedTimes, setFixedTimes] = useState([]);
   const [showPicker, setShowPicker] = useState(false);
   const [tempDate, setTempDate] = useState(new Date());
 
+  // Charger les horaires
   useEffect(() => {
   const loadPreferences = async () => {
     try {
       const res = await fetch(`${BASE_URL}/notification/preferences/${userId}`);
       const data = await res.json();
 
-      if (data.fixed_times) {
-        setFixedTimes(data.fixed_times);
-        console.log("📌 Horaires chargés :", data.fixed_times);
+      console.log("📌 Réponse API :", data);
+
+      // Si l'API renvoie un tableau → on prend la dernière entrée
+      const lastEntry = Array.isArray(data) ? data[data.length - 1] : data;
+
+      if (lastEntry && lastEntry.fixed_times && lastEntry.fixed_times.length > 0) {
+        setFixedTimes(lastEntry.fixed_times);
+      } else {
+        // Aucun horaire → valeurs par défaut
+        setFixedTimes([
+          { hour: 10, minute: 0 },
+          { hour: 12, minute: 0 },
+          { hour: 15, minute: 0 },
+          { hour: 17, minute: 0 },
+        ]);
       }
+
     } catch (err) {
       console.error("❌ Erreur loadPreferences :", err);
+
+      // Valeurs par défaut si erreur
+      setFixedTimes([
+        { hour: 10, minute: 0 },
+        { hour: 12, minute: 0 },
+        { hour: 15, minute: 0 },
+        { hour: 17, minute: 0 },
+      ]);
     }
   };
 
@@ -73,24 +141,28 @@ export default function NotificationsScreen({ userId, navigation }) {
 
 
 
-  // -----------------------------------------------------
-  // Récupération message backend
-  // -----------------------------------------------------
+  // Créer le canal Android
+  useEffect(() => {
+    Notifications.setNotificationChannelAsync("default", {
+      name: "default",
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: "#FF231F7C",
+    });
+  }, []);
+
+  // Message aléatoire
   const fetchMessage = async () => {
     try {
       const res = await fetch(`${BASE_URL}/notification/random/${userId}`);
       const data = await res.json();
       return data.message || "Pense à boire un verre d'eau 💧";
     } catch (err) {
-      console.error("❌ Erreur fetchMessage :", err);
       return "Hydrate-toi 💧";
     }
   };
 
-
-  // -----------------------------------------------------
-  // Ajout d'un horaire fixe
-  // -----------------------------------------------------
+  // Ajouter un horaire
   const addFixedTime = (event, selectedDate) => {
     setShowPicker(false);
     if (!selectedDate) return;
@@ -101,117 +173,148 @@ export default function NotificationsScreen({ userId, navigation }) {
     setFixedTimes((prev) => [...prev, { hour, minute }]);
   };
 
-
-  // -----------------------------------------------------
-  // Enregistrement des préférences
-  // -----------------------------------------------------
+  // Enregistrer
   const saveNotifications = async () => {
+    const allowed = await checkSystemNotificationStatus();
+    if (!allowed) return;
+
+    const settings = await Notifications.getPermissionsAsync();
     const message = await fetchMessage();
 
     const payload = {
       fixedTimes,
+      enabled: notificationsEnabled,
     };
 
     try {
-      const res = await fetch(`${BASE_URL}/notification/preferences/${userId}`, {
+      await fetch(`${BASE_URL}/notification/preferences/${userId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
-      const data = await res.json();
-      console.log("📥 Réponse backend :", data);
-
-      if (!res.ok || !data.saved) {
-        return alert("Erreur lors de l'enregistrement des préférences");
-      }
-
-      console.log("✅ Préférences enregistrées en base !");
     } catch (err) {
-      console.error("❌ Erreur FETCH :", err);
       return alert("Erreur de connexion au serveur");
     }
 
+    const androidBlocked = settings.android.interruptionFilter !== 0;
+
     for (const t of fixedTimes) {
-      await scheduleNotificationAtTime(t.hour, t.minute, message);
+      if (androidBlocked) {
+        await scheduleNotificationJS(t.hour, t.minute, message);
+      } else {
+        await scheduleNotificationAndroid(t.hour, t.minute, message);
+      }
     }
 
-    alert("Notifications programmées !");
-    navigation.navigate("MonCompte");
+    alert("Préférences enregistrées !");
+    navigation.goBack();
   };
-
-
-  // -----------------------------------------------------
-  // TEST CANAL + 10s
-  // -----------------------------------------------------
-  const testChannel10s = async () => {
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: "TEST PERSISTANT",
-        body: "Notification dans 10 secondes ✔",
-        sound: "default",
-        channelId: "default",
-      },
-      trigger: {
-        date: new Date(Date.now() + 10000),
-      },
-    });
-
-    console.log("🟣 Notification test programmée");
-  };
-
 
   // -----------------------------------------------------
   // UI
   // -----------------------------------------------------
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Notifications</Text>
-
-      <View style={styles.card}>
-        <Text style={styles.label}>Horaires programmés</Text>
-
-        {fixedTimes.map((t, index) => (
-          <View key={index} style={styles.timeRow}>
-            <Text style={styles.timeText}>
-              {t.hour.toString().padStart(2, "0")}:
-              {t.minute.toString().padStart(2, "0")}
-            </Text>
-
-            <TouchableOpacity
-              onPress={() =>
-                setFixedTimes((prev) => prev.filter((_, i) => i !== index))
-              }
-            >
-              <Trash2 size={20} color="#E53935" />
-            </TouchableOpacity>
-          </View>
-        ))}
-
-        <TouchableOpacity style={styles.addButton} onPress={() => setShowPicker(true)}>
-          <Plus size={20} color={WHITE} />
-          <Text style={styles.addButtonText}>Ajouter une heure</Text>
+      {/* HEADER */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <ChevronLeft size={28} color="white" />
         </TouchableOpacity>
+
+        
+
+        <Text style={styles.headerTitle}>Notifications</Text>
       </View>
 
-      <TouchableOpacity style={styles.saveButton} onPress={saveNotifications}>
-        <Text style={styles.saveButtonText}>Enregistrer</Text>
-      </TouchableOpacity>
+      <ScrollView style={styles.content}>
+        {/* SECTION SWITCH */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>Notifications</Text>
 
-      <TouchableOpacity
-        style={[styles.saveButton, { backgroundColor: "#DDD", marginTop: 10 }]}
-        onPress={() => navigation.goBack()}
-      >
-        <Text style={[styles.saveButtonText, { color: "#333" }]}>Retour</Text>
-      </TouchableOpacity>
+          <View style={styles.switchRow}>
+            <Text style={styles.switchLabel}>Activer les notifications</Text>
 
-      <TouchableOpacity
-        style={[styles.saveButton, { backgroundColor: "purple", marginTop: 20 }]}
-        onPress={testChannel10s}
-      >
-        <Text style={styles.saveButtonText}>Test Canal + 10s</Text>
-      </TouchableOpacity>
+            <Switch
+              value={notificationsEnabled}
+              onValueChange={setNotificationsEnabled}
+              trackColor={{ false: "#DDD", true: PRIMARY_BLUE }}
+              thumbColor={WHITE}
+            />
+          </View>
+        </View>
 
+        {/* SI SWITCH = ON → afficher le reste */}
+        {notificationsEnabled && (
+          <>
+            {/* SECTION HORAIRES */}
+            <View style={styles.sectionContainer}>
+              <Text style={styles.sectionTitle}>Horaires programmés</Text>
+
+              {fixedTimes.length === 0 && (
+                <Text style={{ color: "#888", marginBottom: 10 }}>
+                  Aucun horaire ajouté pour le moment
+                </Text>
+              )}
+
+              {fixedTimes.map((t, index) => (
+                <View key={index}>
+                  <View style={styles.timeRow}>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 10,
+                      }}
+                    >
+                      <Text style={{ fontSize: 20 }}>🕒</Text>
+
+                      <Text style={styles.timeText}>
+                        {t.hour.toString().padStart(2, "0")}:
+                        {t.minute.toString().padStart(2, "0")}
+                      </Text>
+                    </View>
+
+                    <TouchableOpacity
+                      onPress={() =>
+                        setFixedTimes((prev) =>
+                          prev.filter((_, i) => i !== index)
+                        )
+                      }
+                    >
+                      <Trash2 size={22} color="#E53935" />
+                    </TouchableOpacity>
+                  </View>
+
+                  {index < fixedTimes.length - 1 && (
+                    <View style={styles.separator} />
+                  )}
+                </View>
+              ))}
+
+              <TouchableOpacity
+                style={styles.addTimeButton}
+                onPress={() => setShowPicker(true)}
+              >
+                <Plus size={20} color={WHITE} />
+                <Text style={styles.addTimeText}>Ajouter une heure</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* SAVE */}
+            <TouchableOpacity
+              style={styles.saveButton}
+              onPress={saveNotifications}
+            >
+              <Text style={styles.saveButtonText}>Enregistrer</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </ScrollView>
+
+      {/* TIME PICKER */}
       {showPicker && (
         <DateTimePicker
           value={tempDate}
@@ -225,75 +328,139 @@ export default function NotificationsScreen({ userId, navigation }) {
   );
 }
 
-
 // -----------------------------------------------------
 // Styles
 // -----------------------------------------------------
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F5F7FA",
-    padding: 20,
+  container: { flex: 1, backgroundColor: "#F5F7FA" },
+
+  header: {
+    backgroundColor: PRIMARY_BLUE,
+    height: 120,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 40,
   },
 
-  title: {
-    fontSize: 26,
+  backButton: {
+    position: "absolute",
+    left: 20,
+    paddingTop: 40,
+  },
+
+  headerIcon: {
+    position: "absolute",
+    left: 60,
+    paddingTop: 40,
+  },
+
+  headerTitle: {
+    color: "white",
+    fontSize: 22,
+    fontFamily: fonts.bricolageGrotesque,
     fontWeight: "700",
-    color: PRIMARY_BLUE,
-    marginBottom: 20,
   },
 
-  card: {
-    backgroundColor: WHITE,
+  content: {
     padding: 20,
-    borderRadius: 16,
+    paddingBottom: 50,
+  },
+
+  sectionContainer: {
+    backgroundColor: WHITE,
+    borderRadius: 20,
+    padding: 20,
     marginBottom: 20,
     elevation: 2,
   },
 
-  label: {
+  sectionTitle: {
+    fontFamily: fonts.bricolageGrotesque,
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#333",
+    marginBottom: 20,
+  },
+
+  switchRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  switchLabel: {
     fontSize: 16,
+    fontFamily: fonts.bricolageGrotesque,
     fontWeight: "600",
-    marginBottom: 15,
+    color: "#333",
   },
 
   timeRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingVertical: 10,
+    alignItems: "center",
+    paddingVertical: 12,
   },
 
   timeText: {
     fontSize: 18,
     fontWeight: "600",
+    color: "#333",
+    fontFamily: fonts.bricolageGrotesque,
   },
 
-  addButton: {
-    marginTop: 15,
+  separator: {
+    height: 1,
+    backgroundColor: "#EEE",
+    marginVertical: 10,
+  },
+
+  addTimeButton: {
     backgroundColor: PRIMARY_BLUE,
     paddingVertical: 12,
     borderRadius: 12,
     flexDirection: "row",
-    justifyContent: "center",
     alignItems: "center",
-    gap: 8,
+    justifyContent: "center",
+    gap: 10,
+    marginTop: 10,
   },
 
-  addButtonText: {
+  addTimeText: {
     color: WHITE,
+    fontSize: 15,
     fontWeight: "700",
+    fontFamily: fonts.bricolageGrotesque,
+  },
+
+  manageButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    backgroundColor: "#EEF6FF",
+  },
+
+  manageText: {
+    color: PRIMARY_BLUE,
+    fontSize: 15,
+    fontWeight: "700",
+    fontFamily: fonts.bricolageGrotesque,
   },
 
   saveButton: {
     backgroundColor: PRIMARY_BLUE,
-    paddingVertical: 15,
-    borderRadius: 14,
+    height: 55,
+    borderRadius: 15,
+    justifyContent: "center",
     alignItems: "center",
+    marginTop: 10,
   },
 
   saveButtonText: {
     color: WHITE,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "700",
+    fontFamily: fonts.bricolageGrotesque,
   },
 });
