@@ -303,36 +303,29 @@ app.get('/preferences/horaires/:id_utilisateur', (req, res) => {
   });
 });
 // --------------------------------------
-// ⭐ ROUTE : Enregistrer les préférences notifications (interval + horaires)
+// ⭐ ROUTE : Enregistrer les horaires fixes (NOUVELLE VERSION)
 // --------------------------------------
 app.post('/notification/preferences/:userId', (req, res) => {
   const userId = req.params.userId;
-  const { mode, intervalMinutes, fixedTimes } = req.body;
+  const { fixedTimes } = req.body;
 
-  if (!mode) {
-    return res.status(400).json({ error: "Mode manquant" });
+  if (!fixedTimes || !Array.isArray(fixedTimes)) {
+    return res.status(400).json({ error: "fixedTimes manquant ou invalide" });
   }
 
-  console.log("📥 Données reçues :", { userId, mode, intervalMinutes, fixedTimes });
+  console.log("📥 Données reçues :", { userId, fixedTimes });
 
-  // Préparation SQL
   const sql = `
-    INSERT INTO preferences_notification (id_utilisateur, mode, interval_minutes, fixed_times)
-    VALUES (?, ?, ?, ?)
+    INSERT INTO horaires_notifications (id_utilisateur, fixed_times, actif)
+    VALUES (?, ?, 1)
     ON DUPLICATE KEY UPDATE
-      mode = VALUES(mode),
-      interval_minutes = VALUES(interval_minutes),
-      fixed_times = VALUES(fixed_times)
+      fixed_times = VALUES(fixed_times),
+      actif = 1
   `;
 
   db.query(
     sql,
-    [
-      userId,
-      mode,
-      intervalMinutes || null,
-      JSON.stringify(fixedTimes || [])
-    ],
+    [userId, JSON.stringify(fixedTimes)],
     (err, result) => {
       if (err) {
         console.error("❌ Erreur SQL :", err);
@@ -340,11 +333,39 @@ app.post('/notification/preferences/:userId', (req, res) => {
       }
 
       return res.json({
-        message: "Préférences enregistrées avec succès",
+        message: "Horaires enregistrés avec succès",
         saved: true
       });
     }
   );
+});
+// --------------------------------------
+// ⭐ ROUTE : Récupérer les horaires fixes
+// --------------------------------------
+app.get('/notification/preferences/:userId', (req, res) => {
+  const userId = req.params.userId;
+
+  const sql = `
+    SELECT fixed_times
+    FROM horaires_notifications
+    WHERE id_utilisateur = ?
+    LIMIT 1
+  `;
+
+  db.query(sql, [userId], (err, data) => {
+    if (err) {
+      console.error("❌ Erreur SQL :", err);
+      return res.status(500).json({ error: "Erreur SQL" });
+    }
+
+    if (data.length === 0) {
+      return res.json({ fixed_times: [] });
+    }
+
+    return res.json({
+      fixed_times: JSON.parse(data[0].fixed_times || "[]")
+    });
+  });
 });
 
 

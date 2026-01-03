@@ -63,6 +63,9 @@ const LoginScreen = ({ navigation, onLogin  }) => {
         Alert.alert("Succès", "Connexion réussie !");
         const userId = data.utilisateur.id;
         onLogin(email, userId);
+        await AsyncStorage.setItem("userId", id.toString());
+        await AsyncStorage.setItem("userEmail", email);
+
         
 
     } catch (error) {

@@ -6,12 +6,17 @@
     "orientation": "portrait",
     "icon": "./assets/icon-light-filled.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+
+    "experiments": {
+      "reactNativeNewArchitecture": true
+    },
+
     "splash": {
       "image": "./assets/icon-light-filled.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.votre.gsoif",
@@ -19,6 +24,7 @@
         "NSLocationWhenInUseUsageDescription": "GSoif a besoin de votre position pour afficher les fontaines les plus proches de vous."
       }
     },
+
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon-light-filled.png",
@@ -32,9 +38,11 @@
         "FOREGROUND_SERVICE"
       ]
     },
+
     "web": {
       "favicon": "./assets/icon-light-filled.png"
     },
+
     "plugins": [
       "react-native-map-link",
       "@react-native-community/datetimepicker"

@@ -3,6 +3,9 @@ import { StyleSheet, View } from 'react-native';
 import * as Font from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 
+import * as Notifications from "expo-notifications";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -16,12 +19,21 @@ import FontainesScreen from './screens/FontainesScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import OptionsScreen from './screens/OptionsScreen';
 import MonCompteScreen from './screens/MonCompteScreen';
-import NotificationsScreen from './screens/NotificationsScreen';   // ⭐ AJOUT
+import NotificationsScreen from './screens/NotificationsScreen';
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-// --- NAVIGATION BASSE (ONGLETS) ---
 function TabNavigator({ navigation, onLogout, userEmail, userId }) {
   return (
     <Tab.Navigator
@@ -66,26 +78,52 @@ function TabNavigator({ navigation, onLogout, userEmail, userId }) {
   );
 }
 
-// --- COMPOSANT PRINCIPAL ---
 export default function App() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
-
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState(null);
   const [userId, setUserId] = useState(null);
 
   useEffect(() => {
-    async function loadFonts() {
+    async function loadSessionAndInit() {
+
+      // 🔥 Récupérer la session sauvegardée
+      const savedId = await AsyncStorage.getItem("userId");
+      const savedEmail = await AsyncStorage.getItem("userEmail");
+
+      if (savedId && savedEmail) {
+        setUserId(savedId);
+        setUserEmail(savedEmail);
+        setIsLoggedIn(true);
+      }
+
+      // 🔥 Charger les polices + notifications
       try {
         await Font.loadAsync({
           'BricolageGrotesque': require('./assets/fonts/BricolageGrotesque-VariableFont_opsz,wdth,wght.ttf'),
           'Inter': require('./assets/fonts/Inter-VariableFont_opsz,wght.ttf'),
         });
-      } finally {
         setFontsLoaded(true);
+
+        const { status } = await Notifications.requestPermissionsAsync();
+        console.log("📌 Permission notifications :", status);
+
+        await Notifications.setNotificationChannelAsync("default", {
+          name: "Notifications",
+          importance: Notifications.AndroidImportance.MAX,
+          sound: "default",
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: "#FF231F7C",
+          lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+          bypassDnd: true,
+        });
+        console.log("📌 Channel 'default' configuré avec importance MAX + vibration + lumière");
+      } catch (e) {
+        console.log("❌ Erreur init notifications :", e);
       }
     }
-    loadFonts();
+
+    loadSessionAndInit();
   }, []);
 
   if (!fontsLoaded) return null;
@@ -101,12 +139,14 @@ export default function App() {
               {(props) => (
                 <WelcomeScreen 
                   {...props} 
-                  onLogin={(email, id) => {
+                  onLogin={async (email, id) => {
+                    await AsyncStorage.setItem("userId", id.toString());
+                    await AsyncStorage.setItem("userEmail", email);
+
                     setUserEmail(email);
                     setUserId(id);
                     setIsLoggedIn(true);
                   }}
-
                 />
               )}
             </Stack.Screen>
@@ -115,7 +155,10 @@ export default function App() {
               {(props) => (
                 <LoginScreen 
                   {...props} 
-                  onLogin={(email, id) => {
+                  onLogin={async (email, id) => {
+                    await AsyncStorage.setItem("userId", id.toString());
+                    await AsyncStorage.setItem("userEmail", email);
+
                     setUserEmail(email);
                     setUserId(id);
                     setIsLoggedIn(true);
@@ -128,12 +171,14 @@ export default function App() {
               {(props) => (
                 <SignupScreen 
                   {...props} 
-                  onLogin={(email, id) => {
+                  onLogin={async (email, id) => {
+                    await AsyncStorage.setItem("userId", id.toString());
+                    await AsyncStorage.setItem("userEmail", email);
+
                     setUserEmail(email);
                     setUserId(id);
                     setIsLoggedIn(true);
                   }}
-
                 />
               )}
             </Stack.Screen>
@@ -141,24 +186,24 @@ export default function App() {
         ) : (
           <Stack.Group>
 
-            {/* NAVIGATION PRINCIPALE */}
             <Stack.Screen name="Main">
               {(props) => (
                 <TabNavigator 
                   navigation={props.navigation} 
                   userEmail={userEmail}
-                  userId={userId}   // ⭐ AJOUT OBLIGATOIRE
-                  onLogout={() => {
+                  userId={userId}
+                  onLogout={async () => {
+                    await AsyncStorage.removeItem("userId");
+                    await AsyncStorage.removeItem("userEmail");
+
                     setIsLoggedIn(false);
                     setUserEmail(null);
                     setUserId(null);
                   }}
                 />
-
               )}
             </Stack.Screen>
 
-            {/* MON COMPTE */}
             <Stack.Screen name="MonCompte">
               {(props) => (
                 <MonCompteScreen 
@@ -168,18 +213,15 @@ export default function App() {
               )}
             </Stack.Screen>
 
-            {/* ⭐ NOTIFICATIONS */}
             <Stack.Screen name="Notifications">
               {(props) => (
                 <NotificationsScreen 
                   {...props}
                   userEmail={userEmail}
-                  userId={props.route.params?.userId}
+                  userId={userId}
                 />
               )}
             </Stack.Screen>
-
-
 
           </Stack.Group>
         )}
