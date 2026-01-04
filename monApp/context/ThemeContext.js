@@ -57,6 +57,7 @@ export const ThemeProvider = ({ children }) => {
       text: isDarkMode ? '#E0E0E0' : '#333333',
       textSecondary: isDarkMode ? '#A0A0A0' : '#888888',
       primary: PRIMARY_BLUE,
+      secondary: isDarkMode ? '#2A4B55' : '#C8E0E8',
       border: isDarkMode ? '#333333' : '#F0F0F0',
       iconBg: isDarkMode ? '#2C2C2C' : '#F5F7FA',
       dangerBg: isDarkMode ? '#4a1515' : '#FFEBEE',

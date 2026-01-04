@@ -3,10 +3,10 @@ import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { useContext } from 'react';
 import { ThemeContext } from '../context/ThemeContext';
 
-const CustomButton = ({ title, onPress, style }) => {
+const CustomButton = ({ title, onPress, style, backgroundColor, disabled = false }) => {
     const { colors } = useContext(ThemeContext);
     return (
-        <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary }, style]} onPress={onPress}>
+        <TouchableOpacity style={[styles.button, { backgroundColor: backgroundColor ?? colors.primary }, style]} onPress={onPress}>
             <Text style={[styles.buttonText, { color: colors.surface }]}>{title}</Text>
         </TouchableOpacity>
     );

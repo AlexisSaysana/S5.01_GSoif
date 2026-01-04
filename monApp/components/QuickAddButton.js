@@ -3,9 +3,8 @@ import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { useContext } from 'react';
 import { ThemeContext } from '../context/ThemeContext';
 
-const QuickAddButton = ({ title, onPress, style }) => {
+const QuickAddButton = ({ title, onPress, style, disabled = false }) => {
     const { colors, isDarkMode } = useContext(ThemeContext);
-    const backgroundColor = isDarkMode ? colors.iconBg : colors.primary;
     const textColor = isDarkMode ? colors.text : colors.surface;
     const borderStyle = isDarkMode ? { borderWidth: 1, borderColor: colors.border } : { borderWidth: 0 };
 
@@ -13,7 +12,7 @@ const QuickAddButton = ({ title, onPress, style }) => {
         <TouchableOpacity
             style={[
                 styles.button,
-                { backgroundColor, ...borderStyle },
+                { ...borderStyle },
                 !isDarkMode && styles.lightElevated,
                 style
             ]}
