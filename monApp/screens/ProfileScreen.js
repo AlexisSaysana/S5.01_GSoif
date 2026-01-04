@@ -3,10 +3,10 @@ import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity } from 'rea
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles';
 import { fonts } from '../styles/fonts';
-import { ChevronLeft, User } from 'lucide-react-native';
+import { Settings, User } from 'lucide-react-native';
 import { ThemeContext } from '../context/ThemeContext';
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ navigation }) {
   const { colors, isDarkMode, unit, dailyGoal } = useContext(ThemeContext);
   const [history, setHistory] = useState([]);
   const [completed, setCompleted] = useState(0);
@@ -48,6 +48,12 @@ export default function ProfileScreen() {
       {/* HEADER BLUE */}
       <View style={[styles.header, { backgroundColor: colors.primary }] }>
         <Text style={styles.headerTitle}>Mon profil</Text>
+        <TouchableOpacity 
+                          style={styles.settingsButton} 
+                          onPress={() => navigation.getParent()?.navigate('Setting')}
+                        >
+                          <Settings color="white" size={30} />
+                        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -93,7 +99,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingTop: 40
   },
-  backButton: { position: 'absolute', left: 20, paddingTop: 40 },
+  settingsButton: { position: 'absolute', right: 20, paddingTop: 40 },
   headerTitle: { color: 'white', fontSize: 22, fontFamily: fonts.bricolageGrotesque, fontWeight: '700' },
   content: { padding: 20, alignItems: 'center' },
   progressContainer: { marginTop: 20, alignItems: 'center' },

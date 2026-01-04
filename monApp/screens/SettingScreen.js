@@ -24,6 +24,7 @@ import {
 } from 'lucide-react-native';
 import { ThemeContext } from '../context/ThemeContext'; // Assurez-vous du chemin
 import { fonts } from '../styles/fonts';
+import { PRIMARY_BLUE } from '../styles/baseStyles';
 
 export default function SettingsScreen({ navigation }) {
   // On récupère tout depuis notre contexte global
@@ -251,7 +252,7 @@ export default function SettingsScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { 
-    backgroundColor: '#5BA2FF', // On garde le bleu primaire fixe pour le header
+    backgroundColor: PRIMARY_BLUE,
     height: 120, 
     flexDirection: 'row', 
     alignItems: 'center', 

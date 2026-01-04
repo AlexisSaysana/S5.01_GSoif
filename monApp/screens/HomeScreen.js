@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity } from 'rea
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles';
 import { fonts } from '../styles/fonts';
-import { ChevronLeft } from 'lucide-react-native';
+import { Settings } from 'lucide-react-native';
 import { ThemeContext } from '../context/ThemeContext';
 import ProgressCircle from '../components/ProgressCircle';
 import CustomInput from '../components/CustomInput';
@@ -12,7 +12,7 @@ import CustomButton from '../components/CustomButton';
 import QuickAddButton from '../components/QuickAddButton';
 import Select from '../components/Select';
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ navigation }) {
   const { colors, isDarkMode, unit, dailyGoal } = useContext(ThemeContext);
   const [history, setHistory] = useState([]);
   const [completed, setCompleted] = useState(0);
@@ -65,6 +65,12 @@ export default function ProfileScreen() {
       {/* HEADER */}
       <View style={[styles.header, { backgroundColor: colors.primary }] }>
         <Text style={styles.headerTitle}>Votre progression</Text>
+        <TouchableOpacity 
+                  style={styles.settingsButton} 
+                  onPress={() => navigation.getParent()?.navigate('Setting')}
+                >
+                  <Settings color="white" size={30} />
+                </TouchableOpacity>
       </View>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.progressContainer}>
@@ -222,9 +228,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row', 
     alignItems: 'center', 
     justifyContent: 'center',
-    paddingTop: 36
+    paddingTop: 40
   },
-  backButton: { position: 'absolute', left: 20, paddingTop: 40 },
+  settingsButton: { position: 'absolute', right: 20, paddingTop: 40 },
   headerTitle: { color: 'white', fontSize: 22, fontFamily: fonts.bricolageGrotesque, fontWeight: '700' },
   content: { padding: 20, alignItems: 'center' },
   progressContainer: { marginTop: 20, alignItems: 'center' },

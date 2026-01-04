@@ -6,7 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Plus, Map, User, Settings } from 'lucide-react-native';
+import { Plus, Map, User, Settings, Home } from 'lucide-react-native';
 import { ThemeContext } from './context/ThemeContext';
 
 import WelcomeScreen from './screens/WelcomeScreen';
@@ -36,7 +36,7 @@ function TabNavigator() {
         tabBarStyle: [styles.tabBar, { backgroundColor: colors.surface, borderTopColor: colors.border }],
       }}
     >
-      <Tab.Screen name="Ajouter" component={HomeScreen} options={{ tabBarIcon: ({ color }) => <Plus color={color} size={28} /> }} />
+      <Tab.Screen name="Accueil" component={HomeScreen} options={{ tabBarIcon: ({ color }) => <Home color={color} size={28} /> }} />
       <Tab.Screen name="Rechercher" component={FontainesScreen} options={{ tabBarIcon: ({ color }) => <Map color={color} size={28} /> }} />
       <Tab.Screen name="Profil" component={ProfileScreen} options={{ tabBarIcon: ({ color }) => <User color={color} size={28} /> }} />
       <Tab.Screen name="Options" component={OptionsScreen} options={{ tabBarIcon: ({ color }) => <Settings color={color} size={28} /> }} />
