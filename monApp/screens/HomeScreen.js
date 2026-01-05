@@ -19,6 +19,7 @@ export default function ProfileScreen({ navigation }) {
   const [customAmount, setCustomAmount] = useState('');
   const options = ['Ajouter', 'Retirer']
   const [selectedOption, setSelectedOption] = useState(options[0]);
+  const [margin, setMargin] = useState(0);
   const isAddMode = selectedOption === options[0];
   const canRemove = completed > 0;
   const actionColor = isAddMode ? colors.primary : colors.dangerText; 
@@ -60,7 +61,6 @@ export default function ProfileScreen({ navigation }) {
   };
 
   return (
-    <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* HEADER */}
       <View style={[styles.header, { backgroundColor: colors.primary }] }>
@@ -72,7 +72,7 @@ export default function ProfileScreen({ navigation }) {
                   <Settings color="white" size={30} />
                 </TouchableOpacity>
       </View>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={[styles.content, {marginTop: margin}]}>
         <View style={styles.progressContainer}>
           <ProgressCircle
             size={210}
@@ -164,6 +164,8 @@ export default function ProfileScreen({ navigation }) {
                 keyboardType='numeric'
                 value={customAmount}
                 onChangeText={setCustomAmount}
+                onFocus={() => setMargin(-100)}
+                onBlur={() => setMargin(0)}
                 onSubmitEditing={() => Keyboard.dismiss()}
             />
           <View
@@ -216,7 +218,6 @@ export default function ProfileScreen({ navigation }) {
         </View>
       </ScrollView>
     </View>
-    </TouchableWithoutFeedback>
   );
 }
 
