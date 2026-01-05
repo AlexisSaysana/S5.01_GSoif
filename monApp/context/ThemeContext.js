@@ -10,6 +10,8 @@ export const ThemeProvider = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [unit, setUnit] = useState('mL'); // mL, cL, L
   const [dailyGoal, setDailyGoal] = useState(2000); // stored in mL
+  const [name, setName] = useState("Alya Ayinde");
+  const [email, setEmail] = useState("alya.ayinde@gsoif.fr");
 
   // --- Chargement initial ---
   useEffect(() => {
@@ -21,10 +23,15 @@ export const ThemeProvider = ({ children }) => {
       const storedTheme = await AsyncStorage.getItem('appTheme');
       const storedUnit = await AsyncStorage.getItem('appUnit');
       const storedGoal = await AsyncStorage.getItem('@dailyGoal');
+      const storedName = await AsyncStorage.getItem('@name');
+      const storedEmail = await AsyncStorage.getItem('@email');
 
       if (storedTheme !== null) setIsDarkMode(storedTheme === 'dark');
       if (storedUnit !== null) setUnit(storedUnit);
       if (storedGoal !== null) setDailyGoal(parseInt(storedGoal, 10));
+      if (storedName !== null) setName(storedName);
+      if (storedEmail !== null) setEmail(storedEmail);
+    
     } catch (e) {
       console.error("Erreur chargement préférences", e);
     }
@@ -47,6 +54,16 @@ export const ThemeProvider = ({ children }) => {
     await AsyncStorage.setItem('@dailyGoal', String(goalMl));
   };
 
+  const changeName = async (name) => {
+    setName(name);
+    await AsyncStorage.setItem('@name', name)
+  }
+
+  const changeEmail = async (email) => {
+    setEmail(email);
+    await AsyncStorage.setItem('@email', email)
+  }
+
   // --- Définition des couleurs dynamiques ---
   // C'est ici qu'on définit les couleurs pour chaque mode
   const theme = {
@@ -67,7 +84,12 @@ export const ThemeProvider = ({ children }) => {
     unit,
     dailyGoal,
     changeDailyGoal,
-    changeUnit
+    changeUnit,
+    name,
+    changeName,
+    email,
+    changeEmail,
+
   };
 
   return (

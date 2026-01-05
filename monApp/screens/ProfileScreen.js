@@ -3,11 +3,11 @@ import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity } from 'rea
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles';
 import { fonts } from '../styles/fonts';
-import { Settings, User } from 'lucide-react-native';
+import { Settings, User, UserPen, UserPenIcon } from 'lucide-react-native';
 import { ThemeContext } from '../context/ThemeContext';
 
 export default function ProfileScreen({ navigation }) {
-  const { colors, isDarkMode, unit, dailyGoal } = useContext(ThemeContext);
+  const { colors, isDarkMode, unit, dailyGoal, name, email } = useContext(ThemeContext);
   const [history, setHistory] = useState([]);
   const [completed, setCompleted] = useState(0);
 
@@ -62,8 +62,23 @@ export default function ProfileScreen({ navigation }) {
           <View style={[styles.circlePlaceholder, { borderColor: colors.primary }]}>
              <User size={140} color={colors.primary} />
           </View>
-          <Text style={[styles.percentage, { color: colors.text }]}>{Math.round((completed/ (dailyGoal || 1)) * 100)}%</Text>
-          <Text style={[styles.subText, { color: colors.textSecondary }]}>{`Vous avez bu ${displayForUnit(completed)} sur ${displayForUnit(dailyGoal)} aujourd'hui !`}</Text>
+          <Text style={[styles.percentage, { color: colors.text }]}>{name}</Text>
+          <Text style={[styles.subText, { color: colors.textSecondary }]}>{email}</Text>
+          <TouchableOpacity style={
+            {
+              borderBottomColor: colors.border,
+              display: 'flex',
+              flexDirection: 'row',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: 5, 
+              marginTop: 15,
+            }}
+            onPress={() => navigation.getParent()?.navigate('Account')}
+          >  
+            <UserPen color={colors.textSecondary} size={20} />
+            <Text style={[{ color: colors.textSecondary, textDecorationLine: 'underline' }]}>Paramètres et préferences du compte</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={[styles.divider, { backgroundColor: colors.border }]} />

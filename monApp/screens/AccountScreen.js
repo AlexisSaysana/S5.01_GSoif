@@ -25,10 +25,8 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 export default function AccountScreen({ navigation }) {
-  const { colors, unit, dailyGoal, changeDailyGoal } = useContext(ThemeContext);
-  const [name, setName] = useState("Alya Ayinde");
-  const [email, setEmail] = useState("alyayinde@gmail.com");
-  
+  const { colors, unit, dailyGoal, changeDailyGoal, name, changeName, email, changeEmail } = useContext(ThemeContext);
+
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   
   const [isChangingPassword, setIsChangingPassword] = useState(false);
@@ -125,7 +123,7 @@ export default function AccountScreen({ navigation }) {
                 <TextInput
                   style={[styles.input, { color: colors.text }]}
                   value={name}
-                  onChangeText={setName}
+                  onChangeText={changeName}
                   placeholder="Votre nom"
                   placeholderTextColor={colors.textSecondary}
                 />
@@ -144,7 +142,7 @@ export default function AccountScreen({ navigation }) {
                 <TextInput
                   style={[styles.input, { color: colors.text }]}
                   value={email}
-                  onChangeText={setEmail}
+                  onChangeText={changeEmail}
                   keyboardType="email-address"
                 />
               </View>

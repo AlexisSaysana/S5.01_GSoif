@@ -39,7 +39,6 @@ function TabNavigator() {
       <Tab.Screen name="Accueil" component={HomeScreen} options={{ tabBarIcon: ({ color }) => <Home color={color} size={28} /> }} />
       <Tab.Screen name="Rechercher" component={FontainesScreen} options={{ tabBarIcon: ({ color }) => <Map color={color} size={28} /> }} />
       <Tab.Screen name="Profil" component={ProfileScreen} options={{ tabBarIcon: ({ color }) => <User color={color} size={28} /> }} />
-      <Tab.Screen name="Options" component={OptionsScreen} options={{ tabBarIcon: ({ color }) => <Settings color={color} size={28} /> }} />
     </Tab.Navigator>
   );
 }
@@ -103,6 +102,8 @@ export default function App() {
 
 const styles = StyleSheet.create({
   tabBar: {
+    paddingTop: 10,
+    paddingHorizontal: 20,
     height: 80,
     paddingBottom: 20,
     borderTopLeftRadius: 30,
