@@ -102,10 +102,11 @@ export default function App() {
 
 const styles = StyleSheet.create({
   tabBar: {
+    position: 'absolute',
+    bottom: 0,
     paddingTop: 10,
     paddingHorizontal: 20,
     height: 80,
-    paddingBottom: 20,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     backgroundColor: '#FFF',
