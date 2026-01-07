@@ -74,20 +74,24 @@ app.post('/utilisateurs', async (req, res) => {
         const sql = "INSERT INTO utilisateur (email, nom, prenom, mot_de_passe) VALUES (?, ?, ?, ?)";
         db.query(sql, [email, nom, prenom, hash], (err, result) => {
             if (err) {
-                console.error("Erreur SQL :", err);
-
                 if (err.code === 'ER_DUP_ENTRY') {
                     return res.status(409).json({ error: "Email déjà utilisé" });
                 }
-
                 return res.status(500).json({ error: "Erreur serveur" });
             }
 
-            return res.status(201).json({ message: "Utilisateur ajouté avec succès" });
+            return res.status(201).json({
+                message: "Utilisateur ajouté avec succès",
+                utilisateur: {
+                    id: result.insertId,
+                    email,
+                    nom,
+                    prenom
+                }
+            });
         });
 
     } catch (error) {
-        console.error("Erreur hachage :", error);
         return res.status(500).json({ error: "Erreur lors du hachage du mot de passe" });
     }
 });
