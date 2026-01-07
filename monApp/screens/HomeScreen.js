@@ -2,6 +2,15 @@ import React, { useContext, useEffect, useState } from 'react';
 import { Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+// Réinitialise la progression quotidienne à 0 si la date a changé
+async function checkAndResetDailyCompleted() {
+  const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+  const lastDate = await AsyncStorage.getItem('@dailyCompletedDate');
+  if (lastDate !== today) {
+    await AsyncStorage.setItem('@dailyCompleted', '0');
+    await AsyncStorage.setItem('@dailyCompletedDate', today);
+  }
+}
 import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles';
 import { fonts } from '../styles/fonts';
 import { Settings } from 'lucide-react-native';
@@ -31,6 +40,8 @@ export default function ProfileScreen({ navigation }) {
   useEffect(() => {
     loadHistory();
     loadDailyValues();
+    checkAndResetDailyCompleted();
+    // ...existing code...
   }, []);
 
   const loadHistory = async () => {

@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { 
   View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView,
-  KeyboardAvoidingView, Platform, TextInput, Modal,
+  KeyboardAvoidingView, Platform, TextInput, Modal, Switch,
   LayoutAnimation, UIManager
 } from 'react-native';
-import { ChevronLeft, User, Mail, Lock, Droplet, Bell, X } from 'lucide-react-native';
+import { ChevronLeft, User, Mail, Lock, Droplet, Bell, X, Moon, LogOut } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ThemeContext } from '../context/ThemeContext';
 import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles';
 import { fonts } from '../styles/fonts';
 import CustomButton from '../components/CustomButton';
@@ -17,6 +19,8 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 export default function MonCompteScreen({ navigation, route }) {
   const { userEmail } = route.params || {};
+
+  const { isDarkMode, toggleTheme, colors } = useContext(ThemeContext);
 
   const [prenom, setPrenom] = useState("");
   const [nom, setNom] = useState("");
@@ -317,25 +321,66 @@ export default function MonCompteScreen({ navigation, route }) {
               </View>
             </View>
 
-            {/* BOUTON NOTIFICATIONS */}
-            <View style={styles.inputGroup}>
-              <View style={[styles.iconContainer, { backgroundColor: '#FFF3E0' }]}>
-                <Bell size={20} color="#FF9800" />
+              {/* BOUTON NOTIFICATIONS */}
+              <View style={styles.inputGroup}>
+                <View style={[styles.iconContainer, { backgroundColor: '#FFF3E0' }]}>
+                  <Bell size={20} color="#FF9800" />
+                </View>
+                <TouchableOpacity
+                  style={styles.inputWrapper}
+                  onPress={() => navigation.navigate("Notifications", { userId })}
+                >
+                  <Text style={styles.label}>Notifications</Text>
+                  <Text style={[styles.input, { color: PRIMARY_BLUE, fontWeight: "600" }]}>
+                    Gérer les notifications →
+                  </Text>
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity
-                style={styles.inputWrapper}
-                onPress={() => navigation.navigate("Notifications", { userId })}
-              >
-                <Text style={styles.label}>Notifications</Text>
-                <Text style={[styles.input, { color: PRIMARY_BLUE, fontWeight: "600" }]}>
-                  Gérer les notifications →
-                </Text>
-              </TouchableOpacity>
-            </View>
+
+              {/* DARK MODE TOGGLE (Mon compte) */}
+              <View style={styles.inputGroup}>
+                <View style={[styles.iconContainer, { backgroundColor: colors ? colors.iconBg : '#E0E0E0' }]}>
+                  <Moon size={20} color={colors ? colors.primary : '#5C6BC0'} />
+                </View>
+                <View style={styles.inputWrapper}>
+                  <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
+                      <View>
+                          <Text style={styles.label}>Mode sombre</Text>
+                      </View>
+                      <Switch
+                          trackColor={{ false: "#E0E0E0", true: "#5C6BC0" }}
+                          thumbColor={"#FFF"}
+                          ios_backgroundColor="#E0E0E0"
+                          onValueChange={toggleTheme}
+                          value={isDarkMode}
+                      />
+                  </View>
+                </View>
+              </View>
           </View>
 
           <TouchableOpacity style={styles.saveButton} onPress={handleUpdate}>
             <Text style={styles.saveButtonText}>Enregistrer les modifications</Text>
+          </TouchableOpacity>
+
+          {/* LOGOUT BUTTON */}
+          <TouchableOpacity
+            style={[styles.logoutButton, { backgroundColor: '#FFF3F3', borderColor: '#FFE5E5' }]}
+            onPress={async () => {
+              Alert.alert('Déconnexion', 'Voulez-vous vous déconnecter ?', [
+                { text: 'Annuler', style: 'cancel' },
+                { text: 'Se déconnecter', style: 'destructive', onPress: async () => {
+                    try {
+                      await AsyncStorage.removeItem('userId');
+                      await AsyncStorage.removeItem('userEmail');
+                    } catch (e) { console.log('logout err', e); }
+                    navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] });
+                } }
+              ]);
+            }}
+          >
+            <LogOut size={18} color="#D32F2F" />
+            <Text style={[styles.logoutButtonText, { color: '#D32F2F' }]}>Se déconnecter</Text>
           </TouchableOpacity>
 
         </ScrollView>
@@ -458,6 +503,21 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: WHITE,
     fontSize: 16,
+    fontWeight: '700'
+  },
+  logoutButton: {
+    height: 50,
+    borderRadius: 12,
+    marginTop: 12,
+    marginBottom: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    borderWidth: 1,
+  },
+  logoutButtonText: {
+    fontSize: 15,
     fontWeight: '700'
   },
 

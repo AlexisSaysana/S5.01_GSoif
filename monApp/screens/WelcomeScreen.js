@@ -3,7 +3,7 @@ import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles';
 import { fonts } from '../styles/fonts';
 import { useState } from 'react';
 
-const WelcomeScreen = ({ navigation }) => {
+const WelcomeScreen = ({ navigation, onLogin }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const nextSlide = () => {
     if (activeIndex < welcome.length - 1) {
@@ -51,6 +51,11 @@ const WelcomeScreen = ({ navigation }) => {
             <Image source={require('../assets/Arrow.png')} />
           </TouchableOpacity>
         </View>
+        {activeIndex === 0 && (
+          <TouchableOpacity style={styles.guestButton} onPress={() => onLogin('', 0)}>
+            <Text style={styles.guestButtonText}>Continuer en tant qu'invité</Text>
+          </TouchableOpacity>
+        )}
         <View style={styles.dotsContainer}>
           {welcome.map((_, index) => (
             <View
@@ -137,6 +142,19 @@ const styles = StyleSheet.create({
     width: 130,
     height: 130,
 	}
+,
+  guestButton: {
+    position: 'absolute',
+    bottom: 20,
+    alignSelf: 'center',
+    backgroundColor: 'transparent',
+  },
+  guestButtonText: {
+    color: WHITE,
+    textDecorationLine: 'underline',
+    fontSize: 14,
+    fontWeight: '600'
+  }
 });
 
 const welcome = [

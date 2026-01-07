@@ -107,6 +107,7 @@ export default function FontainesScreen() {
         date: new Date().toISOString(),
         latitude: selectedFontaine.fields.geo_point_2d[0],
         longitude: selectedFontaine.fields.geo_point_2d[1],
+        timestamp: Date.now(),
       };
 
       const saved = await AsyncStorage.getItem('@fountainHistory');

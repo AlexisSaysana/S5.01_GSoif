@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { ChevronLeft } from 'lucide-react-native';
 import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles';
 import { fonts } from '../styles/fonts';
 
@@ -69,8 +70,11 @@ const SignupScreen = ({ navigation, onLogin }) => {
   return (
     <View style={{ flex: 1, backgroundColor: PRIMARY_BLUE }}>
 
-      {/* TOP BLUE */}
+      {/* TOP BLUE + BACK BUTTON */}
       <View style={styles.topBlue}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <ChevronLeft color="white" size={32} />
+        </TouchableOpacity>
         <Image
           style={styles.icon}
           source={require('../assets/icon-light.png')}
@@ -181,6 +185,15 @@ const styles = StyleSheet.create({
     height: '25%',
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
+  },
+  backButton: {
+    position: 'absolute',
+    left: 20,
+    top: 40,
+    zIndex: 10,
+    backgroundColor: 'transparent',
+    padding: 8,
   },
   bottomWhite: {
     backgroundColor: WHITE,

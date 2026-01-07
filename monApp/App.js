@@ -20,7 +20,7 @@ import SignupScreen from './screens/SignupScreen';
 import HomeScreen from './screens/HomeScreen';
 import FontainesScreen from './screens/FontainesScreen';
 import ProfileScreen from './screens/ProfileScreen';
-import OptionsScreen from './screens/OptionsScreen';
+import InviteScreen from './screens/InviteScreen';
 import MonCompteScreen from './screens/MonCompteScreen';
 import NotificationsScreen from './screens/NotificationsScreen';
 import HistoryScreen from './screens/HistoryScreen';
@@ -39,9 +39,8 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 // --- NAVIGATION BASSE (TABS) ---
-function TabNavigator({ onLogout, userEmail, userId }) {
+function TabNavigator({ onLogout, userEmail, userId, isGuest }) {
   const { colors } = useContext(ThemeContext);
-
   return (
     <Tab.Navigator
       screenOptions={{
@@ -63,22 +62,10 @@ function TabNavigator({ onLogout, userEmail, userId }) {
       />
       <Tab.Screen
         name="Profil"
-        component={ProfileScreen}
+        // Pass onLogout to InviteScreen if guest, and to ProfileScreen if not guest
+        children={props => isGuest ? <InviteScreen {...props} onLogout={onLogout} /> : <ProfileScreen {...props} onLogout={onLogout} />}
         options={{ tabBarIcon: ({ color }) => <User color={color} size={28} /> }}
       />
-      <Tab.Screen
-        name="Options"
-        options={{ tabBarIcon: ({ color }) => <Settings color={color} size={28} /> }}
-      >
-        {(props) => (
-          <OptionsScreen
-            {...props}
-            onLogout={onLogout}
-            userEmail={userEmail}
-            userId={userId}
-          />
-        )}
-      </Tab.Screen>
     </Tab.Navigator>
   );
 }
@@ -89,6 +76,7 @@ function AppContent() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState(null);
   const [userId, setUserId] = useState(null);
+  const [isGuest, setIsGuest] = useState(false);
 
   useEffect(() => {
     async function initApp() {
@@ -127,6 +115,15 @@ function AppContent() {
   }, []);
 
   const handleLogin = async (email, id) => {
+    if (!email && (!id || id === 0)) {
+      // Mode invité
+      setIsGuest(true);
+      setUserEmail(null);
+      setUserId(null);
+      setIsLoggedIn(true);
+      return;
+    }
+    setIsGuest(false);
     await AsyncStorage.setItem("userId", id.toString());
     await AsyncStorage.setItem("userEmail", email);
     setUserEmail(email);
@@ -140,6 +137,7 @@ function AppContent() {
     setIsLoggedIn(false);
     setUserEmail(null);
     setUserId(null);
+    setIsGuest(false);
   };
 
   if (!fontsLoaded) return null;
@@ -169,14 +167,15 @@ function AppContent() {
                   onLogout={handleLogout}
                   userEmail={userEmail}
                   userId={userId}
+                  isGuest={isGuest}
                 />
               )}
             </Stack.Screen>
             <Stack.Screen name="MonCompte">
-              {(props) => <MonCompteScreen {...props} userEmail={userEmail} />}
+              {(props) => <MonCompteScreen {...props} userEmail={userEmail} isGuest={isGuest} />}
             </Stack.Screen>
             <Stack.Screen name="Notifications">
-              {(props) => <NotificationsScreen {...props} userEmail={userEmail} userId={userId} />}
+              {(props) => <NotificationsScreen {...props} userEmail={userEmail} userId={userId} isGuest={isGuest} />}
             </Stack.Screen>
             <Stack.Screen name="Setting" component={SettingScreen} />
             <Stack.Screen name="History" component={HistoryScreen} />

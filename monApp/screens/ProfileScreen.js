@@ -7,8 +7,10 @@ import { fonts } from '../styles/fonts';
 import { Settings, User, UserPen, MapPin, Trash2 } from 'lucide-react-native'; // Ajout de Trash2
 import { ThemeContext } from '../context/ThemeContext';
 
-export default function ProfileScreen({ navigation }) {
+export default function ProfileScreen({ navigation, route, onLogout }) {
   const { colors, name, email } = useContext(ThemeContext);
+  // Détection du mode invité : si pas de name/email ou si userId absent
+  const isGuest = !name || !email || name === 'Invité' || email === '';
   const [history, setHistory] = useState([]);
 
   useFocusEffect(
@@ -17,12 +19,17 @@ export default function ProfileScreen({ navigation }) {
     }, [])
   );
 
+  // Nettoyage de l'historique invité (3 jours max)
   const loadHistory = async () => {
     try {
       const saved = await AsyncStorage.getItem('@fountainHistory');
-      if (saved) {
-        setHistory(JSON.parse(saved));
+      let arr = saved ? JSON.parse(saved) : [];
+      if (isGuest) {
+        const now = Date.now();
+        arr = arr.filter(item => item.timestamp && (now - item.timestamp < 3 * 24 * 60 * 60 * 1000));
+        await AsyncStorage.setItem('@fountainHistory', JSON.stringify(arr));
       }
+      setHistory(arr);
     } catch (error) {
       console.log('Error loading history:', error);
     }
@@ -55,7 +62,7 @@ export default function ProfileScreen({ navigation }) {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}> 
       <View style={[styles.header, { backgroundColor: colors.primary }] }>
         <Text style={styles.headerTitle}>Mon profil</Text>
         <TouchableOpacity
@@ -71,18 +78,27 @@ export default function ProfileScreen({ navigation }) {
           <View style={[styles.circlePlaceholder, { borderColor: colors.primary }]}>
              <User size={100} color={colors.primary} />
           </View>
-          <Text style={[styles.percentage, { color: colors.text }]}>{name || "Utilisateur"}</Text>
-          <Text style={[styles.subText, { color: colors.textSecondary }]}>{email}</Text>
-
-          <TouchableOpacity
-            style={styles.accountLink}
-            onPress={() => navigation.getParent()?.navigate('Account')}
-          >
-            <UserPen color={colors.textSecondary} size={20} />
-            <Text style={[styles.linkText, { color: colors.textSecondary }]}>
-              Paramètres et préférences du compte
-            </Text>
-          </TouchableOpacity>
+          {isGuest ? (
+            <>
+              <Text style={[styles.percentage, { color: colors.text }]}>Invité</Text>
+              <TouchableOpacity style={styles.accountLink} onPress={() => navigation.navigate('Login')}>
+                <Text style={[styles.linkText, { color: colors.primary }]}>Créer un compte</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              {/* Affichage sécurisé : infos utilisateur */}
+              <Text style={[styles.percentage, { color: colors.text }]}>{name || "Utilisateur"}</Text>
+              <Text style={[styles.subText, { color: colors.textSecondary }]}>{email}</Text>
+              <TouchableOpacity
+                style={styles.accountLink}
+                onPress={() => navigation.getParent()?.navigate('MonCompte')}
+              >
+                <UserPen color={colors.textSecondary} size={20} />
+                <Text style={[styles.linkText, { color: colors.textSecondary }]}>Paramètres et préférences du compte</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
 
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
@@ -132,6 +148,15 @@ export default function ProfileScreen({ navigation }) {
           </View>
         )}
 
+        {/* BOUTON DECONNEXION */}
+        {!isGuest && (
+          <TouchableOpacity
+            style={styles.logoutButton}
+            onPress={onLogout}
+          >
+            <Text style={styles.logoutText}>Se déconnecter</Text>
+          </TouchableOpacity>
+        )}
         <View style={{ height: 100 }} />
       </ScrollView>
     </View>
@@ -176,5 +201,21 @@ const styles = StyleSheet.create({
   },
 
   emptyContainer: { width: '100%', alignItems: 'center', marginTop: 20 },
-  emptyText: { fontSize: 14, fontFamily: fonts.inter, textAlign: 'center' }
+  emptyText: { fontSize: 14, fontFamily: fonts.inter, textAlign: 'center' },
+  logoutButton: {
+    backgroundColor: '#FF4747',
+    borderRadius: 15,
+    height: 55,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 30,
+    marginHorizontal: 30,
+    elevation: 4,
+  },
+  logoutText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '700',
+    fontFamily: fonts.inter,
+  }
 });

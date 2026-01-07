@@ -83,7 +83,7 @@ const LoginScreen = ({ navigation, onLogin  }) => {
                 />
             </View>
 
-            <View style={styles.bottomWhite}>
+            <View style={[styles.bottomWhite, { backgroundColor: '#FFF' }]}> 
                 <Text style={styles.title}>
                     Se connecter
                 </Text>
@@ -96,12 +96,16 @@ const LoginScreen = ({ navigation, onLogin  }) => {
                             keyboardType="email-address"
                             value={email}
                             onChangeText={setEmail}
+                            style={{ backgroundColor: '#FFF', color: '#222', borderColor: '#E0E0E0', textAlign: 'left' }}
+                            placeholderTextColor="#888"
                         />
                         <CustomInput
                             placeholder="Mot de passe"
                             secureTextEntry={true}
                             value={password}
                             onChangeText={setPassword}
+                            style={{ backgroundColor: '#FFF', color: '#222', borderColor: '#E0E0E0', textAlign: 'left' }}
+                            placeholderTextColor="#888"
                         />
 
                         <TouchableOpacity onPress={() => console.log('Mot de passe oublié')} style={{width: '100%'}}>
@@ -117,11 +121,17 @@ const LoginScreen = ({ navigation, onLogin  }) => {
                         </TouchableOpacity>
                     </View>
 
-                    <View style={{ width: '100%', justifyContent: 'center', alignItems: 'center', gap: 80 }}>
+                    <View style={{ width: '100%', justifyContent: 'center', alignItems: 'center', gap: 24 }}>
                         <CustomButton
                             title="Se connecter"
                             onPress={handleLogin}
                         />
+
+                        <TouchableOpacity onPress={() => onLogin('', 0)}>
+                            <Text style={styles.guestLink}>
+                                Continuer en tant qu'invité
+                            </Text>
+                        </TouchableOpacity>
 
                         <TouchableOpacity onPress={() => navigation.navigate('Inscription')}>
                             <Text style={styles.smallLink}>
@@ -174,6 +184,14 @@ const styles = StyleSheet.create({
         fontSize: 14,
         marginTop: 5,
         fontWeight: '600'
+    }
+    ,
+    guestLink: {
+        color: '#666',
+        fontSize: 14,
+        marginTop: 2,
+        fontWeight: '600',
+        textDecorationLine: 'underline'
     }
 });
 
