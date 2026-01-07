@@ -13,7 +13,6 @@ import * as Location from "expo-location";
 import { showLocation } from "react-native-map-link";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { PRIMARY_BLUE, WHITE } from "../styles/baseStyles";
 import { fonts } from "../styles/fonts";
 import { ThemeContext } from "../context/ThemeContext";
 
@@ -28,10 +27,10 @@ export default function FontainesScreen() {
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState(null);
   const [selectedFontaine, setSelectedFontaine] = useState(null);
-  
+
   const mapRef = useRef(null);
 
-  // Fonction pour calculer la distance entre deux points
+  // Calcul de distance
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371;
     const dLat = (lat2 - lat1) * (Math.PI / 180);
@@ -46,7 +45,6 @@ export default function FontainesScreen() {
 
   useEffect(() => {
     (async () => {
-      // Demande de permission de géolocalisation
       let { status } = await Location.requestForegroundPermissionsAsync();
       let currentUserLoc = null;
 
@@ -57,7 +55,6 @@ export default function FontainesScreen() {
       }
 
       try {
-        // Récupération des données Open Data Paris avec timeout et moins de lignes pour accélérer
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 8000);
         const res = await fetch("https://opendata.paris.fr/api/records/1.0/search/?dataset=fontaines-a-boire&rows=30", { signal: controller.signal });
@@ -65,9 +62,7 @@ export default function FontainesScreen() {
         const data = await res.json();
         let cleanData = (data.records || []).filter(item => item?.fields?.geo_point_2d);
 
-        // Tri par distance si la localisation est disponible
         if (currentUserLoc) {
-
           cleanData = cleanData.map((f) => ({
             ...f,
             distanceKm: calculateDistance(currentUserLoc.latitude, currentUserLoc.longitude, f.fields.geo_point_2d[0], f.fields.geo_point_2d[1])
@@ -84,17 +79,15 @@ export default function FontainesScreen() {
     })();
   }, []);
 
-  // Gestion de la recherche
   const handleSearch = (text) => {
     setSearchText(text);
-    const filtered = fontaines.filter(f => 
-      (f.fields.nom || "").toLowerCase().includes(text.toLowerCase()) || 
+    const filtered = fontaines.filter(f =>
+      (f.fields.nom || "").toLowerCase().includes(text.toLowerCase()) ||
       (f.fields.voie || "").toLowerCase().includes(text.toLowerCase())
     );
     setFilteredFontaines(filtered);
   };
 
-  // Centrer la carte sur une fontaine
   const focusOnFontaine = (f) => {
     setSelectedFontaine(f);
     mapRef.current?.animateCamera({
@@ -103,33 +96,35 @@ export default function FontainesScreen() {
     }, { duration: 800 });
   };
 
-  // Ouvrir l'application de navigation externe
+  // --- FONCTION MAJ : SAUVEGARDE HISTORIQUE + NAVIGATION ---
   const openExternalMaps = async () => {
     if (!selectedFontaine) return;
-    
-    // Sauvegarder dans l'historique
+
     try {
       const historyItem = {
-        name: selectedFontaine.fields.nom || 'Fontaine à boire',
+        name: selectedFontaine.fields.nom || selectedFontaine.fields.type_objet || 'Fontaine à boire',
         location: selectedFontaine.fields.voie || 'Paris',
         date: new Date().toISOString(),
         latitude: selectedFontaine.fields.geo_point_2d[0],
         longitude: selectedFontaine.fields.geo_point_2d[1],
       };
-      
+
       const saved = await AsyncStorage.getItem('@fountainHistory');
       let history = saved ? JSON.parse(saved) : [];
-      
-      // Éviter les doublons : ne garder que les 50 derniers
+
+      // Suppression de l'entrée si elle existe déjà (pour la faire remonter en haut)
       history = history.filter(h => h.name !== historyItem.name || h.location !== historyItem.location);
+
+      // Ajout au début et limite à 20 entrées
       history.unshift(historyItem);
-      history = history.slice(0, 50);
-      
+      history = history.slice(0, 20);
+
       await AsyncStorage.setItem('@fountainHistory', JSON.stringify(history));
     } catch (e) {
       console.log('Erreur sauvegarde historique', e);
     }
-    
+
+    // Ouverture de l'application GPS
     showLocation({
       latitude: selectedFontaine.fields.geo_point_2d[0],
       longitude: selectedFontaine.fields.geo_point_2d[1],
@@ -138,11 +133,8 @@ export default function FontainesScreen() {
     });
   };
 
-  // Always render the main UI immediately; show an overlay spinner while loading
-
   return (
     <View style={{ flex: 1, backgroundColor: colors.primary }}>
-      {/* PARTIE CARTE */}
       <View style={styles.topBlue}>
         <MapView
           ref={mapRef}
@@ -153,7 +145,7 @@ export default function FontainesScreen() {
             latitude: 48.8566, longitude: 2.3522,
             latitudeDelta: 0.05, longitudeDelta: 0.05,
           }}
-          onPress={() => setSelectedFontaine(null)} // Ferme les détails au clic sur la carte
+          onPress={() => setSelectedFontaine(null)}
         >
           {filteredFontaines.map((f) => (
             <Marker
@@ -165,17 +157,17 @@ export default function FontainesScreen() {
         </MapView>
       </View>
 
-      {/* PARTIE BLANCHE (LISTE OU DÉTAILS) */}
       <View style={[styles.bottomWhite, { backgroundColor: colors.background }]}>
         {!selectedFontaine ? (
-          /* AFFICHAGE DE LA LISTE */
           <>
-            <CustomInput 
-              placeholder="Rechercher un point d'eau" 
-              value={searchText} 
-              onChangeText={handleSearch} 
+            <CustomInput
+              placeholder="Rechercher un point d'eau"
+              value={searchText}
+              onChangeText={handleSearch}
             />
-            <Text style={[styles.countText, { color: colors.text }]}>{filteredFontaines.length} points d'eau trouvés</Text>
+            <Text style={[styles.countText, { color: colors.text }]}>
+              {filteredFontaines.length} points d'eau trouvés
+            </Text>
             <ScrollView contentContainerStyle={styles.listContainer} showsVerticalScrollIndicator={false}>
               {filteredFontaines.map((f, index) => (
                 <FountainTab
@@ -191,26 +183,33 @@ export default function FontainesScreen() {
             </ScrollView>
           </>
         ) : (
-          /* AFFICHAGE DES DÉTAILS DE LA FONTAINE SÉLECTIONNÉE */
           <View style={[styles.detailContainer, { backgroundColor: colors.background }]}>
             <View style={[styles.handle, { backgroundColor: colors.border }]} />
-            <Text style={[styles.detailTitle, { color: colors.text }]}>{selectedFontaine.fields.nom || "Fontaine à boire"}</Text>
-            <Text style={[styles.detailSub, { color: colors.textSecondary }]}>{selectedFontaine.fields.voie}, Paris</Text>
-            
-            {/* Rectangle gris pour l'image */}
+            <Text style={[styles.detailTitle, { color: colors.text }]}>
+              {selectedFontaine.fields.nom || "Fontaine à boire"}
+            </Text>
+            <Text style={[styles.detailSub, { color: colors.textSecondary }]}>
+              {selectedFontaine.fields.voie}, Paris
+            </Text>
+
             <View style={[styles.imagePlaceholder, { backgroundColor: colors.surface }]} />
-            
-            <TouchableOpacity style={[styles.mainButton, { backgroundColor: colors.primary, shadowColor: colors.primary }]} onPress={openExternalMaps}>
+
+            <TouchableOpacity
+              style={[styles.mainButton, { backgroundColor: colors.primary }]}
+              onPress={openExternalMaps}
+            >
               <Text style={[styles.mainButtonText, { color: colors.surface }]}>Faire l'itinéraire</Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity onPress={() => setSelectedFontaine(null)} style={{marginTop: 15, paddingVertical: 8}}>
-              <Text style={{color: colors.primary, fontFamily: fonts.inter, fontWeight: '600'}}>Retour à la liste</Text>
+              <Text style={{color: colors.primary, fontFamily: fonts.inter, fontWeight: '600'}}>
+                Retour à la liste
+              </Text>
             </TouchableOpacity>
           </View>
         )}
       </View>
-      {/* Loading overlay (non bloquant) */}
+
       {loading && (
         <View style={styles.loadingOverlay} pointerEvents="none">
           <ActivityIndicator size="large" color={colors.primary} />
@@ -221,57 +220,30 @@ export default function FontainesScreen() {
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
   topBlue: { height: "55%" },
-  bottomWhite: { 
-    height: "55%", 
-    padding: 20, 
-    borderTopLeftRadius: 40, 
-    borderTopRightRadius: 40, 
-    gap: 15, 
+  bottomWhite: {
+    height: "55%",
+    padding: 20,
+    borderTopLeftRadius: 40,
+    borderTopRightRadius: 40,
+    gap: 15,
     marginTop: -40,
   },
-  listContainer: {
-    paddingBottom: 100,
-    gap: 15,
-    width: '100%'
-  },
+  listContainer: { paddingBottom: 100, gap: 15, width: '100%' },
   countText: { fontSize: 14, textAlign: "center", fontFamily: fonts.inter },
-  
-  // Styles pour la vue détails
   detailContainer: { alignItems: 'center', width: '100%' },
   handle: { width: 40, height: 5, borderRadius: 10, marginBottom: 15 },
   detailTitle: { fontFamily: fonts.bricolageGrotesque, fontSize: 22, fontWeight: '800', textAlign: 'center' },
   detailSub: { fontFamily: fonts.inter, marginBottom: 20 },
-  imagePlaceholder: { 
-    width: '100%', 
-    height: 150, 
-    borderRadius: 20, 
-    marginBottom: 20 
+  imagePlaceholder: { width: '100%', height: 150, borderRadius: 20, marginBottom: 20 },
+  mainButton: {
+    width: '100%', height: 55, borderRadius: 15,
+    justifyContent: 'center', alignItems: 'center',
+    elevation: 4, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5,
   },
-  mainButton: { 
-    backgroundColor: PRIMARY_BLUE, 
-    width: '100%', 
-    height: 55, 
-    borderRadius: 15, 
-    justifyContent: 'center', 
-    alignItems: 'center',
-    shadowColor: PRIMARY_BLUE,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 5,
-  },
-  mainButtonText: { color: WHITE, fontFamily: fonts.inter, fontSize: 18, fontWeight: '700' }
-  ,
+  mainButtonText: { fontFamily: fonts.inter, fontSize: 18, fontWeight: '700' },
   loadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.25)'
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.1)'
   }
 });
