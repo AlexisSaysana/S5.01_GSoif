@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles';
 import { fonts } from '../styles/fonts';
 
@@ -133,8 +132,8 @@ const LoginScreen = ({ navigation, onLogin  }) => {
                 </View>
             </View>
         </View>
-    );
-};
+    </View>
+);
 
 const styles = StyleSheet.create({
     topBlue: {

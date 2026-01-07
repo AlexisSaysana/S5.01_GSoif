@@ -1,13 +1,18 @@
 import { TextInput, StyleSheet } from 'react-native';
+import { useContext } from 'react';
 import { fonts } from '../styles/fonts';
+import { ThemeContext } from '../context/ThemeContext';
 
-const CustomInput = (props) => (
+const CustomInput = (props) => {
+    const { colors } = useContext(ThemeContext);
+    return (
     <TextInput
-        style={styles.input}
-        placeholderTextColor="#575757"
+        style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+        placeholderTextColor={colors.textSecondary}
         {...props}
     />
 );
+};
 
 const styles = StyleSheet.create({
     input: {
@@ -15,9 +20,7 @@ const styles = StyleSheet.create({
         paddingVertical: 15,
         paddingHorizontal: 30,
         borderWidth: 1,
-        borderColor: '#D9D9D9',
         borderRadius: 15,
-        backgroundColor: '#F5F5F5',
         fontSize: 16,
         fontFamily: fonts.inter,
     },
