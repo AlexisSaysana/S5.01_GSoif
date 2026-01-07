@@ -1,4 +1,5 @@
-import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { useState } from 'react';
+import { View, Text, Image, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles';
 import { fonts } from '../styles/fonts';
 
@@ -65,7 +66,7 @@ const LoginScreen = ({ navigation, onLogin  }) => {
         await AsyncStorage.setItem("userId", id.toString());
         await AsyncStorage.setItem("userEmail", email);
 
-        
+
 
     } catch (error) {
         console.log("🔥 Erreur FETCH :", error);
@@ -81,7 +82,7 @@ const LoginScreen = ({ navigation, onLogin  }) => {
                     source={require('../assets/icon-light.png')}
                 />
             </View>
-            
+
             <View style={styles.bottomWhite}>
                 <Text style={styles.title}>
                     Se connecter
@@ -113,15 +114,15 @@ const LoginScreen = ({ navigation, onLogin  }) => {
                             }}>
                                 Mot de passe oublié ?
                             </Text>
-                        </TouchableOpacity> 
+                        </TouchableOpacity>
                     </View>
 
                     <View style={{ width: '100%', justifyContent: 'center', alignItems: 'center', gap: 80 }}>
-                        <CustomButton 
-                            title="Se connecter" 
+                        <CustomButton
+                            title="Se connecter"
                             onPress={handleLogin}
                         />
-                        
+
                         <TouchableOpacity onPress={() => navigation.navigate('Inscription')}>
                             <Text style={styles.smallLink}>
                                 Je n'ai pas de compte
@@ -132,8 +133,8 @@ const LoginScreen = ({ navigation, onLogin  }) => {
                 </View>
             </View>
         </View>
-    </View>
-);
+    );
+};
 
 const styles = StyleSheet.create({
     topBlue: {
