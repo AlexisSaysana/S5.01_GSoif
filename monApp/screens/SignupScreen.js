@@ -57,8 +57,9 @@ const SignupScreen = ({ navigation, onLogin }) => {
         return Alert.alert("Erreur", "Une erreur est survenue");
       }
 
-      Alert.alert("Succès", "Compte créé avec succès !");
-      onLogin(email);
+      Alert.alert("Succès", "Compte créé avec succès !", [
+        { text: "OK", onPress: () => navigation.navigate('Login') }
+      ]);
 
     } catch (error) {
       console.log(error);
