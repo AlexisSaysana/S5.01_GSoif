@@ -56,7 +56,6 @@ export default function FontainesScreen() {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 10000);
 
-        // Correction : Utilisation du dataset correct pour les commerces
         const urlFontaines = "https://opendata.paris.fr/api/records/1.0/search/?dataset=fontaines-a-boire&rows=50";
         const urlCommerces = "https://opendata.paris.fr/api/records/1.0/search/?dataset=commerces-eau-de-paris&rows=50";
 
@@ -69,22 +68,25 @@ export default function FontainesScreen() {
         const dataC = await resC.json();
         clearTimeout(timeout);
 
-        // Normalisation Fontaines (Champ: nom / voie)
+        // Nettoyage Fontaines
         const cleanF = (dataF.records || []).map(item => ({
           id: item.recordid,
           name: item.fields.nom || item.fields.type_objet || "Fontaine à boire",
           address: item.fields.voie || "Paris",
           coords: item.fields.geo_point_2d,
-          type: 'fontaine'
+          type: 'fontaine',
+          isAvailable: item.fields.dispo === "OUI",
+          motif: item.fields.motif_ind || "Fermeture saisonnière"
         }));
 
-        // Normalisation Commerces (Champ: nom_du_commerce / adresse)
+        // Nettoyage Commerces
         const cleanC = (dataC.records || []).map(item => ({
           id: item.recordid,
           name: item.fields.nom_commerce || "Commerce partenaire",
           address: item.fields.nom_voie || "Paris",
           coords: item.fields.geo_point_2d,
-          type: 'commerce'
+          type: 'commerce',
+          isAvailable: true
         }));
 
         let allPoints = [...cleanF, ...cleanC];
@@ -126,23 +128,29 @@ export default function FontainesScreen() {
   const openExternalMaps = async () => {
     if (!selectedPoint) return;
 
+    // SAUVEGARDE DANS L'HISTORIQUE (Relié au Profil)
     try {
       const historyItem = {
+        id: selectedPoint.id + Date.now(),
         name: selectedPoint.name,
         location: selectedPoint.address,
+        type: selectedPoint.type,
         date: new Date().toISOString(),
-        type: selectedPoint.type
       };
 
       const saved = await AsyncStorage.getItem('@fountainHistory');
       let history = saved ? JSON.parse(saved) : [];
-      history = history.filter(h => h.name !== historyItem.name);
+
+      // On évite les doublons de nom dans l'historique
+      history = history.filter(h => h.name !== selectedPoint.name);
       history.unshift(historyItem);
+
       await AsyncStorage.setItem('@fountainHistory', JSON.stringify(history.slice(0, 20)));
     } catch (e) {
       console.log('Erreur historique:', e);
     }
 
+    // OUVERTURE GPS
     showLocation({
       latitude: selectedPoint.coords[0],
       longitude: selectedPoint.coords[1],
@@ -168,7 +176,7 @@ export default function FontainesScreen() {
             <Marker
               key={p.id}
               coordinate={{ latitude: p.coords[0], longitude: p.coords[1] }}
-              pinColor={p.type === 'fontaine' ? colors.primary : '#4CAF50'}
+              pinColor={!p.isAvailable ? '#B0B0B0' : (p.type === 'fontaine' ? colors.primary : '#4CAF50')}
               onPress={() => setSelectedPoint(p)}
             />
           ))}
@@ -186,7 +194,8 @@ export default function FontainesScreen() {
 
             <ScrollView contentContainerStyle={styles.listContainer} showsVerticalScrollIndicator={false}>
               {filteredPoints.map((p, index) => (
-                <View key={p.id} style={{ width: '100%' }}>
+                <View key={p.id} style={styles.itemWrapper}>
+                  {/* Badge de Type au-dessus du Tab */}
                   <View style={[
                     styles.badge,
                     { backgroundColor: p.type === 'fontaine' ? colors.primary : '#4CAF50' }
@@ -201,6 +210,8 @@ export default function FontainesScreen() {
                     location={p.address}
                     distance={p.distanceKm ? (p.distanceKm < 1 ? `${(p.distanceKm * 1000).toFixed(0)} m` : `${p.distanceKm.toFixed(1)} km`) : "—"}
                     time={p.distanceKm ? `${Math.round(p.distanceKm * 12)} min` : "—"}
+                    isAvailable={p.isAvailable}
+                    motif={p.motif}
                     nearest={index === 0 && !searchText}
                     onPress={() => focusOnPoint(p)}
                   />
@@ -212,15 +223,25 @@ export default function FontainesScreen() {
           <View style={[styles.detailContainer, { backgroundColor: colors.background }]}>
             <View style={[styles.handle, { backgroundColor: colors.border }]} />
 
-            <View style={[styles.badgeDetail, { backgroundColor: selectedPoint.type === 'fontaine' ? colors.primary : '#4CAF50' }]}>
-                <Text style={styles.badgeText}>{selectedPoint.type === 'fontaine' ? 'FONTAINE À BOIRE' : 'COMMERCE PARTENAIRE'}</Text>
+            <View style={[styles.badge, { backgroundColor: selectedPoint.type === 'fontaine' ? colors.primary : '#4CAF50', marginBottom: 10, marginLeft: 0 }]}>
+              <Text style={styles.badgeText}>{selectedPoint.type === 'fontaine' ? 'FONTAINE' : 'COMMERCE'}</Text>
             </View>
 
             <Text style={[styles.detailTitle, { color: colors.text }]}>{selectedPoint.name}</Text>
             <Text style={[styles.detailSub, { color: colors.textSecondary }]}>{selectedPoint.address}</Text>
 
-            <TouchableOpacity style={[styles.mainButton, { backgroundColor: colors.primary }]} onPress={openExternalMaps}>
-              <Text style={[styles.mainButtonText, { color: 'white' }]}>Itinéraire</Text>
+            {!selectedPoint.isAvailable && (
+                 <Text style={styles.motifTextDetail}>Ce point d'eau est actuellement indisponible.</Text>
+            )}
+
+            <TouchableOpacity
+              disabled={!selectedPoint.isAvailable}
+              style={[styles.mainButton, { backgroundColor: selectedPoint.isAvailable ? colors.primary : colors.border }]}
+              onPress={openExternalMaps}
+            >
+              <Text style={[styles.mainButtonText, { color: 'white' }]}>
+                {selectedPoint.isAvailable ? "Itinéraire" : "Indisponible"}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => setSelectedPoint(null)} style={{marginTop: 20}}>
@@ -250,22 +271,22 @@ const styles = StyleSheet.create({
     marginTop: -40,
   },
   listContainer: { paddingBottom: 100, gap: 20, width: '100%' },
+  itemWrapper: { width: '100%' },
   badge: {
     alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
     marginBottom: -12,
-    marginLeft: 12,
+    marginLeft: 15,
     zIndex: 10,
-    elevation: 2,
   },
-  badgeDetail: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 10, marginBottom: 10 },
-  badgeText: { color: 'white', fontSize: 10, fontWeight: '900', letterSpacing: 0.5 },
+  badgeText: { color: 'white', fontSize: 10, fontWeight: '900' },
   detailContainer: { alignItems: 'center', width: '100%' },
   handle: { width: 40, height: 5, borderRadius: 10, marginBottom: 15 },
   detailTitle: { fontFamily: fonts.bricolageGrotesque, fontSize: 24, fontWeight: '800', textAlign: 'center', marginBottom: 5 },
-  detailSub: { fontFamily: fonts.inter, fontSize: 16, marginBottom: 25, textAlign: 'center', opacity: 0.8 },
+  detailSub: { fontFamily: fonts.inter, fontSize: 16, marginBottom: 15, textAlign: 'center', opacity: 0.8 },
+  motifTextDetail: { fontFamily: fonts.inter, color: '#FF5252', fontSize: 14, marginBottom: 20, fontStyle: 'italic' },
   mainButton: { width: '100%', height: 55, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
   mainButtonText: { fontSize: 18, fontWeight: '700' },
   loadingOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.7)' }
