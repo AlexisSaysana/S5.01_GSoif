@@ -10,6 +10,7 @@ import {
   Modal,
   Linking
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { 
   ChevronLeft, 
   Moon, 
@@ -38,13 +39,32 @@ export default function SettingsScreen({ navigation, onLogout, userEmail }) {
   const unitOptions = ['mL', 'cL', 'L', 'oz'];
 
   // --- Actions ---
-  const handleDeleteHistory = () => {
+  const handleDeleteHistory = async () => {
     Alert.alert(
       "Supprimer l'historique",
       "Êtes-vous sûr ? Cette action est irréversible.",
       [
         { text: "Annuler", style: "cancel" },
-        { text: "Supprimer", style: "destructive", onPress: () => console.log("Supprimé") }
+        { 
+          text: "Supprimer", 
+          style: "destructive", 
+          onPress: async () => {
+            try {
+              await AsyncStorage.removeItem('@fountainHistory');
+              // Naviguer vers le tab Profil et forcer le refresh
+              navigation.navigate('Main', { 
+                screen: 'Profil',
+                params: { refresh: Date.now() }
+              });
+              setTimeout(() => {
+                Alert.alert("Succès", "Historique supprimé avec succès");
+              }, 300);
+            } catch (error) {
+              console.log('Error deleting history:', error);
+              Alert.alert("Erreur", "Impossible de supprimer l'historique");
+            }
+          }
+        }
       ]
     );
   };

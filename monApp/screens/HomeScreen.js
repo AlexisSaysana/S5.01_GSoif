@@ -1,10 +1,10 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { Keyboard, TouchableWithoutFeedback } from 'react-native';
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles';
 import { fonts } from '../styles/fonts';
-import { Settings } from 'lucide-react-native';
+import { Settings, Droplet } from 'lucide-react-native';
 import { ThemeContext } from '../context/ThemeContext';
 import ProgressCircle from '../components/ProgressCircle';
 import CustomInput from '../components/CustomInput';
@@ -63,142 +63,90 @@ export default function ProfileScreen({ navigation }) {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* HEADER */}
-      <View style={[styles.header, { backgroundColor: colors.primary }] }>
+      <View style={[styles.header, { backgroundColor: colors.primary }]}>
         <Text style={styles.headerTitle}>Votre progression</Text>
         <TouchableOpacity 
-                  style={styles.settingsButton} 
-                  onPress={() => navigation.getParent()?.navigate('Setting')}
-                >
-                  <Settings color="white" size={30} />
-                </TouchableOpacity>
+          style={styles.settingsButton} 
+          onPress={() => navigation.getParent()?.navigate('Setting')}
+        >
+          <Settings color="white" size={30} />
+        </TouchableOpacity>
       </View>
-      <ScrollView contentContainerStyle={[styles.content, {marginTop: margin}]}>
-        <View style={styles.progressContainer}>
+
+      {/* CONTENU PRINCIPAL */}
+      <View style={styles.content}>
+        
+        {/* CERCLE DE PROGRESSION */}
+        <View style={styles.progressSection}>
           <ProgressCircle
-            size={210}
-            strokeWidth={12}
+            size={180}
+            strokeWidth={14}
             color={colors.primary}
             backgroundColor={colors.secondary}
             progress={progression > 1 ? 1 : progression}
           >
-            <Image 
-              source={isDarkMode ? require('../assets/bottle_icon_white.png') : require('../assets/bottle_icon.png')}
-              style={styles.bottleIcon} 
-            />
+            <Droplet size={50} color={colors.primary} fill={colors.primary} />
             <Text style={[styles.percentage, { color: colors.text }]}>{Math.round(progression * 100)}%</Text>
           </ProgressCircle>
-            <Text style={[styles.subText, { color: colors.textSecondary }]}>{`Vous avez bu ${displayForUnit(completed)} sur ${displayForUnit(dailyGoal)} aujourd'hui !`}</Text>          
-        </View>
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <View
-            style={
-              {
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center',
-                  width: '100%',
-                  paddingHorizontal: 20,
-                  gap: 12,
-              }
-            }
-        >
-          <View
-            style={
-              {
-                display: 'flex',
-                flexDirection: 'row',
-                justifyContent: 'center',
-                alignItems: 'center',
-                gap: 10,
-              }
-            }
-          >
-          <Select
-            options={options}
-            value={selectedOption}
-            onChange={setSelectedOption}
-          />
-          <Text style={{ color: colors.textSecondary }}>
-            une quantité d'eau
-          </Text>
-          </View>
-            <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 10 }}>
-              {([100, 250, 500]).map((amt) => (
-                <QuickAddButton
-                  style={{opacity: buttonOpacity, backgroundColor: actionColor}}
-                  key={String(amt)}
-                  title={`${sign + displayForUnit(amt).replace(' ', '')}`}
-                  onPress={async () => {
-                    const delta = isAddMode ? amt : -amt;
-                    const newVal = Math.max(0, completed + delta);
-                    setCompleted(newVal);
-                    await AsyncStorage.setItem('@dailyCompleted', String(newVal));
-                  }}
-                />
-              ))}
+          
+          <View style={styles.statsRow}>
+            <View style={styles.statBox}>
+              <Text style={[styles.statValue, { color: colors.primary }]}>{displayForUnit(completed)}</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Consommé</Text>
             </View>
-          <View style={
-          {
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              gap: 10,
-              marginTop: 8,
-          }
-        }>
-          <View
-            style={
-              {
-                display: 'flex',
-                flexDirection: 'row',
-                justifyContent: 'center',
-                alignItems: 'center',
-                  gap: 8,
-              }
-            }
-          >
-            <CustomInput
-              placeholder="Quantité"
-              width={220}
+            <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+            <View style={styles.statBox}>
+              <Text style={[styles.statValue, { color: colors.textSecondary }]}>{displayForUnit(dailyGoal)}</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Objectif</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* ACTIONS RAPIDES */}
+        <View style={[styles.actionSection, { backgroundColor: colors.surface }]}>
+          <View style={styles.selectRow}>
+            <Select
+              options={options}
+              value={selectedOption}
+              onChange={setSelectedOption}
+            />
+            <Text style={[styles.actionLabel, { color: colors.textSecondary }]}>
+              une quantité d'eau
+            </Text>
+          </View>
+          
+          <View style={[styles.sectionDivider, { backgroundColor: colors.border }]} />
+          
+          <Text style={[styles.sectionSubtitle, { color: colors.text }]}>Raccourcis</Text>
+          
+          <View style={styles.quickButtonsRow}>
+            {([100, 250, 500]).map((amt) => (
+              <QuickAddButton
+                style={{ opacity: buttonOpacity, backgroundColor: actionColor }}
+                key={String(amt)}
+                title={`${sign}${displayForUnit(amt).replace(' ', '')}`}
+                onPress={async () => {
+                  const delta = isAddMode ? amt : -amt;
+                  const newVal = Math.max(0, completed + delta);
+                  setCompleted(newVal);
+                  await AsyncStorage.setItem('@dailyCompleted', String(newVal));
+                }}
+              />
+            ))}
+          </View>
+
+          <View style={[styles.sectionDivider, { backgroundColor: colors.border }]} />
+          
+          <Text style={[styles.sectionSubtitle, { color: colors.text }]}>Quantité personnalisée</Text>
+
+          <View style={styles.customInputRow}>
+            <View style={{ flex: 1 }}>
+              <CustomInput
+                placeholder="Entrez une quantité"
                 keyboardType='numeric'
                 value={customAmount}
                 onChangeText={setCustomAmount}
-                onFocus={() => setMargin(-100)}
-                onBlur={() => setMargin(0)}
-                onSubmitEditing={() => Keyboard.dismiss()}
-            />
-          <View
-              style={
-                {
-                  display: 'flex',
-                  flexDirection: 'row',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  height: 30,
-                }
-              }
-            >
-              <Text
-                style={
-                  {
-                    color: colors.text,
-                    fontSize: 16,
-                    fontWeight: 'bold',
-                  }
-                }
-              >
-                {unit}
-              </Text>
-            </View>
-          </View>
-        </View>
-          <View style={{ width: '100%', paddingHorizontal: 20 }}>
-            <CustomButton
-              title={selectedOption}
-              backgroundColor={actionColor}
-              onPress={async () => {
-                  // Convert customAmount (assumed in current unit) to mL
+                onSubmitEditing={() => {
                   let val = parseFloat(customAmount.replace(',', '.')) || 0;
                   let toAdd = 0;
                   if (unit === 'L') toAdd = Math.round(val * 1000);
@@ -208,15 +156,34 @@ export default function ProfileScreen({ navigation }) {
                   const delta = isAddMode ? toAdd : -toAdd;
                   const newVal = Math.max(0, completed + delta);
                   setCompleted(newVal);
-                  await AsyncStorage.setItem('@dailyCompleted', String(newVal));
+                  AsyncStorage.setItem('@dailyCompleted', String(newVal));
                   setCustomAmount('');
                   Keyboard.dismiss();
                 }}
-              style={{ paddingVertical: 12, opacity: buttonOpacity}}
-            />
+              />
+            </View>
+            <TouchableOpacity 
+              style={[styles.customButton, { backgroundColor: actionColor, opacity: buttonOpacity }]}
+              onPress={async () => {
+                let val = parseFloat(customAmount.replace(',', '.')) || 0;
+                let toAdd = 0;
+                if (unit === 'L') toAdd = Math.round(val * 1000);
+                else if (unit === 'cL') toAdd = Math.round(val * 10);
+                else if (unit === 'oz') toAdd = Math.round(val * 29.5735);
+                else toAdd = Math.round(val);
+                const delta = isAddMode ? toAdd : -toAdd;
+                const newVal = Math.max(0, completed + delta);
+                setCompleted(newVal);
+                await AsyncStorage.setItem('@dailyCompleted', String(newVal));
+                setCustomAmount('');
+                Keyboard.dismiss();
+              }}
+            >
+              <Text style={styles.customButtonText}>{unit}</Text>
+            </TouchableOpacity>
           </View>
         </View>
-      </ScrollView>
+      </View>
     </View>
   );
 }
@@ -232,26 +199,123 @@ const styles = StyleSheet.create({
     paddingTop: 40
   },
   settingsButton: { position: 'absolute', right: 20, paddingTop: 40 },
-  headerTitle: { color: 'white', fontSize: 22, fontFamily: fonts.bricolageGrotesque, fontWeight: '700' },
-  content: { padding: 20, alignItems: 'center' },
-  progressContainer: { marginTop: 20, alignItems: 'center' },
-  circlePlaceholder: { 
-    width: 140, height: 140, borderRadius: 70, 
-    borderWidth: 8, 
-    justifyContent: 'center',alignItems: 'center' 
+  headerTitle: { 
+    color: 'white', 
+    fontSize: 22, 
+    fontFamily: fonts.bricolageGrotesque, 
+    fontWeight: '700' 
   },
-  bottleIcon: { width: 60, height: 80, resizeMode: 'contain' },
-  percentage: { fontSize: 40, fontWeight: 'bold', fontFamily: fonts.bricolageGrotesque },
-  subText: { marginTop: 12, fontFamily: fonts.inter },
-  divider: { width: '100%', height: 1, marginVertical: 30 },
-  sectionTitle: { alignSelf: 'flex-start', fontSize: 18, fontWeight: '700', marginBottom: 20, fontFamily: fonts.bricolageGrotesque },
-  historyItem: { 
-    flexDirection: 'row', width: '100%', padding: 15, 
-    borderRadius: 20, marginBottom: 15, alignItems: 'center',
-    elevation: 3, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10
+  content: { 
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    justifyContent: 'center',
+    paddingBottom: 100,
+    gap: 40,
   },
-  blueDot: { width: 15, height: 15, borderRadius: 10, backgroundColor: '#64B5F6', marginRight: 15 },
-  locationName: { fontSize: 16, fontWeight: '600', fontFamily: fonts.inter },
-  locationCity: { fontSize: 12, fontFamily: fonts.inter },
-  emptyText: { fontSize: 14, fontFamily: fonts.inter, marginTop: 10 }
+  progressSection: {
+    alignItems: 'center',
+    gap: 25,
+  },
+  percentage: { 
+    fontSize: 36, 
+    fontWeight: 'bold', 
+    fontFamily: fonts.bricolageGrotesque,
+    marginTop: 8,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    width: '100%',
+    paddingHorizontal: 30,
+  },
+  statBox: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    fontFamily: fonts.bricolageGrotesque,
+  },
+  statLabel: {
+    fontSize: 13,
+    fontFamily: fonts.inter,
+    marginTop: 4,
+  },
+  statDivider: {
+    width: 1,
+    height: 40,
+    marginHorizontal: 15,
+  },
+  actionSection: {
+    borderRadius: 25,
+    padding: 20,
+    gap: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  selectRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  actionLabel: {
+    fontSize: 15,
+    fontFamily: fonts.inter,
+  },
+  sectionDivider: {
+    height: 1,
+    width: '100%',
+    marginVertical: 4,
+  },
+  sectionSubtitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    fontFamily: fonts.inter,
+    marginTop: 4,
+  },
+  quickButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: 4,
+  },
+  customInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  customButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 17,
+    borderRadius: 12,
+    minWidth: 70,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  customButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '700',
+    fontFamily: fonts.inter,
+  },
+  unitBox: {
+    paddingHorizontal: 15,
+    paddingVertical: 15,
+    borderRadius: 12,
+    minWidth: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  unitText: {
+    fontSize: 16,
+    fontWeight: '700',
+    fontFamily: fonts.inter,
+  },
 });

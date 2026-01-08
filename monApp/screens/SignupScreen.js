@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles';
 import { fonts } from '../styles/fonts';
-import { ChevronLeft } from 'lucide-react-native';
+import { ChevronLeft, User, Mail, Lock, Eye, EyeOff } from 'lucide-react-native';
 
 import CustomInput from '../components/CustomInput';
 import CustomButton from '../components/CustomButton';
@@ -17,6 +17,8 @@ const SignupScreen = ({ navigation, onLogin }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
  const handleSignup = async () => {
   if (!prenom.trim() || !nom.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
@@ -126,38 +128,70 @@ const SignupScreen = ({ navigation, onLogin }) => {
                 gap: 30,
               }}
             >
-              <CustomInput
-                placeholder="Prénom"
-                value={prenom}
-                onChangeText={setPrenom}
-              />
+              <View style={styles.inputContainer}>
+                <User size={20} color="#999" style={styles.inputIcon} />
+                <CustomInput
+                  placeholder="Prénom"
+                  value={prenom}
+                  onChangeText={setPrenom}
+                  style={styles.inputWithIcon}
+                />
+              </View>
 
-              <CustomInput
-                placeholder="Nom"
-                value={nom}
-                onChangeText={setNom}
-              />
+              <View style={styles.inputContainer}>
+                <User size={20} color="#999" style={styles.inputIcon} />
+                <CustomInput
+                  placeholder="Nom"
+                  value={nom}
+                  onChangeText={setNom}
+                  style={styles.inputWithIcon}
+                />
+              </View>
 
-              <CustomInput
-                placeholder="E-mail"
-                keyboardType="email-address"
-                value={email}
-                onChangeText={setEmail}
-              />
+              <View style={styles.inputContainer}>
+                <Mail size={20} color="#999" style={styles.inputIcon} />
+                <CustomInput
+                  placeholder="E-mail"
+                  keyboardType="email-address"
+                  value={email}
+                  onChangeText={setEmail}
+                  style={styles.inputWithIcon}
+                />
+              </View>
 
-              <CustomInput
-                placeholder="Mot de passe"
-                secureTextEntry={true}
-                value={password}
-                onChangeText={setPassword}
-              />
+              <View style={styles.inputContainer}>
+                <Lock size={20} color="#999" style={styles.inputIcon} />
+                <CustomInput
+                  placeholder="Mot de passe"
+                  secureTextEntry={!showPassword}
+                  value={password}
+                  onChangeText={setPassword}
+                  style={styles.inputWithIcon}
+                />
+                <TouchableOpacity 
+                  style={styles.eyeIcon}
+                  onPress={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff size={20} color="#999" /> : <Eye size={20} color="#999" />}
+                </TouchableOpacity>
+              </View>
 
-              <CustomInput
-                placeholder="Confirmer le mot de passe"
-                secureTextEntry={true}
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-              />
+              <View style={styles.inputContainer}>
+                <Lock size={20} color="#999" style={styles.inputIcon} />
+                <CustomInput
+                  placeholder="Confirmer le mot de passe"
+                  secureTextEntry={!showConfirmPassword}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  style={styles.inputWithIcon}
+                />
+                <TouchableOpacity 
+                  style={styles.eyeIcon}
+                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? <EyeOff size={20} color="#999" /> : <Eye size={20} color="#999" />}
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* BUTTONS */}
@@ -271,6 +305,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 5,
     fontWeight: '600'
+  },
+  inputContainer: {
+    width: '100%',
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  inputIcon: {
+    position: 'absolute',
+    left: 15,
+    zIndex: 1,
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: 15,
+    zIndex: 1,
+  },
+  inputWithIcon: {
+    paddingLeft: 45,
   }
 });
 

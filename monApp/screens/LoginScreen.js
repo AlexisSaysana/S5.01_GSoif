@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles';
 import { fonts } from '../styles/fonts';
-import { Mail, Lock } from 'lucide-react-native';
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react-native';
 
 import CustomInput from '../components/CustomInput';
 import CustomButton from '../components/CustomButton';
@@ -13,6 +13,7 @@ const LoginScreen = ({ navigation, onLogin  }) => {
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
 
     // -------------------------
     //   CONNEXION
@@ -107,11 +108,17 @@ const LoginScreen = ({ navigation, onLogin  }) => {
                             <Lock size={20} color="#999" style={styles.inputIcon} />
                             <CustomInput
                                 placeholder="Mot de passe"
-                                secureTextEntry={true}
+                                secureTextEntry={!showPassword}
                                 value={password}
                                 onChangeText={setPassword}
                                 style={styles.inputWithIcon}
                             />
+                            <TouchableOpacity 
+                                style={styles.eyeIcon}
+                                onPress={() => setShowPassword(!showPassword)}
+                            >
+                                {showPassword ? <EyeOff size={20} color="#999" /> : <Eye size={20} color="#999" />}
+                            </TouchableOpacity>
                         </View>
 
                         <TouchableOpacity onPress={() => console.log('Mot de passe oublié')} style={{width: '100%'}}>
@@ -201,6 +208,11 @@ const styles = StyleSheet.create({
     inputIcon: {
         position: 'absolute',
         left: 15,
+        zIndex: 1,
+    },
+    eyeIcon: {
+        position: 'absolute',
+        right: 15,
         zIndex: 1,
     },
     inputWithIcon: {

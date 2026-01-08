@@ -7,7 +7,7 @@ import { fonts } from '../styles/fonts';
 import { Settings, User, UserPen, MapPin, Trash2 } from 'lucide-react-native';
 import { ThemeContext } from '../context/ThemeContext';
 
-export default function ProfileScreen({ navigation, userEmail, onLogout }) {
+export default function ProfileScreen({ navigation, userEmail, onLogout, route }) {
   const { colors, name, email } = useContext(ThemeContext);
   const [history, setHistory] = useState([]);
   const isGuest = userEmail === null;
@@ -15,7 +15,7 @@ export default function ProfileScreen({ navigation, userEmail, onLogout }) {
   useFocusEffect(
     useCallback(() => {
       loadHistory();
-    }, [])
+    }, [route?.params?.refresh])
   );
 
   const loadHistory = async () => {
@@ -39,6 +39,9 @@ export default function ProfileScreen({ navigation, userEmail, onLogout }) {
         }
         
         setHistory(loadedHistory);
+      } else {
+        // Si pas de données sauvegardées (historique supprimé), vider le state
+        setHistory([]);
       }
     } catch (error) {
       console.log('Error loading history:', error);
