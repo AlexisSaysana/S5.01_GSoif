@@ -24,6 +24,8 @@ import MonCompteScreen from './screens/MonCompteScreen';
 import NotificationsScreen from './screens/NotificationsScreen';
 import HistoryScreen from './screens/HistoryScreen';
 import SettingScreen from './screens/SettingScreen';
+import TermsScreen from './screens/TermsScreen';
+import PrivacyScreen from './screens/PrivacyScreen';
 
 // Configuration des notifications
 Notifications.setNotificationHandler({
@@ -205,6 +207,8 @@ const handleLogin = async (email = null, id = null, fullName = null) => {
               {(props) => <SettingScreen {...props} onLogout={handleLogout} userEmail={userEmail} />}
             </Stack.Screen>
             <Stack.Screen name="History" component={HistoryScreen} />
+            <Stack.Screen name="Terms" component={TermsScreen} />
+            <Stack.Screen name="Privacy" component={PrivacyScreen} />
           </Stack.Group>
         )}
       </Stack.Navigator>

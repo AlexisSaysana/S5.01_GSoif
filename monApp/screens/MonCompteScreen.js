@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { 
   View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView,
   KeyboardAvoidingView, Platform, TextInput, Modal,
@@ -8,6 +8,8 @@ import { ChevronLeft, User, Mail, Lock, Droplet, Bell, X } from 'lucide-react-na
 import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles';
 import { fonts } from '../styles/fonts';
 import CustomButton from '../components/CustomButton';
+import { ThemeContext } from '../context/ThemeContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const BASE_URL = "https://s5-01-gsoif.onrender.com";
 
@@ -16,7 +18,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 export default function MonCompteScreen({ navigation, route, userEmail }) {
-
+  const { colors } = useContext(ThemeContext);
 
   const [prenom, setPrenom] = useState("");
   const [nom, setNom] = useState("");
@@ -141,12 +143,14 @@ export default function MonCompteScreen({ navigation, route, userEmail }) {
     }
   };
 
+
+
   // ----------------------------
   // 🎨 UI EXACTE
   // ----------------------------
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { backgroundColor: colors.primary }]}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <ChevronLeft color="white" size={30} />
         </TouchableOpacity>
@@ -160,104 +164,109 @@ export default function MonCompteScreen({ navigation, route, userEmail }) {
         <ScrollView contentContainerStyle={styles.content}>
 
           {/* INFORMATIONS */}
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Mes informations</Text>
+          <View style={[styles.sectionContainer, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Mes informations</Text>
 
             {/* Prénom */}
             <View style={styles.inputGroup}>
-              <View style={styles.iconContainer}>
-                <User size={20} color={PRIMARY_BLUE} />
+              <View style={[styles.iconContainer, { backgroundColor: colors.iconBg }]}>
+                <User size={20} color={colors.primary} />
               </View>
               <View style={styles.inputWrapper}>
-                <Text style={styles.label}>Prénom</Text>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Prénom</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: colors.text }]}
                   value={prenom}
                   onChangeText={setPrenom}
+                  placeholderTextColor={colors.textSecondary}
                 />
               </View>
             </View>
 
             {/* Nom */}
             <View style={styles.inputGroup}>
-              <View style={styles.iconContainer}>
-                <User size={20} color={PRIMARY_BLUE} />
+              <View style={[styles.iconContainer, { backgroundColor: colors.iconBg }]}>
+                <User size={20} color={colors.primary} />
               </View>
               <View style={styles.inputWrapper}>
-                <Text style={styles.label}>Nom</Text>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Nom</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: colors.text }]}
                   value={nom}
                   onChangeText={setNom}
+                  placeholderTextColor={colors.textSecondary}
                 />
               </View>
             </View>
 
             {/* Email */}
             <View style={styles.inputGroup}>
-              <View style={styles.iconContainer}>
-                <Mail size={20} color={PRIMARY_BLUE} />
+              <View style={[styles.iconContainer, { backgroundColor: colors.iconBg }]}>
+                <Mail size={20} color={colors.primary} />
               </View>
               <View style={styles.inputWrapper}>
-                <Text style={styles.label}>Adresse e-mail</Text>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Adresse e-mail</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: colors.text }]}
                   value={email}
                   onChangeText={setEmail}
+                  placeholderTextColor={colors.textSecondary}
                 />
               </View>
             </View>
           </View>
 
           {/* SÉCURITÉ */}
-          <View style={styles.sectionContainer}>
+          <View style={[styles.sectionContainer, { backgroundColor: colors.surface }]}>
             <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
-              <Text style={styles.sectionTitle}>Sécurité</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Sécurité</Text>
               {isChangingPassword && (
                 <TouchableOpacity onPress={togglePasswordMode}>
-                  <X size={20} color="#999" />
+                  <X size={20} color={colors.textSecondary} />
                 </TouchableOpacity>
               )}
             </View>
 
             {!isChangingPassword ? (
               <TouchableOpacity style={styles.inputGroup} onPress={togglePasswordMode}>
-                <View style={[styles.iconContainer, { backgroundColor: '#FFEBEE' }]}>
-                  <Lock size={20} color="#E53935" />
+                <View style={[styles.iconContainer, { backgroundColor: colors.dangerBg }]}>
+                  <Lock size={20} color={colors.dangerText} />
                 </View>
                 <View style={styles.inputWrapper}>
-                  <Text style={styles.label}>Mot de passe</Text>
-                  <Text style={[styles.input, {fontSize: 20}]}>••••••••</Text>
+                  <Text style={[styles.label, { color: colors.textSecondary }]}>Mot de passe</Text>
+                  <Text style={[styles.input, { fontSize: 20, color: colors.text }]}>••••••••</Text>
                 </View>
               </TouchableOpacity>
             ) : (
               <View>
                 <View style={styles.inputGroup}>
-                  <View style={[styles.iconContainer, { backgroundColor: '#FFEBEE' }]}>
-                    <Lock size={20} color="#E53935" />
+                  <View style={[styles.iconContainer, { backgroundColor: colors.dangerBg }]}>
+                    <Lock size={20} color={colors.dangerText} />
                   </View>
                   <View style={styles.inputWrapper}>
-                    <Text style={styles.label}>Ancien mot de passe</Text>
+                    <Text style={[styles.label, { color: colors.textSecondary }]}>Ancien mot de passe</Text>
                     <TextInput
-                      style={styles.input}
+                      style={[styles.input, { color: colors.text }]}
                       value={oldPassword}
                       onChangeText={setOldPassword}
                       secureTextEntry
+                      placeholderTextColor={colors.textSecondary}
                     />
                   </View>
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <View style={[styles.iconContainer, { backgroundColor: '#FFEBEE' }]}>
-                    <Lock size={20} color="#E53935" />
+                  <View style={[styles.iconContainer, { backgroundColor: colors.dangerBg }]}>
+                    <Lock size={20} color={colors.dangerText} />
                   </View>
                   <View style={styles.inputWrapper}>
-                    <Text style={styles.label}>Nouveau mot de passe</Text>
+                    <Text style={[styles.label, { color: colors.textSecondary }]}>Nouveau mot de passe</Text>
                     <TextInput
-                      style={styles.input}
+                      style={[styles.input, { color: colors.text }]}
                       value={newPassword}
                       onChangeText={setNewPassword}
                       secureTextEntry
+                      placeholderTextColor={colors.textSecondary}
                     />
                   </View>
                 </View>
@@ -265,11 +274,12 @@ export default function MonCompteScreen({ navigation, route, userEmail }) {
                 <CustomButton title="Modifier le mot de passe" onPress={handlePasswordUpdate} />
               </View>
             )}
+
           </View>
 
           {/* HYDRATATION */}
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Hydratation & Préférences</Text>
+          <View style={[styles.sectionContainer, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Hydratation & Préférences</Text>
 
             {/* Objectif */}
             <View style={styles.inputGroup}>
@@ -277,17 +287,17 @@ export default function MonCompteScreen({ navigation, route, userEmail }) {
                 <Droplet size={20} color="#00BCD4" />
               </View>
               <View style={styles.inputWrapper}>
-                <Text style={styles.label}>Objectif quotidien (ml)</Text>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Objectif quotidien (ml)</Text>
                 <View style={styles.goalRow}>
-                  <Text style={styles.input}>{dailyGoal} mL</Text>
+                  <Text style={[styles.input, { color: colors.text }]}>{dailyGoal} mL</Text>
                   <TouchableOpacity
-                    style={styles.modifierButton}
+                    style={[styles.modifierButton, { backgroundColor: colors.iconBg }]}
                     onPress={() => {
                       setTempGoal(dailyGoal);
                       setShowGoalModal(true);
                     }}
                   >
-                    <Text style={styles.modifierText}>Modifier</Text>
+                    <Text style={[styles.modifierText, { color: colors.primary }]}>Modifier</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -302,15 +312,15 @@ export default function MonCompteScreen({ navigation, route, userEmail }) {
                 style={styles.inputWrapper}
                 onPress={() => navigation.navigate("Notifications", { userId })}
               >
-                <Text style={styles.label}>Notifications</Text>
-                <Text style={[styles.input, { color: PRIMARY_BLUE, fontWeight: "600" }]}>
-                  Gérer les notifications →
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Notifications</Text>
+                <Text style={[styles.input, { color: colors.primary, fontWeight: "600" }]}>
+                  Gérer les notifications
                 </Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          <TouchableOpacity style={styles.saveButton} onPress={handleUpdate}>
+          <TouchableOpacity style={[styles.saveButton, { backgroundColor: colors.primary }]}>
             <Text style={styles.saveButtonText}>Enregistrer les modifications</Text>
           </TouchableOpacity>
 
@@ -320,27 +330,28 @@ export default function MonCompteScreen({ navigation, route, userEmail }) {
       {/* MODALE OBJECTIF */}
       <Modal visible={showGoalModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Modifier l'objectif</Text>
-            <Text style={styles.modalSubtitle}>Entre 1500 et 4000 mL</Text>
+          <View style={[styles.modalContainer, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Modifier l'objectif</Text>
+            <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>Entre 1500 et 4000 mL</Text>
 
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { borderBottomColor: colors.primary, color: colors.text }]}
               value={tempGoal}
               onChangeText={setTempGoal}
               keyboardType="numeric"
+              placeholderTextColor={colors.textSecondary}
             />
 
             <View style={styles.modalButtonRow}>
               <TouchableOpacity
-                style={[styles.modalButton, { backgroundColor: '#E0E0E0' }]}
+                style={[styles.modalButton, { backgroundColor: colors.iconBg }]}
                 onPress={() => setShowGoalModal(false)}
               >
-                <Text style={styles.modalButtonText}>Annuler</Text>
+                <Text style={[styles.modalButtonText, { color: colors.text }]}>Annuler</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.modalButton, { backgroundColor: PRIMARY_BLUE }]}
+                style={[styles.modalButton, { backgroundColor: colors.primary }]}
                 onPress={() => {
                   const val = parseInt(tempGoal);
                   if (isNaN(val) || val < 1500 || val > 4000) {
@@ -364,9 +375,8 @@ export default function MonCompteScreen({ navigation, route, userEmail }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F7FA' },
+  container: { flex: 1 },
   header: { 
-    backgroundColor: PRIMARY_BLUE, 
     height: 120, 
     flexDirection: 'row', 
     alignItems: 'center', 
@@ -378,17 +388,19 @@ const styles = StyleSheet.create({
   content: { padding: 20, paddingBottom: 50 },
 
   sectionContainer: {
-    backgroundColor: WHITE,
     borderRadius: 20,
     padding: 20,
     marginBottom: 20,
-    elevation: 2
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
   },
   sectionTitle: {
     fontFamily: fonts.bricolageGrotesque,
     fontSize: 18,
     fontWeight: '700',
-    color: '#333',
     marginBottom: 20,
   },
 
@@ -401,14 +413,18 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#EEF6FF',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 15
   },
   inputWrapper: { flex: 1 },
-  label: { fontSize: 12, color: '#888', marginBottom: 4 },
-  input: { fontSize: 16, color: '#333', fontWeight: '500' },
+  label: { fontSize: 12, marginBottom: 4 },
+  input: { 
+    fontSize: 16, 
+    fontWeight: '500',
+    minHeight: 40,
+    paddingVertical: 8
+  },
 
   goalRow: {
     flexDirection: 'row',
@@ -416,15 +432,13 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   modifierButton: {
-    backgroundColor: '#F0F0F0',
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 8,
   },
-  modifierText: { color: PRIMARY_BLUE, fontWeight: '600', fontSize: 12 },
+  modifierText: { fontWeight: '600', fontSize: 12 },
 
   saveButton: {
-    backgroundColor: PRIMARY_BLUE,
     height: 55,
     borderRadius: 15,
     justifyContent: 'center',
@@ -444,7 +458,6 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   modalContainer: {
-    backgroundColor: WHITE,
     borderRadius: 20,
     padding: 25,
     width: '85%',
@@ -457,13 +470,11 @@ const styles = StyleSheet.create({
   },
   modalSubtitle: {
     fontSize: 14,
-    color: '#888',
     marginBottom: 20
   },
   modalInput: {
     fontSize: 16,
     borderBottomWidth: 2,
-    borderBottomColor: PRIMARY_BLUE,
     paddingVertical: 10,
     marginBottom: 25
   },

@@ -204,14 +204,14 @@ export default function SettingsScreen({ navigation, onLogout, userEmail }) {
             icon={FileText} 
             iconColor="#607D8B" 
             label="Conditions d'utilisation" 
-            action={() => Linking.openURL('https://google.com')}
+            action={() => navigation.navigate('Terms')}
           />
            <View style={[styles.divider, { backgroundColor: colors.border }]} />
           <SettingRow 
             icon={ShieldAlert} 
             iconColor="#607D8B" 
             label="Politique de confidentialité" 
-            action={() => Linking.openURL('https://google.com')}
+            action={() => navigation.navigate('Privacy')}
           />
         </View>
 
