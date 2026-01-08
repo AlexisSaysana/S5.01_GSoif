@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import { Plus, Trash2, ChevronLeft, Bell } from "lucide-react-native";
 import { PRIMARY_BLUE, WHITE } from "../styles/baseStyles";
 import * as Notifications from "expo-notifications";
 import { fonts } from "../styles/fonts";
+import { ThemeContext } from "../context/ThemeContext";
 
 
 const BASE_URL = "https://s5-01-gsoif.onrender.com";
@@ -95,6 +96,7 @@ const scheduleNotificationAndroid = async (hour, minute, message) => {
 // Écran principal
 // -----------------------------------------------------
 export default function NotificationsScreen({ route, navigation }) {
+  const { colors } = useContext(ThemeContext);
   const userId = route?.params?.userId;
 
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
@@ -218,11 +220,11 @@ export default function NotificationsScreen({ route, navigation }) {
   // -----------------------------------------------------
   return (
     // On utilise SafeAreaView pour éviter l'encoche et la barre du bas
-        <SafeAreaView style={styles.safeArea}>
-          <View style={styles.container}>
+        <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.primary }]}>
+          <View style={[styles.container, { backgroundColor: colors.background }]}>
 
             {/* HEADER RÉVISÉ */}
-            <View style={styles.header}>
+            <View style={[styles.header, { backgroundColor: colors.primary }]}>
               <TouchableOpacity
                 style={styles.backButton}
                 onPress={() => navigation.goBack()}
@@ -237,14 +239,14 @@ export default function NotificationsScreen({ route, navigation }) {
               contentContainerStyle={styles.scrollPadding} // Ajout de padding interne
             >
               {/* SECTION SWITCH */}
-              <View style={styles.sectionContainer}>
-                <Text style={styles.sectionTitle}>Paramètres</Text>
+              <View style={[styles.sectionContainer, { backgroundColor: colors.surface }]}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Paramètres</Text>
                 <View style={styles.switchRow}>
-                  <Text style={styles.switchLabel}>Activer les notifications</Text>
+                  <Text style={[styles.switchLabel, { color: colors.text }]}>Activer les notifications</Text>
                   <Switch
                     value={notificationsEnabled}
                     onValueChange={setNotificationsEnabled}
-                    trackColor={{ false: "#DDD", true: PRIMARY_BLUE }}
+                    trackColor={{ false: "#DDD", true: colors.primary }}
                     thumbColor={WHITE}
                   />
                 </View>
@@ -253,14 +255,14 @@ export default function NotificationsScreen({ route, navigation }) {
               {notificationsEnabled && (
                 <>
                   {/* SECTION HORAIRES */}
-                  <View style={styles.sectionContainer}>
-                    <Text style={styles.sectionTitle}>Horaires programmés</Text>
+                  <View style={[styles.sectionContainer, { backgroundColor: colors.surface }]}>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>Horaires programmés</Text>
                     {fixedTimes.map((t, index) => (
                       <View key={index}>
                         <View style={styles.timeRow}>
                           <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                             <Text style={{ fontSize: 20 }}>🕒</Text>
-                            <Text style={styles.timeText}>
+                            <Text style={[styles.timeText, { color: colors.text }]}>
                               {t.hour.toString().padStart(2, "0")}:{t.minute.toString().padStart(2, "0")}
                             </Text>
                           </View>
@@ -268,18 +270,18 @@ export default function NotificationsScreen({ route, navigation }) {
                             <Trash2 size={22} color="#E53935" />
                           </TouchableOpacity>
                         </View>
-                        {index < fixedTimes.length - 1 && <View style={styles.separator} />}
+                        {index < fixedTimes.length - 1 && <View style={[styles.separator, { backgroundColor: colors.border }]} />}
                       </View>
                     ))}
 
-                    <TouchableOpacity style={styles.addTimeButton} onPress={() => setShowPicker(true)}>
+                    <TouchableOpacity style={[styles.addTimeButton, { backgroundColor: colors.primary }]} onPress={() => setShowPicker(true)}>
                       <Plus size={20} color={WHITE} />
                       <Text style={styles.addTimeText}>Ajouter une heure</Text>
                     </TouchableOpacity>
                   </View>
 
                   {/* BOUTON ENREGISTRER */}
-                  <TouchableOpacity style={styles.saveButton} onPress={saveNotifications}>
+                  <TouchableOpacity style={[styles.saveButton, { backgroundColor: colors.primary }]} onPress={saveNotifications}>
                     <Text style={styles.saveButtonText}>Enregistrer</Text>
                   </TouchableOpacity>
                 </>

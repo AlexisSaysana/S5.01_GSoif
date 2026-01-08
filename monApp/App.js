@@ -24,6 +24,8 @@ import MonCompteScreen from './screens/MonCompteScreen';
 import NotificationsScreen from './screens/NotificationsScreen';
 import HistoryScreen from './screens/HistoryScreen';
 import SettingScreen from './screens/SettingScreen';
+import TermsScreen from './screens/TermsScreen';
+import PrivacyScreen from './screens/PrivacyScreen';
 import QuestsScreen from './screens/QuestsScreen'; // Import de QuestsScreen
 
 // Configuration des notifications
@@ -203,6 +205,8 @@ function AppContent() {
             </Stack.Screen>
             <Stack.Screen name="Quests" component={QuestsScreen} />
             <Stack.Screen name="History" component={HistoryScreen} />
+            <Stack.Screen name="Terms" component={TermsScreen} />
+            <Stack.Screen name="Privacy" component={PrivacyScreen} />
           </Stack.Group>
         )}
       </Stack.Navigator>
