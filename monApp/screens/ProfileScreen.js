@@ -107,7 +107,7 @@ export default function ProfileScreen({ navigation, userEmail, onLogout, route }
           ) : (
             <TouchableOpacity
               style={styles.accountLink}
-              onPress={() => navigation.getParent()?.navigate('Account')}
+              onPress={() => navigation.getParent()?.navigate('MonCompte')}
             >
               <UserPen color={colors.textSecondary} size={20} />
               <Text style={[styles.linkText, { color: colors.textSecondary }]}>

@@ -38,7 +38,7 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 // --- NAVIGATION BASSE (TABS) ---
-function TabNavigator({ onLogout, userEmail, userId }) {
+function TabNavigator({ onLogout, userEmail, userId,userName }) {
   const { colors } = useContext(ThemeContext);
 
   return (
@@ -68,6 +68,7 @@ function TabNavigator({ onLogout, userEmail, userId }) {
           <ProfileScreen
             {...props}
             userEmail={userEmail}
+            userName={userName}
             onLogout={onLogout}
           />
         )}
@@ -78,10 +79,12 @@ function TabNavigator({ onLogout, userEmail, userId }) {
 
 // --- COMPOSANT RACINE (NAVIGATION LOGIC) ---
 function AppContent() {
+  const { changeName, changeEmail } = useContext(ThemeContext);
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState(null);
   const [userId, setUserId] = useState(null);
+  const [userName, setUserName] = useState(null);
 
   useEffect(() => {
     async function initApp() {
@@ -89,9 +92,11 @@ function AppContent() {
         // 1. Charger la session
         const savedId = await AsyncStorage.getItem("userId");
         const savedEmail = await AsyncStorage.getItem("userEmail");
+        const savedName = await AsyncStorage.getItem("userName");
         if (savedId && savedEmail) {
           setUserId(savedId);
           setUserEmail(savedEmail);
+          setUserName(savedName);
           setIsLoggedIn(true);
         }
 
@@ -118,30 +123,46 @@ function AppContent() {
     }
     initApp();
   }, []);
-
-  const handleLogin = async (email = null, id = null) => {
+const handleLogin = async (email = null, id = null, fullName = null) => {
     if (email && id) {
+      // 1. Sauvegarde AsyncStorage
       await AsyncStorage.setItem("userId", id.toString());
       await AsyncStorage.setItem("userEmail", email);
+      if (fullName) await AsyncStorage.setItem("userName", fullName);
+
+      // 2. Mise à jour du Context (très important pour le ProfileScreen)
+      if (fullName) changeName(fullName);
+      if (email) changeEmail(email);
+
+      // 3. Mise à jour du state local
       setUserEmail(email);
       setUserId(id);
+      setUserName(fullName);
     } else {
       // Mode invité
+      setUserName(null);
       setUserEmail(null);
-      setUserId(null);
+      changeName("Invité"); // Valeur par défaut dans le contexte
+      changeEmail("");
     }
-
     setIsLoggedIn(true);
-  };
+};
 
 
-  const handleLogout = async () => {
-    await AsyncStorage.removeItem("userId");
-    await AsyncStorage.removeItem("userEmail");
-    setIsLoggedIn(false);
-    setUserEmail(null);
-    setUserId(null);
-  };
+ const handleLogout = async () => {
+     await AsyncStorage.removeItem("userId");
+     await AsyncStorage.removeItem("userEmail");
+     await AsyncStorage.removeItem("userName");
+
+     // Reset du contexte
+     changeName("");
+     changeEmail("");
+
+     setIsLoggedIn(false);
+     setUserEmail(null);
+     setUserId(null);
+     setUserName(null);
+ };
 
   if (!fontsLoaded) return null;
 
@@ -170,6 +191,7 @@ function AppContent() {
                   onLogout={handleLogout}
                   userEmail={userEmail}
                   userId={userId}
+                  userName={userName}
                 />
               )}
             </Stack.Screen>

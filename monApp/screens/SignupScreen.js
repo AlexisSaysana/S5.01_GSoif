@@ -20,7 +20,7 @@ const SignupScreen = ({ navigation, onLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
- const handleSignup = async () => {
+const handleSignup = async () => {
   if (!prenom.trim() || !nom.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
     return Alert.alert("Erreur", "Veuillez remplir tous les champs");
   }
@@ -29,8 +29,11 @@ const SignupScreen = ({ navigation, onLogin }) => {
     return Alert.alert("Erreur", "Les mots de passe ne correspondent pas");
   }
 
+  // Petite fonction utilitaire pour la majuscule
+  const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+
   try {
-    const response = await fetch(`${BASE_URL}/inscription`, {
+    const response = await fetch(`${BASE_URL}/utilisateurs`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -41,7 +44,11 @@ const SignupScreen = ({ navigation, onLogin }) => {
       })
     });
 
-    const data = await response.json();
+    const textData = await response.text();
+    console.log("📥 Réponse brute du serveur :", textData);
+
+    // 2. Essayer de transformer en JSON manuellement
+    const data = JSON.parse(textData);
 
     if (!response.ok) {
       if (data.error === "Champs manquants") {
@@ -50,28 +57,29 @@ const SignupScreen = ({ navigation, onLogin }) => {
       if (data.error === "Email déjà utilisé") {
         return Alert.alert("Erreur", "Cet email est déjà utilisé");
       }
-      return Alert.alert("Erreur", "Une erreur est survenue");
-    }
+      return res.status(500).json({ error: "Erreur serveur", details: err });    }
 
-    Alert.alert("Succès", "Compte créé avec succès !");
+    // --- LOGIQUE DE SUCCÈS ---
 
-    // 🔥 Utiliser les bonnes clés renvoyées par ton backend
-    const userId = data.id;
-    const userEmail = data.email;
-    const userNom = data.nom;
-    const userPrenom = data.prenom;
+    // On récupère l'objet utilisateur (vérifiez si votre backend renvoie "utilisateur" ou les clés en direct)
+    const user = data.utilisateur || data;
 
-    // 🔥 Connexion automatique
-    onLogin(userEmail, userId);
+    const formattedPrenom = capitalize(user.prenom);
+    const formattedNom = capitalize(user.nom);
+    const fullName = `${formattedPrenom} ${formattedNom}`;
+
+    Alert.alert("Succès", `Bienvenue ${formattedPrenom} !`);
 
     // 🔥 Sauvegarde locale
-    await AsyncStorage.setItem("userId", userId.toString());
-    await AsyncStorage.setItem("userEmail", userEmail);
-    await AsyncStorage.setItem("userNom", userNom);
-    await AsyncStorage.setItem("userPrenom", userPrenom);
+    await AsyncStorage.setItem("userId", user.id.toString());
+    await AsyncStorage.setItem("userEmail", user.email);
+    await AsyncStorage.setItem("userName", fullName);
+
+    // 🔥 Connexion automatique et redirection vers l'accueil via App.js
+    onLogin(user.email, user.id, fullName);
 
   } catch (error) {
-    console.log(error);
+    console.log("🔥 Erreur Signup:", error);
     Alert.alert("Erreur", "Impossible de se connecter au serveur");
   }
 };

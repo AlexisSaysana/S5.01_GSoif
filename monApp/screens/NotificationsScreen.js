@@ -6,12 +6,15 @@ import {
   TouchableOpacity,
   ScrollView,
   Switch,
+  SafeAreaView,
+  Platform,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Plus, Trash2, ChevronLeft, Bell } from "lucide-react-native";
 import { PRIMARY_BLUE, WHITE } from "../styles/baseStyles";
 import * as Notifications from "expo-notifications";
 import { fonts } from "../styles/fonts";
+
 
 const BASE_URL = "https://s5-01-gsoif.onrender.com";
 
@@ -214,145 +217,111 @@ export default function NotificationsScreen({ route, navigation }) {
   // UI
   // -----------------------------------------------------
   return (
-    <View style={styles.container}>
-      {/* HEADER */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <ChevronLeft size={28} color="white" />
-        </TouchableOpacity>
+    // On utilise SafeAreaView pour éviter l'encoche et la barre du bas
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.container}>
 
+            {/* HEADER RÉVISÉ */}
+            <View style={styles.header}>
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={() => navigation.goBack()}
+              >
+                <ChevronLeft size={28} color="white" />
+              </TouchableOpacity>
+              <Text style={styles.headerTitle}>Notifications</Text>
+            </View>
 
+            <ScrollView
+              style={styles.content}
+              contentContainerStyle={styles.scrollPadding} // Ajout de padding interne
+            >
+              {/* SECTION SWITCH */}
+              <View style={styles.sectionContainer}>
+                <Text style={styles.sectionTitle}>Paramètres</Text>
+                <View style={styles.switchRow}>
+                  <Text style={styles.switchLabel}>Activer les notifications</Text>
+                  <Switch
+                    value={notificationsEnabled}
+                    onValueChange={setNotificationsEnabled}
+                    trackColor={{ false: "#DDD", true: PRIMARY_BLUE }}
+                    thumbColor={WHITE}
+                  />
+                </View>
+              </View>
 
-        <Text style={styles.headerTitle}>Notifications</Text>
-      </View>
+              {notificationsEnabled && (
+                <>
+                  {/* SECTION HORAIRES */}
+                  <View style={styles.sectionContainer}>
+                    <Text style={styles.sectionTitle}>Horaires programmés</Text>
+                    {fixedTimes.map((t, index) => (
+                      <View key={index}>
+                        <View style={styles.timeRow}>
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                            <Text style={{ fontSize: 20 }}>🕒</Text>
+                            <Text style={styles.timeText}>
+                              {t.hour.toString().padStart(2, "0")}:{t.minute.toString().padStart(2, "0")}
+                            </Text>
+                          </View>
+                          <TouchableOpacity onPress={() => setFixedTimes(prev => prev.filter((_, i) => i !== index))}>
+                            <Trash2 size={22} color="#E53935" />
+                          </TouchableOpacity>
+                        </View>
+                        {index < fixedTimes.length - 1 && <View style={styles.separator} />}
+                      </View>
+                    ))}
 
-      <ScrollView style={styles.content}>
-        {/* SECTION SWITCH */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Notifications</Text>
-
-          <View style={styles.switchRow}>
-            <Text style={styles.switchLabel}>Activer les notifications</Text>
-
-            <Switch
-              value={notificationsEnabled}
-              onValueChange={setNotificationsEnabled}
-              trackColor={{ false: "#DDD", true: PRIMARY_BLUE }}
-              thumbColor={WHITE}
-            />
-          </View>
-        </View>
-
-        {/* SI SWITCH = ON → afficher le reste */}
-        {notificationsEnabled && (
-          <>
-            {/* SECTION HORAIRES */}
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Horaires programmés</Text>
-
-              {fixedTimes.length === 0 && (
-                <Text style={{ color: "#888", marginBottom: 10 }}>
-                  Aucun horaire ajouté pour le moment
-                </Text>
-              )}
-
-              {fixedTimes.map((t, index) => (
-                <View key={index}>
-                  <View style={styles.timeRow}>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 10,
-                      }}
-                    >
-                      <Text style={{ fontSize: 20 }}>🕒</Text>
-
-                      <Text style={styles.timeText}>
-                        {t.hour.toString().padStart(2, "0")}:
-                        {t.minute.toString().padStart(2, "0")}
-                      </Text>
-                    </View>
-
-                    <TouchableOpacity
-                      onPress={() =>
-                        setFixedTimes((prev) =>
-                          prev.filter((_, i) => i !== index)
-                        )
-                      }
-                    >
-                      <Trash2 size={22} color="#E53935" />
+                    <TouchableOpacity style={styles.addTimeButton} onPress={() => setShowPicker(true)}>
+                      <Plus size={20} color={WHITE} />
+                      <Text style={styles.addTimeText}>Ajouter une heure</Text>
                     </TouchableOpacity>
                   </View>
 
-                  {index < fixedTimes.length - 1 && (
-                    <View style={styles.separator} />
-                  )}
-                </View>
-              ))}
+                  {/* BOUTON ENREGISTRER */}
+                  <TouchableOpacity style={styles.saveButton} onPress={saveNotifications}>
+                    <Text style={styles.saveButtonText}>Enregistrer</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </ScrollView>
 
-              <TouchableOpacity
-                style={styles.addTimeButton}
-                onPress={() => setShowPicker(true)}
-              >
-                <Plus size={20} color={WHITE} />
-                <Text style={styles.addTimeText}>Ajouter une heure</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* SAVE */}
-            <TouchableOpacity
-              style={styles.saveButton}
-              onPress={saveNotifications}
-            >
-              <Text style={styles.saveButtonText}>Enregistrer</Text>
-            </TouchableOpacity>
-          </>
-        )}
-      </ScrollView>
-
-      {/* TIME PICKER */}
-      {showPicker && (
-        <DateTimePicker
-          value={tempDate}
-          mode="time"
-          is24Hour={true}
-          display="spinner"
-          onChange={addFixedTime}
-        />
-      )}
-    </View>
-  );
-}
+            {showPicker && (
+              <DateTimePicker value={tempDate} mode="time" is24Hour={true} display="spinner" onChange={addFixedTime} />
+            )}
+          </View>
+        </SafeAreaView>
+      );
+    }
 
 // -----------------------------------------------------
 // Styles
 // -----------------------------------------------------
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F7FA" },
-
+  safeArea: {
+      flex: 1,
+      backgroundColor: PRIMARY_BLUE // Le haut de l'écran sera bleu
+    },
+    container: {
+      flex: 1,
+      backgroundColor: "#F5F7FA" // Le reste sera gris clair
+    },
   header: {
-    backgroundColor: PRIMARY_BLUE,
-    height: 120,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingTop: 40,
-  },
+      backgroundColor: PRIMARY_BLUE,
+      height: 120,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingTop: 40
+    },
 
-  backButton: {
-    position: "absolute",
-    left: 20,
-    paddingTop: 40,
-  },
+    backButton: { position: 'absolute', left: 20, paddingTop: 40 },
+
 
   headerIcon: {
     position: "absolute",
     left: 60,
-    paddingTop: 40,
+
   },
 
   headerTitle: {
@@ -363,10 +332,12 @@ const styles = StyleSheet.create({
   },
 
   content: {
-    padding: 20,
-    paddingBottom: 50,
+      flex: 1,
   },
-
+  scrollPadding: {
+      padding: 20,
+      paddingBottom: 100,
+  },
   sectionContainer: {
     backgroundColor: WHITE,
     borderRadius: 20,
@@ -455,6 +426,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginTop: 10,
+    marginBottom: 20,
   },
 
   saveButtonText: {
