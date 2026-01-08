@@ -15,8 +15,8 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-export default function MonCompteScreen({ navigation, route }) {
-  const { userEmail } = route.params || {};
+export default function MonCompteScreen({ navigation, route, userEmail }) {
+
 
   const [prenom, setPrenom] = useState("");
   const [nom, setNom] = useState("");
@@ -41,30 +41,6 @@ export default function MonCompteScreen({ navigation, route }) {
     }
   };
 
-  // ----------------------------
-  // 🔒 SI PAS CONNECTÉ
-  // ----------------------------
-  if (!userEmail) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <ChevronLeft color="white" size={30} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Mon compte</Text>
-        </View>
-
-        <View style={styles.content}>
-          <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 20 }}>
-            Vous n'êtes pas connecté.
-          </Text>
-
-          <CustomButton title="Se connecter" onPress={() => navigation.navigate("Login")} />
-          <CustomButton title="Créer un compte" onPress={() => navigation.navigate("Signup")} />
-        </View>
-      </View>
-    );
-  }
 
   // ----------------------------
   // 🔄 CHARGEMENT DES DONNÉES

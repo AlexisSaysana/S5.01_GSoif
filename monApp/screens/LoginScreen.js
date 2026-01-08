@@ -3,6 +3,7 @@ import { View, Text, Image, StyleSheet, TouchableOpacity, Alert } from 'react-na
 import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles';
 import { fonts } from '../styles/fonts';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import CustomInput from '../components/CustomInput';
 import CustomButton from '../components/CustomButton';
@@ -63,11 +64,19 @@ const LoginScreen = ({ navigation, onLogin  }) => {
         }
 
         Alert.alert("Succès", "Connexion réussie !");
-        const userId = data.utilisateur.id;
-        onLogin(email, userId);
-        await AsyncStorage.setItem("userId", id.toString());
-        await AsyncStorage.setItem("userEmail", email);
 
+                const user = data.utilisateur;
+                // Fonction pour mettre la première lettre en majuscule
+                const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+
+                const fullName = `${capitalize(user.prenom)} ${capitalize(user.nom)}`;                    // Sauvegarde locale
+                    await AsyncStorage.setItem("userId", user.id.toString());
+                    await AsyncStorage.setItem("userEmail", user.email);
+                    await AsyncStorage.setItem("userName", fullName);
+
+                    // On transmet les infos à App.js
+
+                    onLogin(data.utilisateur.email, data.utilisateur.id, fullName);
 
 
     } catch (error) {
