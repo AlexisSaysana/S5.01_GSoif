@@ -68,7 +68,6 @@ export default function FontainesScreen() {
         const dataC = await resC.json();
         clearTimeout(timeout);
 
-        // Nettoyage Fontaines
         const cleanF = (dataF.records || []).map(item => ({
           id: item.recordid,
           name: item.fields.nom || item.fields.type_objet || "Fontaine à boire",
@@ -79,7 +78,6 @@ export default function FontainesScreen() {
           motif: item.fields.motif_ind || "Fermeture saisonnière"
         }));
 
-        // Nettoyage Commerces
         const cleanC = (dataC.records || []).map(item => ({
           id: item.recordid,
           name: item.fields.nom_commerce || "Commerce partenaire",
@@ -128,7 +126,7 @@ export default function FontainesScreen() {
   const openExternalMaps = async () => {
     if (!selectedPoint) return;
 
-    // SAUVEGARDE DANS L'HISTORIQUE (Relié au Profil)
+    // 1. SAUVEGARDE DANS L'HISTORIQUE (Relié au Profil)
     try {
       const historyItem = {
         id: selectedPoint.id + Date.now(),
@@ -140,17 +138,21 @@ export default function FontainesScreen() {
 
       const saved = await AsyncStorage.getItem('@fountainHistory');
       let history = saved ? JSON.parse(saved) : [];
-
-      // On évite les doublons de nom dans l'historique
       history = history.filter(h => h.name !== selectedPoint.name);
       history.unshift(historyItem);
-
       await AsyncStorage.setItem('@fountainHistory', JSON.stringify(history.slice(0, 20)));
+
+      // 2. LOGIQUE DES QUÊTES (Compteur de clics pour les badges)
+      const savedStats = await AsyncStorage.getItem('@user_stats');
+      let stats = savedStats ? JSON.parse(savedStats) : { clickCount: 0 };
+      stats.clickCount += 1; // On incrémente pour les quêtes Koala, Héros, etc.
+      await AsyncStorage.setItem('@user_stats', JSON.stringify(stats));
+
     } catch (e) {
-      console.log('Erreur historique:', e);
+      console.log('Erreur historique/stats:', e);
     }
 
-    // OUVERTURE GPS
+    // 3. OUVERTURE GPS
     showLocation({
       latitude: selectedPoint.coords[0],
       longitude: selectedPoint.coords[1],
@@ -195,7 +197,6 @@ export default function FontainesScreen() {
             <ScrollView contentContainerStyle={styles.listContainer} showsVerticalScrollIndicator={false}>
               {filteredPoints.map((p, index) => (
                 <View key={p.id} style={styles.itemWrapper}>
-                  {/* Badge de Type au-dessus du Tab */}
                   <View style={[
                     styles.badge,
                     { backgroundColor: p.type === 'fontaine' ? colors.primary : '#4CAF50' }

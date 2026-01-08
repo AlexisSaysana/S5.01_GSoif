@@ -53,6 +53,7 @@ export default function HomeScreen({ navigation }) {
   const [weeklyData, setWeeklyData] = useState({});
   const [customAmount, setCustomAmount] = useState('');
   const [margin, setMargin] = useState(0);
+  const [hasGoalBeenReachedToday, setHasGoalBeenReachedToday] = useState(false);
 
   const options = ['Ajouter', 'Retirer'];
   const [selectedOption, setSelectedOption] = useState(options[0]);
@@ -70,6 +71,11 @@ export default function HomeScreen({ navigation }) {
   const initData = async () => {
     const today = new Date().toISOString().slice(0, 10);
     const lastDate = await AsyncStorage.getItem('@dailyCompletedDate');
+
+    // Récupérer si l'objectif a déjà été compté aujourd'hui
+    const reachedToday = await AsyncStorage.getItem('@goalReached_' + today);
+    setHasGoalBeenReachedToday(reachedToday === 'true');
+
     if (lastDate !== today) {
       await AsyncStorage.setItem('@dailyCompleted', '0');
       await AsyncStorage.setItem('@dailyCompletedDate', today);
@@ -80,11 +86,40 @@ export default function HomeScreen({ navigation }) {
     if (savedHistory) setWeeklyData(JSON.parse(savedHistory));
   };
 
+  // LOGIQUE DE MISE À JOUR DES QUÊTES D'HYDRATATION
+  const updateHydrationQuest = async () => {
+    const today = new Date().toISOString().slice(0, 10);
+
+    // On ne compte qu'une fois par jour maximum
+    if (!hasGoalBeenReachedToday) {
+      try {
+        const savedStats = await AsyncStorage.getItem('@user_stats');
+        let stats = savedStats ? JSON.parse(savedStats) : { clickCount: 0, hydrationCount: 0 };
+
+        stats.hydrationCount = (stats.hydrationCount || 0) + 1;
+
+        await AsyncStorage.setItem('@user_stats', JSON.stringify(stats));
+        await AsyncStorage.setItem('@goalReached_' + today, 'true');
+        setHasGoalBeenReachedToday(true);
+        console.log("Objectif hydratation enregistré dans les stats !");
+      } catch (e) {
+        console.error("Erreur stats hydratation:", e);
+      }
+    }
+  };
+
   const updateWaterProgress = async (amountMl) => {
     const delta = isAddMode ? amountMl : -amountMl;
     const newVal = Math.max(0, completed + delta);
     const today = new Date().toISOString().slice(0, 10);
+
     setCompleted(newVal);
+
+    // Si on vient d'atteindre ou dépasser l'objectif
+    if (newVal >= dailyGoal && dailyGoal > 0) {
+      updateHydrationQuest();
+    }
+
     const newWeekly = { ...weeklyData, [today]: newVal };
     setWeeklyData(newWeekly);
     await AsyncStorage.setItem('@dailyCompleted', String(newVal));

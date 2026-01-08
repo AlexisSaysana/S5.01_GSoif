@@ -1,167 +1,185 @@
 import React, { useContext, useCallback, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView,StatusBar,Platform, TouchableOpacity, Alert } from 'react-native';
+import {
+  View, Text, StyleSheet, ScrollView, StatusBar,
+  Platform, TouchableOpacity, Alert
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { showLocation } from "react-native-map-link";
 import { fonts } from '../styles/fonts';
-import { Settings, User, UserPen, MapPin, Trash2 } from 'lucide-react-native';
+import { Settings, User, UserPen, MapPin, Trash2, Trophy } from 'lucide-react-native';
 import { ThemeContext } from '../context/ThemeContext';
+import { QUESTS } from '../utils/questsData'; // Import centralisé depuis ton dossier utils
 
 export default function ProfileScreen({ navigation, userEmail, onLogout, route }) {
   const { colors, name, email } = useContext(ThemeContext);
   const [history, setHistory] = useState([]);
+  const [unlockedBadges, setUnlockedBadges] = useState([]);
   const isGuest = userEmail === null;
 
+  // Se déclenche à chaque fois que l'écran revient au premier plan
   useFocusEffect(
     useCallback(() => {
       loadHistory();
+      loadBadges();
     }, [route?.params?.refresh])
   );
+
+  // Charger les badges débloqués en comparant les stats avec la liste QUESTS
+  const loadBadges = async () => {
+    try {
+      const savedStats = await AsyncStorage.getItem('@user_stats');
+      if (savedStats) {
+        const stats = JSON.parse(savedStats);
+
+        // On filtre QUESTS pour ne garder que celles où l'objectif est atteint
+        const unlocked = QUESTS.filter(quest => {
+          const currentProgress = quest.type === 'click'
+            ? (stats.clickCount || 0)
+            : (stats.hydrationCount || 0);
+          return currentProgress >= quest.goal;
+        });
+        setUnlockedBadges(unlocked);
+      }
+    } catch (e) {
+      console.log('Erreur chargement badges:', e);
+    }
+  };
 
   const loadHistory = async () => {
     try {
       const saved = await AsyncStorage.getItem('@fountainHistory');
       if (saved) {
         let loadedHistory = JSON.parse(saved);
-        
-        // Pour les invités, filtrer les items de plus de 72 heures
         if (isGuest) {
           const now = new Date().getTime();
-          const maxAge = 72 * 60 * 60 * 1000; // 72 heures en millisecondes
-          
-          loadedHistory = loadedHistory.filter(item => {
-            const itemDate = new Date(item.date).getTime();
-            return (now - itemDate) < maxAge;
-          });
-          
-          // Sauvegarder l'historique filtré
-          await AsyncStorage.setItem('@fountainHistory', JSON.stringify(loadedHistory));
+          const maxAge = 72 * 60 * 60 * 1000;
+          loadedHistory = loadedHistory.filter(item => (now - new Date(item.date).getTime()) < maxAge);
         }
-        
         setHistory(loadedHistory);
-      } else {
-        // Si pas de données sauvegardées (historique supprimé), vider le state
-        setHistory([]);
       }
     } catch (error) {
-      console.log('Error loading history:', error);
+      console.log('Erreur historique:', error);
     }
+  };
+
+  // Afficher la description du badge lors d'un clic
+  const showBadgeDetail = (badge) => {
+    Alert.alert(
+      badge.title,
+      `${badge.description}\n\nObjectif : ${badge.goal} ${badge.type === 'click' ? 'itinéraires' : 'jours complétés'}`,
+      [{ text: "Super !", style: "default" }]
+    );
   };
 
   const redoItinerary = (item) => {
     showLocation({
-      latitude: item.latitude,
-      longitude: item.longitude,
+      latitude: item.coords[0],
+      longitude: item.coords[1],
       title: item.name,
       appsWhiteList: ['google-maps', 'apple-maps', 'waze']
     });
   };
 
   const deleteHistoryItem = async (indexToDelete) => {
-    try {
-      const newHistory = history.filter((_, index) => index !== indexToDelete);
-      setHistory(newHistory);
-      await AsyncStorage.setItem('@fountainHistory', JSON.stringify(newHistory));
-    } catch (error) {
-      console.log('Error deleting item:', error);
-      Alert.alert("Erreur", "Impossible de supprimer cet élément.");
-    }
+    const newHistory = history.filter((_, index) => index !== indexToDelete);
+    setHistory(newHistory);
+    await AsyncStorage.setItem('@fountainHistory', JSON.stringify(newHistory));
   };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+
       {/* HEADER FIXE */}
       <View style={[styles.header, { backgroundColor: colors.primary }]}>
         <Text style={styles.headerTitle}>Mon profil</Text>
-        <TouchableOpacity
-          style={styles.settingsButton}
-          onPress={() => navigation.getParent()?.navigate('Setting')}
-        >
+        <TouchableOpacity style={styles.settingsButton} onPress={() => navigation.getParent()?.navigate('Setting')}>
           <Settings color="white" size={30} />
         </TouchableOpacity>
       </View>
 
-      {/* CONTENU SCROLLABLE */}
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        
-        {/* PROFIL */}
-        <View style={styles.progressContainer}>
-          <View style={[styles.circlePlaceholder, { borderColor: colors.primary }]}>
-            <User size={100} color={colors.primary} />
-          </View>
 
-          <Text style={[styles.percentage, { color: colors.text }]}>
+        {/* SECTION INFO UTILISATEUR */}
+        <View style={styles.profileSection}>
+          <View style={[styles.avatarCircle, { borderColor: colors.primary }]}>
+            <User size={80} color={colors.primary} />
+          </View>
+          <Text style={[styles.userName, { color: colors.text }]}>
             {isGuest ? "Invité" : name || "Utilisateur"}
           </Text>
-
-          <Text style={[styles.subText, { color: colors.textSecondary }]}>
-            {isGuest ? "Aucune adresse email" : email}
+          <Text style={[styles.userEmail, { color: colors.textSecondary }]}>
+            {isGuest ? "Mode invité activé" : email}
           </Text>
 
-          {isGuest ? (
-            <TouchableOpacity style={styles.accountLink} onPress={onLogout}>
-              <UserPen color={colors.textSecondary} size={20} />
-              <Text style={[styles.linkText, { color: colors.textSecondary }]}>Se connecter</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={styles.accountLink}
-              onPress={() => navigation.getParent()?.navigate('MonCompte')}
-            >
-              <UserPen color={colors.textSecondary} size={20} />
-              <Text style={[styles.linkText, { color: colors.textSecondary }]}>
-                Paramètres et préférences du compte
-              </Text>
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity
+            style={styles.editLink}
+            onPress={isGuest ? onLogout : () => navigation.getParent()?.navigate('MonCompte')}
+          >
+            <UserPen color={colors.textSecondary} size={18} />
+            <Text style={[styles.linkText, { color: colors.textSecondary }]}>
+              {isGuest ? "Se connecter" : "Paramètres du compte"}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-        {/* TITRE HISTORIQUE */}
+        {/* SECTION MES BADGES */}
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Points d'eau utilisés récemment
-          </Text>
+          <View style={styles.row}>
+            <Trophy size={20} color={colors.primary} />
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Mes Badges ({unlockedBadges.length})</Text>
+          </View>
+          <TouchableOpacity onPress={() => navigation.navigate('Quêtes')}>
+            <Text style={{ color: colors.primary, fontWeight: '700' }}>Défis</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* LISTE HISTORIQUE */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.badgeScroll}>
+          {unlockedBadges.length > 0 ? (
+            unlockedBadges.map((badge) => (
+              <TouchableOpacity
+                key={badge.id}
+                activeOpacity={0.7}
+                onPress={() => showBadgeDetail(badge)} // Clic sur le badge pour la description
+                style={[styles.badgeCard, { backgroundColor: colors.surface }]}
+              >
+                <Text style={{ fontSize: 32 }}>{badge.icon}</Text>
+              </TouchableOpacity>
+            ))
+          ) : (
+            <Text style={[styles.emptyText, { marginLeft: 0 }]}>Continue tes quêtes pour débloquer des badges !</Text>
+          )}
+        </ScrollView>
+
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+        {/* SECTION HISTORIQUE */}
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Historique récent</Text>
+        </View>
+
         {history.length > 0 ? (
           history.map((item, index) => (
-            <View key={index} style={[styles.historyItem, { backgroundColor: colors.surface }]}>
-              
-              <TouchableOpacity
-                style={styles.itemMainArea}
-                onPress={() => redoItinerary(item)}
-                activeOpacity={0.6}
-              >
-                <View style={[styles.iconCircle, { backgroundColor: colors.primary + '20' }]}>
+            <View key={index} style={[styles.historyCard, { backgroundColor: colors.surface }]}>
+              <TouchableOpacity style={styles.historyMain} onPress={() => redoItinerary(item)}>
+                <View style={[styles.iconBox, { backgroundColor: colors.primary + '15' }]}>
                   <MapPin size={20} color={colors.primary} />
                 </View>
-
-                <View style={styles.itemTextContainer}>
-                  <Text style={[styles.locationName, { color: colors.text }]} numberOfLines={1}>
-                    {item.name}
-                  </Text>
-                  <Text style={[styles.locationCity, { color: colors.textSecondary }]}>
-                    {item.location} • {new Date(item.date).toLocaleDateString('fr-FR')}
-                  </Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.histName, { color: colors.text }]} numberOfLines={1}>{item.name}</Text>
+                  <Text style={[styles.histDate, { color: colors.textSecondary }]}>{item.location}</Text>
                 </View>
               </TouchableOpacity>
-
-              <TouchableOpacity style={styles.deleteButton} onPress={() => deleteHistoryItem(index)}>
-                <Trash2 size={20} color="#FF5252" />
+              <TouchableOpacity style={styles.deleteBtn} onPress={() => deleteHistoryItem(index)}>
+                <Trash2 size={18} color="#FF5252" />
               </TouchableOpacity>
-
             </View>
           ))
         ) : (
-          <View style={styles.emptyContainer}>
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-              Aucun itinéraire enregistré.
-            </Text>
-          </View>
+          <Text style={styles.emptyText}>Aucun itinéraire enregistré.</Text>
         )}
 
         <View style={{ height: 100 }} />
@@ -172,76 +190,42 @@ export default function ProfileScreen({ navigation, userEmail, onLogout, route }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-
-    header: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      height: Platform.OS === 'android' ? StatusBar.currentHeight + 80 : 120,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 40,
-      zIndex: 10,
-    },
-    settingsButton: {
-      position: 'absolute',
-      right: 20,
-      top: Platform.OS === 'android' ? StatusBar.currentHeight + 20 : 45,
-      zIndex: 11,
-    },
-    headerTitle: {
-      color: 'white',
-      fontSize: 22,
-      fontFamily: fonts.bricolageGrotesque,
-      fontWeight: '700',
-    },
-    content: {
-      padding: 20,
-      paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 110 : 140,
-      alignItems: 'center'
-    },
-
-  progressContainer: { marginTop: 20, alignItems: 'center' },
-  circlePlaceholder: { width: 140, height: 140, borderRadius: 70, borderWidth: 5, justifyContent: 'center', alignItems: 'center' },
-  percentage: { fontSize: 28, fontWeight: 'bold', marginTop: 15, fontFamily: fonts.bricolageGrotesque },
-  subText: { marginTop: 5, fontFamily: fonts.inter, fontSize: 16 },
-  accountLink: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 20, padding: 10 },
-  linkText: { textDecorationLine: 'underline', fontFamily: fonts.inter },
-
-  divider: { width: '100%', height: 1, marginVertical: 30 },
-
-  sectionHeader: { width: '100%', marginBottom: 15 },
+  header: {
+    position: 'absolute', top: 0, left: 0, right: 0,
+    height: Platform.OS === 'android' ? StatusBar.currentHeight + 80 : 120,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 40, zIndex: 10,
+  },
+  settingsButton: { position: 'absolute', right: 20, top: Platform.OS === 'android' ? StatusBar.currentHeight + 20 : 45 },
+  headerTitle: { color: 'white', fontSize: 22, fontFamily: fonts.bricolageGrotesque, fontWeight: '700' },
+  content: { padding: 20, paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 110 : 140 },
+  profileSection: { alignItems: 'center', marginTop: 10 },
+  avatarCircle: { width: 120, height: 120, borderRadius: 60, borderWidth: 4, justifyContent: 'center', alignItems: 'center' },
+  userName: { fontSize: 26, fontWeight: '800', marginTop: 15, fontFamily: fonts.bricolageGrotesque },
+  userEmail: { fontSize: 15, fontFamily: fonts.inter, opacity: 0.7 },
+  editLink: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 15 },
+  linkText: { textDecorationLine: 'underline', fontSize: 13, fontFamily: fonts.inter },
+  divider: { width: '100%', height: 1, marginVertical: 25 },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sectionTitle: { fontSize: 18, fontWeight: '700', fontFamily: fonts.bricolageGrotesque },
-
-  historyItem: {
-    flexDirection: 'row',
-    width: '100%',
+  badgeScroll: { paddingRight: 20, gap: 12 },
+  badgeCard: {
+    width: 70,
+    height: 70,
     borderRadius: 20,
-    marginBottom: 12,
+    justifyContent: 'center',
     alignItems: 'center',
     elevation: 2,
     shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    overflow: 'hidden',
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
   },
-
-  itemMainArea: { flex: 1, flexDirection: 'row', alignItems: 'center', padding: 15 },
-  iconCircle: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
-  itemTextContainer: { flex: 1 },
-  locationName: { fontSize: 16, fontWeight: '600', fontFamily: fonts.inter },
-  locationCity: { fontSize: 12, fontFamily: fonts.inter, marginTop: 2 },
-
-  deleteButton: {
-    padding: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderLeftWidth: 1,
-    borderLeftColor: 'rgba(0,0,0,0.05)',
-  },
-
-  emptyContainer: { width: '100%', alignItems: 'center', marginTop: 20 },
-  emptyText: { fontSize: 14, fontFamily: fonts.inter, textAlign: 'center' },
+  historyCard: { flexDirection: 'row', borderRadius: 20, marginBottom: 12, overflow: 'hidden', elevation: 2, shadowOpacity: 0.05 },
+  historyMain: { flex: 1, flexDirection: 'row', alignItems: 'center', padding: 15 },
+  iconBox: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+  histName: { fontSize: 15, fontWeight: '600', fontFamily: fonts.inter },
+  histDate: { fontSize: 12, opacity: 0.6 },
+  deleteBtn: { padding: 15, borderLeftWidth: 1, borderLeftColor: 'rgba(0,0,0,0.05)', justifyContent: 'center' },
+  emptyText: { textAlign: 'center', fontFamily: fonts.inter, fontSize: 14, opacity: 0.5 }
 });

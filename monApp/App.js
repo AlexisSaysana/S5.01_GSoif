@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useEffect, useState, useRef, useContext } from 'react';
 import { StyleSheet } from 'react-native';
 import * as Font from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
@@ -8,7 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Plus, Map, User, Settings, Home } from 'lucide-react-native';
+import { Plus, Map, User, Settings, Home, Search } from 'lucide-react-native'; // Ajout de Search
 
 // Context & Theme
 import { ThemeProvider, ThemeContext } from './context/ThemeContext';
@@ -24,6 +24,7 @@ import MonCompteScreen from './screens/MonCompteScreen';
 import NotificationsScreen from './screens/NotificationsScreen';
 import HistoryScreen from './screens/HistoryScreen';
 import SettingScreen from './screens/SettingScreen';
+import QuestsScreen from './screens/QuestsScreen'; // Import de QuestsScreen
 
 // Configuration des notifications
 Notifications.setNotificationHandler({
@@ -38,7 +39,7 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 // --- NAVIGATION BASSE (TABS) ---
-function TabNavigator({ onLogout, userEmail, userId,userName }) {
+function TabNavigator({ onLogout, userEmail, userId, userName }) {
   const { colors } = useContext(ThemeContext);
 
   return (
@@ -59,6 +60,12 @@ function TabNavigator({ onLogout, userEmail, userId,userName }) {
         name="Rechercher"
         component={FontainesScreen}
         options={{ tabBarIcon: ({ color }) => <Map color={color} size={28} /> }}
+      />
+      {/* NOUVEL ONGLE QUÊTES AVEC L'ICÔNE RECHERCHE */}
+      <Tab.Screen
+        name="Quêtes"
+        component={QuestsScreen}
+        options={{ tabBarIcon: ({ color }) => <Search color={color} size={28} /> }}
       />
       <Tab.Screen
         name="Profil"
@@ -89,7 +96,6 @@ function AppContent() {
   useEffect(() => {
     async function initApp() {
       try {
-        // 1. Charger la session
         const savedId = await AsyncStorage.getItem("userId");
         const savedEmail = await AsyncStorage.getItem("userEmail");
         const savedName = await AsyncStorage.getItem("userName");
@@ -100,13 +106,11 @@ function AppContent() {
           setIsLoggedIn(true);
         }
 
-        // 2. Charger les polices
         await Font.loadAsync({
           'BricolageGrotesque': require('./assets/fonts/BricolageGrotesque-VariableFont_opsz,wdth,wght.ttf'),
           'Inter': require('./assets/fonts/Inter-VariableFont_opsz,wght.ttf'),
         });
 
-        // 3. Notifications
         const { status } = await Notifications.requestPermissionsAsync();
         if (status === 'granted') {
           await Notifications.setNotificationChannelAsync("default", {
@@ -123,46 +127,39 @@ function AppContent() {
     }
     initApp();
   }, []);
-const handleLogin = async (email = null, id = null, fullName = null) => {
+
+  const handleLogin = async (email = null, id = null, fullName = null) => {
     if (email && id) {
-      // 1. Sauvegarde AsyncStorage
       await AsyncStorage.setItem("userId", id.toString());
       await AsyncStorage.setItem("userEmail", email);
       if (fullName) await AsyncStorage.setItem("userName", fullName);
 
-      // 2. Mise à jour du Context (très important pour le ProfileScreen)
       if (fullName) changeName(fullName);
       if (email) changeEmail(email);
 
-      // 3. Mise à jour du state local
       setUserEmail(email);
       setUserId(id);
       setUserName(fullName);
     } else {
-      // Mode invité
       setUserName(null);
       setUserEmail(null);
-      changeName("Invité"); // Valeur par défaut dans le contexte
+      changeName("Invité");
       changeEmail("");
     }
     setIsLoggedIn(true);
-};
+  };
 
-
- const handleLogout = async () => {
-     await AsyncStorage.removeItem("userId");
-     await AsyncStorage.removeItem("userEmail");
-     await AsyncStorage.removeItem("userName");
-
-     // Reset du contexte
-     changeName("");
-     changeEmail("");
-
-     setIsLoggedIn(false);
-     setUserEmail(null);
-     setUserId(null);
-     setUserName(null);
- };
+  const handleLogout = async () => {
+    await AsyncStorage.removeItem("userId");
+    await AsyncStorage.removeItem("userEmail");
+    await AsyncStorage.removeItem("userName");
+    changeName("");
+    changeEmail("");
+    setIsLoggedIn(false);
+    setUserEmail(null);
+    setUserId(null);
+    setUserName(null);
+  };
 
   if (!fontsLoaded) return null;
 
@@ -204,6 +201,7 @@ const handleLogin = async (email = null, id = null, fullName = null) => {
             <Stack.Screen name="Setting">
               {(props) => <SettingScreen {...props} onLogout={handleLogout} userEmail={userEmail} />}
             </Stack.Screen>
+            <Stack.Screen name="Quests" component={QuestsScreen} />
             <Stack.Screen name="History" component={HistoryScreen} />
           </Stack.Group>
         )}
