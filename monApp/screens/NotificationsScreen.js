@@ -224,7 +224,7 @@ export default function NotificationsScreen({ route, navigation }) {
           <ChevronLeft size={28} color="white" />
         </TouchableOpacity>
 
-        
+
 
         <Text style={styles.headerTitle}>Notifications</Text>
       </View>

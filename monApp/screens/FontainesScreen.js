@@ -138,7 +138,7 @@ export default function FontainesScreen() {
       <View style={styles.topBlue}>
         <MapView
           ref={mapRef}
-          provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
+        //  provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
           style={StyleSheet.absoluteFillObject}
           showsUserLocation={true}
           initialRegion={{

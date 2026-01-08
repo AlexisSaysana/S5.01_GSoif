@@ -6,25 +6,22 @@
     "orientation": "portrait",
     "icon": "./assets/icon-light-filled.png",
     "userInterfaceStyle": "light",
-
     "experiments": {
       "reactNativeNewArchitecture": true
     },
-
     "splash": {
       "image": "./assets/icon-light-filled.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.votre.gsoif",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "GSoif a besoin de votre position pour afficher les fontaines les plus proches de vous."
+        "NSLocationWhenInUseUsageDescription": "GSoif a besoin de votre position pour afficher les fontaines les plus proches de vous.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
-
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon-light-filled.png",
@@ -36,16 +33,24 @@
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
         "FOREGROUND_SERVICE"
-      ]
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAzmdUc01GRK6HqBz4x83lbwzxv3yImGGA"
+        }
+      }
     },
-
     "web": {
       "favicon": "./assets/icon-light-filled.png"
     },
-
     "plugins": [
       "react-native-map-link",
       "@react-native-community/datetimepicker"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "b2a4ab98-90d0-4822-9143-cb54cc7d171d"
+      }
+    }
   }
 }
