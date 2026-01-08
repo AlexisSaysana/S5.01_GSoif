@@ -1,5 +1,5 @@
 import React, { useContext, useCallback, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView,StatusBar,Platform, TouchableOpacity, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { showLocation } from "react-native-map-link";
@@ -173,37 +173,35 @@ export default function ProfileScreen({ navigation, userEmail, onLogout, route }
 const styles = StyleSheet.create({
   container: { flex: 1 },
 
-  header: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 120,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 40,
-    zIndex: 10,
-  },
-
-  settingsButton: {
-    position: 'absolute',
-    right: 20,
-    top: 40,
-    zIndex: 11,
-  },
-
-  headerTitle: {
-    color: 'white',
-    fontSize: 22,
-    fontFamily: fonts.bricolageGrotesque,
-    fontWeight: '700',
-  },
-
-  content: {
-    padding: 20,
-    paddingTop: 140,
-  },
+    header: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      height: Platform.OS === 'android' ? StatusBar.currentHeight + 80 : 120,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 40,
+      zIndex: 10,
+    },
+    settingsButton: {
+      position: 'absolute',
+      right: 20,
+      top: Platform.OS === 'android' ? StatusBar.currentHeight + 20 : 45,
+      zIndex: 11,
+    },
+    headerTitle: {
+      color: 'white',
+      fontSize: 22,
+      fontFamily: fonts.bricolageGrotesque,
+      fontWeight: '700',
+    },
+    content: {
+      padding: 20,
+      paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 110 : 140,
+      alignItems: 'center'
+    },
 
   progressContainer: { marginTop: 20, alignItems: 'center' },
   circlePlaceholder: { width: 140, height: 140, borderRadius: 70, borderWidth: 5, justifyContent: 'center', alignItems: 'center' },
