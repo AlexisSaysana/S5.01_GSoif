@@ -5,10 +5,9 @@ import {
   ActivityIndicator,
   Text,
   ScrollView,
-  Platform,
   TouchableOpacity,
 } from "react-native";
-import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
+import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
 import { showLocation } from "react-native-map-link";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -21,16 +20,15 @@ import FountainTab from "../components/FountainTab";
 
 export default function FontainesScreen() {
   const { colors } = useContext(ThemeContext);
-  const [fontaines, setFontaines] = useState([]);
-  const [filteredFontaines, setFilteredFontaines] = useState([]);
+  const [pointsDEau, setPointsDEau] = useState([]);
+  const [filteredPoints, setFilteredPoints] = useState([]);
   const [searchText, setSearchText] = useState("");
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState(null);
-  const [selectedFontaine, setSelectedFontaine] = useState(null);
+  const [selectedPoint, setSelectedPoint] = useState(null);
 
   const mapRef = useRef(null);
 
-  // Calcul de distance
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371;
     const dLat = (lat2 - lat1) * (Math.PI / 180);
@@ -56,23 +54,52 @@ export default function FontainesScreen() {
 
       try {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 8000);
-        const res = await fetch("https://opendata.paris.fr/api/records/1.0/search/?dataset=fontaines-a-boire&rows=30", { signal: controller.signal });
+        const timeout = setTimeout(() => controller.abort(), 10000);
+
+        // Correction : Utilisation du dataset correct pour les commerces
+        const urlFontaines = "https://opendata.paris.fr/api/records/1.0/search/?dataset=fontaines-a-boire&rows=50";
+        const urlCommerces = "https://opendata.paris.fr/api/records/1.0/search/?dataset=commerces-eau-de-paris&rows=50";
+
+        const [resF, resC] = await Promise.all([
+          fetch(urlFontaines, { signal: controller.signal }),
+          fetch(urlCommerces, { signal: controller.signal })
+        ]);
+
+        const dataF = await resF.json();
+        const dataC = await resC.json();
         clearTimeout(timeout);
-        const data = await res.json();
-        let cleanData = (data.records || []).filter(item => item?.fields?.geo_point_2d);
+
+        // Normalisation Fontaines (Champ: nom / voie)
+        const cleanF = (dataF.records || []).map(item => ({
+          id: item.recordid,
+          name: item.fields.nom || item.fields.type_objet || "Fontaine à boire",
+          address: item.fields.voie || "Paris",
+          coords: item.fields.geo_point_2d,
+          type: 'fontaine'
+        }));
+
+        // Normalisation Commerces (Champ: nom_du_commerce / adresse)
+        const cleanC = (dataC.records || []).map(item => ({
+          id: item.recordid,
+          name: item.fields.nom_commerce || "Commerce partenaire",
+          address: item.fields.nom_voie || "Paris",
+          coords: item.fields.geo_point_2d,
+          type: 'commerce'
+        }));
+
+        let allPoints = [...cleanF, ...cleanC];
 
         if (currentUserLoc) {
-          cleanData = cleanData.map((f) => ({
-            ...f,
-            distanceKm: calculateDistance(currentUserLoc.latitude, currentUserLoc.longitude, f.fields.geo_point_2d[0], f.fields.geo_point_2d[1])
+          allPoints = allPoints.map((p) => ({
+            ...p,
+            distanceKm: calculateDistance(currentUserLoc.latitude, currentUserLoc.longitude, p.coords[0], p.coords[1])
           })).sort((a, b) => a.distanceKm - b.distanceKm);
         }
 
-        setFontaines(cleanData);
-        setFilteredFontaines(cleanData);
+        setPointsDEau(allPoints);
+        setFilteredPoints(allPoints);
       } catch (err) {
-        console.error('Fontaines fetch error', err);
+        console.error('Fetch error:', err);
       } finally {
         setLoading(false);
       }
@@ -81,54 +108,45 @@ export default function FontainesScreen() {
 
   const handleSearch = (text) => {
     setSearchText(text);
-    const filtered = fontaines.filter(f =>
-      (f.fields.nom || "").toLowerCase().includes(text.toLowerCase()) ||
-      (f.fields.voie || "").toLowerCase().includes(text.toLowerCase())
+    const filtered = pointsDEau.filter(p =>
+      p.name.toLowerCase().includes(text.toLowerCase()) ||
+      p.address.toLowerCase().includes(text.toLowerCase())
     );
-    setFilteredFontaines(filtered);
+    setFilteredPoints(filtered);
   };
 
-  const focusOnFontaine = (f) => {
-    setSelectedFontaine(f);
+  const focusOnPoint = (p) => {
+    setSelectedPoint(p);
     mapRef.current?.animateCamera({
-      center: { latitude: f.fields.geo_point_2d[0], longitude: f.fields.geo_point_2d[1] },
+      center: { latitude: p.coords[0], longitude: p.coords[1] },
       zoom: 17
     }, { duration: 800 });
   };
 
-  // --- FONCTION MAJ : SAUVEGARDE HISTORIQUE + NAVIGATION ---
   const openExternalMaps = async () => {
-    if (!selectedFontaine) return;
+    if (!selectedPoint) return;
 
     try {
       const historyItem = {
-        name: selectedFontaine.fields.nom || selectedFontaine.fields.type_objet || 'Fontaine à boire',
-        location: selectedFontaine.fields.voie || 'Paris',
+        name: selectedPoint.name,
+        location: selectedPoint.address,
         date: new Date().toISOString(),
-        latitude: selectedFontaine.fields.geo_point_2d[0],
-        longitude: selectedFontaine.fields.geo_point_2d[1],
+        type: selectedPoint.type
       };
 
       const saved = await AsyncStorage.getItem('@fountainHistory');
       let history = saved ? JSON.parse(saved) : [];
-
-      // Suppression de l'entrée si elle existe déjà (pour la faire remonter en haut)
-      history = history.filter(h => h.name !== historyItem.name || h.location !== historyItem.location);
-
-      // Ajout au début et limite à 20 entrées
+      history = history.filter(h => h.name !== historyItem.name);
       history.unshift(historyItem);
-      history = history.slice(0, 20);
-
-      await AsyncStorage.setItem('@fountainHistory', JSON.stringify(history));
+      await AsyncStorage.setItem('@fountainHistory', JSON.stringify(history.slice(0, 20)));
     } catch (e) {
-      console.log('Erreur sauvegarde historique', e);
+      console.log('Erreur historique:', e);
     }
 
-    // Ouverture de l'application GPS
     showLocation({
-      latitude: selectedFontaine.fields.geo_point_2d[0],
-      longitude: selectedFontaine.fields.geo_point_2d[1],
-      title: selectedFontaine.fields.nom || "Fontaine",
+      latitude: selectedPoint.coords[0],
+      longitude: selectedPoint.coords[1],
+      title: selectedPoint.name,
       appsWhiteList: ['google-maps', 'apple-maps', 'waze']
     });
   };
@@ -138,80 +156,82 @@ export default function FontainesScreen() {
       <View style={styles.topBlue}>
         <MapView
           ref={mapRef}
-        //  provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
           style={StyleSheet.absoluteFillObject}
           showsUserLocation={true}
           initialRegion={{
             latitude: 48.8566, longitude: 2.3522,
             latitudeDelta: 0.05, longitudeDelta: 0.05,
           }}
-          onPress={() => setSelectedFontaine(null)}
+          onPress={() => setSelectedPoint(null)}
         >
-          {filteredFontaines.map((f) => (
+          {filteredPoints.map((p) => (
             <Marker
-              key={f.recordid}
-              coordinate={{ latitude: f.fields.geo_point_2d[0], longitude: f.fields.geo_point_2d[1] }}
-              onPress={() => setSelectedFontaine(f)}
+              key={p.id}
+              coordinate={{ latitude: p.coords[0], longitude: p.coords[1] }}
+              pinColor={p.type === 'fontaine' ? colors.primary : '#4CAF50'}
+              onPress={() => setSelectedPoint(p)}
             />
           ))}
         </MapView>
       </View>
 
       <View style={[styles.bottomWhite, { backgroundColor: colors.background }]}>
-        {!selectedFontaine ? (
+        {!selectedPoint ? (
           <>
             <CustomInput
-              placeholder="Rechercher un point d'eau"
+              placeholder="Rechercher fontaine ou commerce"
               value={searchText}
               onChangeText={handleSearch}
             />
-            <Text style={[styles.countText, { color: colors.text }]}>
-              {filteredFontaines.length} points d'eau trouvés
-            </Text>
+
             <ScrollView contentContainerStyle={styles.listContainer} showsVerticalScrollIndicator={false}>
-              {filteredFontaines.map((f, index) => (
-                <FountainTab
-                  key={f.recordid}
-                  name={f.fields.nom || f.fields.type_objet || "Fontaine"}
-                  location={f.fields.voie || "Paris"}
-                  distance={f.distanceKm ? (f.distanceKm < 1 ? `${(f.distanceKm * 1000).toFixed(0)} m` : `${f.distanceKm.toFixed(1)} km`) : "—"}
-                  time={f.distanceKm ? `${Math.round(f.distanceKm * 12)} min` : "—"}
-                  nearest={index === 0 && !searchText}
-                  onPress={() => focusOnFontaine(f)}
-                />
+              {filteredPoints.map((p, index) => (
+                <View key={p.id} style={{ width: '100%' }}>
+                  <View style={[
+                    styles.badge,
+                    { backgroundColor: p.type === 'fontaine' ? colors.primary : '#4CAF50' }
+                  ]}>
+                    <Text style={styles.badgeText}>
+                      {p.type === 'fontaine' ? 'FONTAINE' : 'COMMERCE'}
+                    </Text>
+                  </View>
+
+                  <FountainTab
+                    name={p.name}
+                    location={p.address}
+                    distance={p.distanceKm ? (p.distanceKm < 1 ? `${(p.distanceKm * 1000).toFixed(0)} m` : `${p.distanceKm.toFixed(1)} km`) : "—"}
+                    time={p.distanceKm ? `${Math.round(p.distanceKm * 12)} min` : "—"}
+                    nearest={index === 0 && !searchText}
+                    onPress={() => focusOnPoint(p)}
+                  />
+                </View>
               ))}
             </ScrollView>
           </>
         ) : (
           <View style={[styles.detailContainer, { backgroundColor: colors.background }]}>
             <View style={[styles.handle, { backgroundColor: colors.border }]} />
-            <Text style={[styles.detailTitle, { color: colors.text }]}>
-              {selectedFontaine.fields.nom || "Fontaine à boire"}
-            </Text>
-            <Text style={[styles.detailSub, { color: colors.textSecondary }]}>
-              {selectedFontaine.fields.voie}, Paris
-            </Text>
 
-            <View style={[styles.imagePlaceholder, { backgroundColor: colors.surface }]} />
+            <View style={[styles.badgeDetail, { backgroundColor: selectedPoint.type === 'fontaine' ? colors.primary : '#4CAF50' }]}>
+                <Text style={styles.badgeText}>{selectedPoint.type === 'fontaine' ? 'FONTAINE À BOIRE' : 'COMMERCE PARTENAIRE'}</Text>
+            </View>
 
-            <TouchableOpacity
-              style={[styles.mainButton, { backgroundColor: colors.primary }]}
-              onPress={openExternalMaps}
-            >
-              <Text style={[styles.mainButtonText, { color: colors.surface }]}>Faire l'itinéraire</Text>
+            <Text style={[styles.detailTitle, { color: colors.text }]}>{selectedPoint.name}</Text>
+            <Text style={[styles.detailSub, { color: colors.textSecondary }]}>{selectedPoint.address}</Text>
+
+            <TouchableOpacity style={[styles.mainButton, { backgroundColor: colors.primary }]} onPress={openExternalMaps}>
+              <Text style={[styles.mainButtonText, { color: 'white' }]}>Itinéraire</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => setSelectedFontaine(null)} style={{marginTop: 15, paddingVertical: 8}}>
-              <Text style={{color: colors.primary, fontFamily: fonts.inter, fontWeight: '600'}}>
-                Retour à la liste
-              </Text>
+            <TouchableOpacity onPress={() => setSelectedPoint(null)} style={{marginTop: 20}}>
+              <Text style={{color: colors.primary, fontWeight: '700', fontSize: 16}}>Retour à la liste</Text>
             </TouchableOpacity>
           </View>
         )}
       </View>
 
       {loading && (
-        <View style={styles.loadingOverlay} pointerEvents="none">
+        <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
       )}
@@ -220,7 +240,7 @@ export default function FontainesScreen() {
 }
 
 const styles = StyleSheet.create({
-  topBlue: { height: "55%" },
+  topBlue: { height: "50%" },
   bottomWhite: {
     height: "55%",
     padding: 20,
@@ -229,21 +249,24 @@ const styles = StyleSheet.create({
     gap: 15,
     marginTop: -40,
   },
-  listContainer: { paddingBottom: 100, gap: 15, width: '100%' },
-  countText: { fontSize: 14, textAlign: "center", fontFamily: fonts.inter },
+  listContainer: { paddingBottom: 100, gap: 20, width: '100%' },
+  badge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 8,
+    marginBottom: -12,
+    marginLeft: 12,
+    zIndex: 10,
+    elevation: 2,
+  },
+  badgeDetail: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 10, marginBottom: 10 },
+  badgeText: { color: 'white', fontSize: 10, fontWeight: '900', letterSpacing: 0.5 },
   detailContainer: { alignItems: 'center', width: '100%' },
   handle: { width: 40, height: 5, borderRadius: 10, marginBottom: 15 },
-  detailTitle: { fontFamily: fonts.bricolageGrotesque, fontSize: 22, fontWeight: '800', textAlign: 'center' },
-  detailSub: { fontFamily: fonts.inter, marginBottom: 20 },
-  imagePlaceholder: { width: '100%', height: 150, borderRadius: 20, marginBottom: 20 },
-  mainButton: {
-    width: '100%', height: 55, borderRadius: 15,
-    justifyContent: 'center', alignItems: 'center',
-    elevation: 4, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5,
-  },
-  mainButtonText: { fontFamily: fonts.inter, fontSize: 18, fontWeight: '700' },
-  loadingOverlay: {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.1)'
-  }
+  detailTitle: { fontFamily: fonts.bricolageGrotesque, fontSize: 24, fontWeight: '800', textAlign: 'center', marginBottom: 5 },
+  detailSub: { fontFamily: fonts.inter, fontSize: 16, marginBottom: 25, textAlign: 'center', opacity: 0.8 },
+  mainButton: { width: '100%', height: 55, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
+  mainButtonText: { fontSize: 18, fontWeight: '700' },
+  loadingOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.7)' }
 });
