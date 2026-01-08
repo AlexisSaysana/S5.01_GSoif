@@ -61,11 +61,16 @@ function TabNavigator({ onLogout, userEmail, userId }) {
         component={FontainesScreen}
         options={{ tabBarIcon: ({ color }) => <Map color={color} size={28} /> }}
       />
-      <Tab.Screen
-        name="Profil"
-        component={ProfileScreen}
-        options={{ tabBarIcon: ({ color }) => <User color={color} size={28} /> }}
-      />
+      <Tab.Screen name="Profil">
+        {(props) => (
+          <ProfileScreen
+            {...props}
+            userEmail={userEmail}
+            onLogout={onLogout}
+          />
+        )}
+      </Tab.Screen>
+
       <Tab.Screen
         name="Options"
         options={{ tabBarIcon: ({ color }) => <Settings color={color} size={28} /> }}
@@ -126,13 +131,21 @@ function AppContent() {
     initApp();
   }, []);
 
-  const handleLogin = async (email, id) => {
-    await AsyncStorage.setItem("userId", id.toString());
-    await AsyncStorage.setItem("userEmail", email);
-    setUserEmail(email);
-    setUserId(id);
+  const handleLogin = async (email = null, id = null) => {
+    if (email && id) {
+      await AsyncStorage.setItem("userId", id.toString());
+      await AsyncStorage.setItem("userEmail", email);
+      setUserEmail(email);
+      setUserId(id);
+    } else {
+      // Mode invité
+      setUserEmail(null);
+      setUserId(null);
+    }
+
     setIsLoggedIn(true);
   };
+
 
   const handleLogout = async () => {
     await AsyncStorage.removeItem("userId");

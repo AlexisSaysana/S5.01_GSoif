@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles';
 import { fonts } from '../styles/fonts';
@@ -16,55 +17,61 @@ const SignupScreen = ({ navigation, onLogin }) => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const handleSignup = async () => {
-    if (
-      !prenom.trim() ||
-      !nom.trim() ||
-      !email.trim() ||
-      !password.trim() ||
-      !confirmPassword.trim()
-    ) {
-      return Alert.alert("Erreur", "Veuillez remplir tous les champs");
-    }
+ const handleSignup = async () => {
+  if (!prenom.trim() || !nom.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
+    return Alert.alert("Erreur", "Veuillez remplir tous les champs");
+  }
 
-    if (password !== confirmPassword) {
-      return Alert.alert("Erreur", "Les mots de passe ne correspondent pas");
-    }
+  if (password !== confirmPassword) {
+    return Alert.alert("Erreur", "Les mots de passe ne correspondent pas");
+  }
 
-    try {
-      const response = await fetch(`${BASE_URL}/utilisateurs`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          email: email,
-          nom: nom,
-          prenom: prenom,
-          mot_de_passe: password
-        })
-      });
+  try {
+    const response = await fetch(`${BASE_URL}/inscription`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: email,
+        nom: nom,
+        prenom: prenom,
+        mot_de_passe: password
+      })
+    });
 
-      const data = await response.json();
+    const data = await response.json();
 
-      if (!response.ok) {
-        if (data.error === "Champs manquants") {
-          return Alert.alert("Erreur", `Champs manquants : ${data.details.join(", ")}`);
-        }
-        if (data.error === "Email déjà utilisé") {
-          return Alert.alert("Erreur", "Cet email est déjà utilisé");
-        }
-        return Alert.alert("Erreur", "Une erreur est survenue");
+    if (!response.ok) {
+      if (data.error === "Champs manquants") {
+        return Alert.alert("Erreur", `Champs manquants : ${data.details.join(", ")}`);
       }
-
-      Alert.alert("Succès", "Compte créé avec succès !");
-      onLogin(email);
-
-    } catch (error) {
-      console.log(error);
-      Alert.alert("Erreur", "Impossible de se connecter au serveur");
+      if (data.error === "Email déjà utilisé") {
+        return Alert.alert("Erreur", "Cet email est déjà utilisé");
+      }
+      return Alert.alert("Erreur", "Une erreur est survenue");
     }
-  };
+
+    Alert.alert("Succès", "Compte créé avec succès !");
+
+    // 🔥 Utiliser les bonnes clés renvoyées par ton backend
+    const userId = data.id;
+    const userEmail = data.email;
+    const userNom = data.nom;
+    const userPrenom = data.prenom;
+
+    // 🔥 Connexion automatique
+    onLogin(userEmail, userId);
+
+    // 🔥 Sauvegarde locale
+    await AsyncStorage.setItem("userId", userId.toString());
+    await AsyncStorage.setItem("userEmail", userEmail);
+    await AsyncStorage.setItem("userNom", userNom);
+    await AsyncStorage.setItem("userPrenom", userPrenom);
+
+  } catch (error) {
+    console.log(error);
+    Alert.alert("Erreur", "Impossible de se connecter au serveur");
+  }
+};
 
   return (
     <View style={{ flex: 1, backgroundColor: PRIMARY_BLUE }}>
@@ -162,7 +169,7 @@ const SignupScreen = ({ navigation, onLogin }) => {
                 </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity onPress={onLogin}>
+              <TouchableOpacity onPress={() => onLogin(null, null)}>
                 <Text style={styles.smallLink}>Poursuivre en tant qu'invité</Text>
               </TouchableOpacity>
 
