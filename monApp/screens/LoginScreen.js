@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles';
 import { fonts } from '../styles/fonts';
+import { Mail, Lock } from 'lucide-react-native';
 
 import CustomInput from '../components/CustomInput';
 import CustomButton from '../components/CustomButton';
@@ -91,18 +92,27 @@ const LoginScreen = ({ navigation, onLogin  }) => {
                 <View style={{ width: '100%', fontFamily: fonts.inter, display: 'flex', gap: 60 }}>
 
                     <View style={{ width: '100%', justifyContent: 'center', alignItems: 'center', gap: 30 }}>
-                        <CustomInput
-                            placeholder="E-mail"
-                            keyboardType="email-address"
-                            value={email}
-                            onChangeText={setEmail}
-                        />
-                        <CustomInput
-                            placeholder="Mot de passe"
-                            secureTextEntry={true}
-                            value={password}
-                            onChangeText={setPassword}
-                        />
+                        <View style={styles.inputContainer}>
+                            <Mail size={20} color="#999" style={styles.inputIcon} />
+                            <CustomInput
+                                placeholder="E-mail"
+                                keyboardType="email-address"
+                                value={email}
+                                onChangeText={setEmail}
+                                style={styles.inputWithIcon}
+                            />
+                        </View>
+                        
+                        <View style={styles.inputContainer}>
+                            <Lock size={20} color="#999" style={styles.inputIcon} />
+                            <CustomInput
+                                placeholder="Mot de passe"
+                                secureTextEntry={true}
+                                value={password}
+                                onChangeText={setPassword}
+                                style={styles.inputWithIcon}
+                            />
+                        </View>
 
                         <TouchableOpacity onPress={() => console.log('Mot de passe oublié')} style={{width: '100%'}}>
                             <Text style={{
@@ -117,17 +127,25 @@ const LoginScreen = ({ navigation, onLogin  }) => {
                         </TouchableOpacity>
                     </View>
 
-                    <View style={{ width: '100%', justifyContent: 'center', alignItems: 'center', gap: 80 }}>
+                    <View style={{ width: '100%', justifyContent: 'center', alignItems: 'center', gap: 30 }}>
                         <CustomButton
                             title="Se connecter"
                             onPress={handleLogin}
                         />
 
-                        <TouchableOpacity onPress={() => navigation.navigate('Inscription')}>
-                            <Text style={styles.smallLink}>
-                                Je n'ai pas de compte
-                            </Text>
-                        </TouchableOpacity>
+                        <View style={{ gap: 20, alignItems: 'center' }}>
+                            <TouchableOpacity onPress={() => onLogin(null, null)}>
+                                <Text style={styles.smallLink}>
+                                    Poursuivre en tant qu'invité
+                                </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity onPress={() => navigation.navigate('Inscription')}>
+                                <Text style={styles.smallLink}>
+                                    Je n'ai pas de compte
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
 
                 </View>
@@ -174,6 +192,19 @@ const styles = StyleSheet.create({
         fontSize: 14,
         marginTop: 5,
         fontWeight: '600'
+    },
+    inputContainer: {
+        width: '100%',
+        position: 'relative',
+        justifyContent: 'center',
+    },
+    inputIcon: {
+        position: 'absolute',
+        left: 15,
+        zIndex: 1,
+    },
+    inputWithIcon: {
+        paddingLeft: 45,
     }
 });
 

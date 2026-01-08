@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles';
 import { fonts } from '../styles/fonts';
+import { ChevronLeft } from 'lucide-react-native';
 
 import CustomInput from '../components/CustomInput';
 import CustomButton from '../components/CustomButton';
@@ -78,6 +79,13 @@ const SignupScreen = ({ navigation, onLogin }) => {
 
       {/* TOP BLUE */}
       <View style={styles.topBlue}>
+        <TouchableOpacity 
+          style={styles.backButton} 
+          onPress={() => navigation.goBack()}
+        >
+          <ChevronLeft color="white" size={32} />
+        </TouchableOpacity>
+
         <Image
           style={styles.icon}
           source={require('../assets/icon-light.png')}
@@ -188,6 +196,13 @@ const styles = StyleSheet.create({
     height: '25%',
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
+  },
+  backButton: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    zIndex: 10,
   },
   bottomWhite: {
     backgroundColor: WHITE,

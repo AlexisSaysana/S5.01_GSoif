@@ -21,7 +21,25 @@ export default function ProfileScreen({ navigation, userEmail, onLogout }) {
   const loadHistory = async () => {
     try {
       const saved = await AsyncStorage.getItem('@fountainHistory');
-      if (saved) setHistory(JSON.parse(saved));
+      if (saved) {
+        let loadedHistory = JSON.parse(saved);
+        
+        // Pour les invités, filtrer les items de plus de 72 heures
+        if (isGuest) {
+          const now = new Date().getTime();
+          const maxAge = 72 * 60 * 60 * 1000; // 72 heures en millisecondes
+          
+          loadedHistory = loadedHistory.filter(item => {
+            const itemDate = new Date(item.date).getTime();
+            return (now - itemDate) < maxAge;
+          });
+          
+          // Sauvegarder l'historique filtré
+          await AsyncStorage.setItem('@fountainHistory', JSON.stringify(loadedHistory));
+        }
+        
+        setHistory(loadedHistory);
+      }
     } catch (error) {
       console.log('Error loading history:', error);
     }

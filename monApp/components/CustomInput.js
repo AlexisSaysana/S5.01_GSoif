@@ -1,14 +1,11 @@
 import { TextInput, StyleSheet } from 'react-native';
-import { useContext } from 'react';
 import { fonts } from '../styles/fonts';
-import { ThemeContext } from '../context/ThemeContext';
 
 const CustomInput = (props) => {
-    const { colors } = useContext(ThemeContext);
     return (
     <TextInput
-        style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-        placeholderTextColor={colors.textSecondary}
+        style={styles.input}
+        placeholderTextColor="#999"
         {...props}
     />
 );
@@ -20,6 +17,9 @@ const styles = StyleSheet.create({
         paddingVertical: 15,
         paddingHorizontal: 30,
         borderWidth: 1,
+        borderColor: '#E0E0E0',
+        backgroundColor: '#FFFFFF',
+        color: '#1A1A1A',
         borderRadius: 15,
         fontSize: 16,
         fontFamily: fonts.inter,

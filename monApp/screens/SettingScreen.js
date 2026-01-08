@@ -26,12 +26,13 @@ import { ThemeContext } from '../context/ThemeContext'; // Assurez-vous du chemi
 import { fonts } from '../styles/fonts';
 import { PRIMARY_BLUE } from '../styles/baseStyles';
 
-export default function SettingsScreen({ navigation }) {
+export default function SettingsScreen({ navigation, onLogout, userEmail }) {
   // On récupère tout depuis notre contexte global
   const { isDarkMode, toggleTheme, colors, unit, changeUnit } = useContext(ThemeContext);
   
   const [isLocationEnabled, setIsLocationEnabled] = useState(true);
   const [showUnitModal, setShowUnitModal] = useState(false);
+  const isGuest = userEmail === null;
 
   // Options d'unités disponibles
   const unitOptions = ['mL', 'cL', 'L', 'oz'];
@@ -194,13 +195,34 @@ export default function SettingsScreen({ navigation }) {
           />
         </View>
 
-        {/* 4. DANGER ZONE */}
-        <TouchableOpacity 
-          style={[styles.dangerButton, { backgroundColor: colors.dangerBg, borderColor: colors.dangerBg }]} 
-          onPress={handleDeleteAccount}
-        >
-          <Text style={[styles.dangerButtonText, { color: colors.dangerText }]}>Supprimer mon compte</Text>
-        </TouchableOpacity>
+        {/* 4. DANGER ZONE - Masqué pour les invités */}
+        {!isGuest && (
+          <>
+            <TouchableOpacity 
+              style={[styles.dangerButton, { backgroundColor: colors.dangerBg, borderColor: colors.dangerBg }]} 
+              onPress={handleDeleteAccount}
+            >
+              <Text style={[styles.dangerButtonText, { color: colors.dangerText }]}>Supprimer mon compte</Text>
+            </TouchableOpacity>
+
+            {/* BOUTON DE DÉCONNEXION */}
+            <TouchableOpacity 
+              style={[styles.logoutButton, { backgroundColor: '#FF4747' }]} 
+              onPress={() => {
+                Alert.alert(
+                  "Déconnexion",
+                  "Voulez-vous vraiment vous déconnecter ?",
+                  [
+                    { text: "Annuler", style: "cancel" },
+                    { text: "Déconnexion", style: "destructive", onPress: onLogout }
+                  ]
+                );
+              }}
+            >
+              <Text style={styles.logoutButtonText}>Se déconnecter</Text>
+            </TouchableOpacity>
+          </>
+        )}
 
         <Text style={[styles.versionText, { color: colors.textSecondary }]}>GSoif v1.0.2</Text>
         <View style={{height: 20}} />
@@ -330,6 +352,18 @@ const styles = StyleSheet.create({
     fontFamily: fonts.inter,
     fontWeight: '700',
     fontSize: 16,
+  },
+  logoutButton: {
+    paddingVertical: 15,
+    borderRadius: 15,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  logoutButtonText: {
+    fontFamily: fonts.inter,
+    fontWeight: '700',
+    fontSize: 16,
+    color: 'white',
   },
   versionText: {
     textAlign: 'center',
