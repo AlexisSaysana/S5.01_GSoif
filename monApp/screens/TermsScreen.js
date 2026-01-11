@@ -3,13 +3,26 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { ChevronLeft } from 'lucide-react-native';
 import { ThemeContext } from '../context/ThemeContext';
 import { fonts } from '../styles/fonts';
+import { PRIMARY_BLUE } from '../styles/baseStyles';
 
-export default function TermsScreen({ navigation }) {
+export default function TermsScreen({ navigation, route }) {
   const { colors } = useContext(ThemeContext);
+  const fromSignup = route?.params?.fromSignup;
+
+  // Couleurs en mode clair forcé
+  const lightColors = {
+    background: '#FFFFFF',
+    text: '#1A1A1A',
+    textSecondary: '#666666',
+    primary: PRIMARY_BLUE,
+  };
+
+  // Utiliser les couleurs claires si on vient de l'inscription, sinon les couleurs du thème
+  const displayColors = fromSignup ? lightColors : colors;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { backgroundColor: colors.primary }]}>
+    <View style={[styles.container, { backgroundColor: displayColors.background }]}>
+      <View style={[styles.header, { backgroundColor: displayColors.primary }]}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <ChevronLeft color="white" size={30} />
         </TouchableOpacity>
@@ -17,17 +30,17 @@ export default function TermsScreen({ navigation }) {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={[styles.date, { color: colors.textSecondary }]}>
+        <Text style={[styles.date, { color: displayColors.textSecondary }]}>
           Dernière mise à jour : 8 janvier 2026
         </Text>
 
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>1. Acceptation des conditions</Text>
-        <Text style={[styles.paragraph, { color: colors.text }]}>
+        <Text style={[styles.sectionTitle, { color: displayColors.text }]}>1. Acceptation des conditions</Text>
+        <Text style={[styles.paragraph, { color: displayColors.text }]}>
           En utilisant l'application GSoif ("l'Application"), vous acceptez d'être lié par les présentes conditions d'utilisation. Si vous n'acceptez pas ces conditions, veuillez ne pas utiliser l'Application.
         </Text>
 
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>2. Description du service</Text>
-        <Text style={[styles.paragraph, { color: colors.text }]}>
+        <Text style={[styles.sectionTitle, { color: displayColors.text }]}>2. Description du service</Text>
+        <Text style={[styles.paragraph, { color: displayColors.text }]}>
           GSoif est une application mobile qui vous permet de :
           {'\n'}• Suivre votre consommation d'eau quotidienne
           {'\n'}• Définir et atteindre vos objectifs d'hydratation
@@ -35,13 +48,13 @@ export default function TermsScreen({ navigation }) {
           {'\n'}• Recevoir des rappels de boire de l'eau
         </Text>
 
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>3. Compte utilisateur</Text>
-        <Text style={[styles.paragraph, { color: colors.text }]}>
+        <Text style={[styles.sectionTitle, { color: displayColors.text }]}>3. Compte utilisateur</Text>
+        <Text style={[styles.paragraph, { color: displayColors.text }]}>
           Vous êtes responsable de maintenir la confidentialité de vos identifiants de connexion. Vous acceptez de nous informer immédiatement de toute utilisation non autorisée de votre compte.
         </Text>
 
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>4. Utilisation acceptable</Text>
-        <Text style={[styles.paragraph, { color: colors.text }]}>
+        <Text style={[styles.sectionTitle, { color: displayColors.text }]}>4. Utilisation acceptable</Text>
+        <Text style={[styles.paragraph, { color: displayColors.text }]}>
           Vous vous engagez à :
           {'\n'}• Fournir des informations exactes lors de votre inscription
           {'\n'}• Ne pas utiliser l'Application à des fins illégales
@@ -49,33 +62,33 @@ export default function TermsScreen({ navigation }) {
           {'\n'}• Respecter les droits d'auteur et de propriété intellectuelle
         </Text>
 
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>5. Contenu utilisateur</Text>
-        <Text style={[styles.paragraph, { color: colors.text }]}>
+        <Text style={[styles.sectionTitle, { color: displayColors.text }]}>5. Contenu utilisateur</Text>
+        <Text style={[styles.paragraph, { color: displayColors.text }]}>
           Les données que vous enregistrez dans l'Application (historique d'hydratation, préférences) vous appartiennent. Nous ne les utilisons que pour fournir et améliorer nos services.
         </Text>
 
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>6. Géolocalisation</Text>
-        <Text style={[styles.paragraph, { color: colors.text }]}>
+        <Text style={[styles.sectionTitle, { color: displayColors.text }]}>6. Géolocalisation</Text>
+        <Text style={[styles.paragraph, { color: displayColors.text }]}>
           L'utilisation de la fonctionnalité de localisation des points d'eau nécessite votre consentement explicite. Vous pouvez désactiver cette fonctionnalité à tout moment dans les paramètres de votre appareil.
         </Text>
 
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>7. Limitation de responsabilité</Text>
-        <Text style={[styles.paragraph, { color: colors.text }]}>
+        <Text style={[styles.sectionTitle, { color: displayColors.text }]}>7. Limitation de responsabilité</Text>
+        <Text style={[styles.paragraph, { color: displayColors.text }]}>
           L'Application est fournie "en l'état". Nous ne garantissons pas que l'Application sera exempte d'erreurs ou disponible en permanence. Les informations fournies par l'Application sont à titre informatif uniquement et ne constituent pas un avis médical.
         </Text>
 
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>8. Modifications des conditions</Text>
-        <Text style={[styles.paragraph, { color: colors.text }]}>
+        <Text style={[styles.sectionTitle, { color: displayColors.text }]}>8. Modifications des conditions</Text>
+        <Text style={[styles.paragraph, { color: displayColors.text }]}>
           Nous nous réservons le droit de modifier ces conditions à tout moment. Les modifications prendront effet dès leur publication dans l'Application. Votre utilisation continue de l'Application après publication constitue votre acceptation des nouvelles conditions.
         </Text>
 
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>9. Résiliation</Text>
-        <Text style={[styles.paragraph, { color: colors.text }]}>
+        <Text style={[styles.sectionTitle, { color: displayColors.text }]}>9. Résiliation</Text>
+        <Text style={[styles.paragraph, { color: displayColors.text }]}>
           Vous pouvez supprimer votre compte à tout moment depuis les paramètres de l'Application. Nous nous réservons le droit de suspendre ou résilier votre accès en cas de violation de ces conditions.
         </Text>
 
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>10. Contact</Text>
-        <Text style={[styles.paragraph, { color: colors.text }]}>
+        <Text style={[styles.sectionTitle, { color: displayColors.text }]}>10. Contact</Text>
+        <Text style={[styles.paragraph, { color: displayColors.text }]}>
           Pour toute question concernant ces conditions, veuillez nous contacter à :
           {'\n'}Email : support@gsoif.app
         </Text>
