@@ -17,9 +17,10 @@ import { ThemeContext } from "../context/ThemeContext";
 
 import CustomInput from "../components/CustomInput";
 import FountainTab from "../components/FountainTab";
+import { QUESTS } from "../utils/questsData";
 
 export default function FontainesScreen() {
-  const { colors } = useContext(ThemeContext);
+  const { colors, email: userEmail } = useContext(ThemeContext);
   const [pointsDEau, setPointsDEau] = useState([]);
   const [filteredPoints, setFilteredPoints] = useState([]);
   const [searchText, setSearchText] = useState("");
@@ -126,8 +127,8 @@ export default function FontainesScreen() {
   const openExternalMaps = async () => {
     if (!selectedPoint) return;
 
-    // 1. Enregistrer dans l'historique (serveur)
     try {
+      // 1️⃣ AJOUTER DANS L'HISTORIQUE
       await fetch("https://s5-01-gsoif.onrender.com/historique", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -141,26 +142,35 @@ export default function FontainesScreen() {
         })
       });
 
-      // 2. Incrémenter clickCount (quêtes)
+      // 2️⃣ INCRÉMENTER LE CLICKCOUNT
       await fetch(`https://s5-01-gsoif.onrender.com/stats/click/${userEmail}`, {
         method: "PUT"
       });
 
+      // 3️⃣ VÉRIFIER LES QUÊTES ET ENREGISTRER LES BADGES
+      const statsRes = await fetch(`https://s5-01-gsoif.onrender.com/stats/${userEmail}`);
+      const stats = await statsRes.json();
+
+      for (const quest of QUESTS) {
+        const progress = quest.type === "click" ? stats.clickCount : 0;
+
+        if (progress >= quest.goal) {
+          await fetch("https://s5-01-gsoif.onrender.com/badges", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: userEmail,
+              badge_id: quest.id
+            })
+          });
+        }
+      }
+
     } catch (e) {
-      console.log("Erreur historique/stats:", e);
+      console.log("Erreur historique/stats/badges:", e);
     }
 
-      // 2. LOGIQUE DES QUÊTES (Compteur de clics pour les badges)
-      const savedStats = await AsyncStorage.getItem('@user_stats');
-      let stats = savedStats ? JSON.parse(savedStats) : { clickCount: 0 };
-      stats.clickCount += 1; // On incrémente pour les quêtes Koala, Héros, etc.
-      await AsyncStorage.setItem('@user_stats', JSON.stringify(stats));
-
-    } catch (e) {
-      console.log('Erreur historique/stats:', e);
-    }
-
-    // 3. OUVERTURE GPS
+    // 4️⃣ OUVERTURE GPS
     showLocation({
       latitude: selectedPoint.coords[0],
       longitude: selectedPoint.coords[1],

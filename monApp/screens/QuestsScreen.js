@@ -1,28 +1,28 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, StatusBar, Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemeContext } from '../context/ThemeContext';
 import { fonts } from '../styles/fonts';
 import { Settings } from 'lucide-react-native'; // Ajouté pour l'icône
 import { QUESTS } from '../utils/questsData';
 
 export default function QuestsScreen({ navigation }) {
-  const { colors } = useContext(ThemeContext);
+  const { colors, email } = useContext(ThemeContext);
   const [stats, setStats] = useState({ clickCount: 0, hydrationCount: 0 });
 
   useEffect(() => {
-    const loadStats = async () => {
+    const fetchStats = async () => {
       try {
-        const savedStats = await AsyncStorage.getItem('@user_stats');
-        if (savedStats) {
-          setStats(JSON.parse(savedStats));
-        }
+        const response = await fetch(`https://s5-01-gsoif.onrender.com/stats/${email}`);
+        const data = await response.json();
+        setStats(data);
       } catch (e) {
         console.error("Erreur chargement stats quêtes", e);
       }
     };
-    loadStats();
+
+    fetchStats();
   }, []);
+
 
   const showQuestDetail = (quest) => {
     Alert.alert(quest.title, quest.description);

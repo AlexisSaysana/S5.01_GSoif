@@ -37,15 +37,24 @@ export default function ProfileScreen({ navigation, userEmail, onLogout, route }
       const response = await fetch(`https://s5-01-gsoif.onrender.com/badges/${userEmail}`);
       const badgeData = await response.json();
 
+      if (!Array.isArray(badgeData)) {
+        console.log("Réponse inattendue de /badges:", badgeData);
+        setUnlockedBadges([]);
+        return;
+      }
+
       const unlocked = QUESTS.filter(quest =>
-        badgeData.some(b => parseInt(b.badge_id) === quest.id)
+        badgeData.some(b => b.badge_id === quest.id.toString())
       );
 
       setUnlockedBadges(unlocked);
     } catch (e) {
       console.log("Erreur chargement badges:", e);
+      setUnlockedBadges([]);
     }
   };
+
+
 
 
 
@@ -179,7 +188,7 @@ export default function ProfileScreen({ navigation, userEmail, onLogout, route }
                   <Text style={[styles.histDate, { color: colors.textSecondary }]}>{item.location}</Text>
                 </View>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.deleteBtn} onPress={() => onPress={() => deleteHistoryItem(item.id)}>
+              <TouchableOpacity style={styles.deleteBtn} onPress={() => deleteHistoryItem(item.id)}>
                 <Trash2 size={18} color="#FF5252" />
               </TouchableOpacity>
             </View>
