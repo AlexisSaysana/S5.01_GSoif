@@ -79,7 +79,32 @@ export default function SettingsScreen({ navigation, onLogout, userEmail }) {
       "Action définitive. Toutes vos données seront effacées.",
       [
         { text: "Annuler", style: "cancel" },
-        { text: "Supprimer", style: "destructive", onPress: () => navigation.navigate('Login') }
+        {
+          text: "Supprimer",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const response = await fetch(`https://s5-01-gsoif.onrender.com/utilisateurs/${userEmail}`, {
+                method: "DELETE"
+              });
+
+              const data = await response.json();
+
+              if (!response.ok) {
+                Alert.alert("Erreur", data.error || "Impossible de supprimer le compte");
+                return;
+              }
+
+              onLogout();
+              navigation.navigate("Login");
+
+              Alert.alert("Succès", "Votre compte a été supprimé");
+            } catch (error) {
+              console.log(error);
+              Alert.alert("Erreur", "Problème de connexion au serveur");
+            }
+          }
+        }
       ]
     );
   };

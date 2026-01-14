@@ -372,6 +372,25 @@ app.get('/notification/preferences/:userId', (req, res) => {
     });
   });
 });
+// SUPPRESSION DE COMPTE
+app.delete('/utilisateurs/:email', (req, res) => {
+  const email = req.params.email;
+
+  const sql = "DELETE FROM utilisateur WHERE email = ?";
+  db.query(sql, [email], (err, result) => {
+    if (err) {
+      console.error("Erreur SQL :", err);
+      return res.status(500).json({ error: "Erreur serveur" });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Utilisateur non trouvé" });
+    }
+
+    return res.json({ message: "Compte supprimé avec succès" });
+  });
+});
+
 
 
 // --------------------------------------
