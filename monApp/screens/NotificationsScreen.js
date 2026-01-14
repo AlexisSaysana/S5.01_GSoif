@@ -244,6 +244,7 @@ export default function NotificationsScreen({ route, navigation }) {
                 <View style={styles.switchRow}>
                   <Text style={[styles.switchLabel, { color: colors.text }]}>Activer les notifications</Text>
                   <Switch
+                    testID="notif-switch"
                     value={notificationsEnabled}
                     onValueChange={setNotificationsEnabled}
                     trackColor={{ false: "#DDD", true: colors.primary }}
@@ -258,7 +259,7 @@ export default function NotificationsScreen({ route, navigation }) {
                   <View style={[styles.sectionContainer, { backgroundColor: colors.surface }]}>
                     <Text style={[styles.sectionTitle, { color: colors.text }]}>Horaires programmés</Text>
                     {fixedTimes.map((t, index) => (
-                      <View key={index}>
+                      <View key={index} testID={`time-${index}`}>
                         <View style={styles.timeRow}>
                           <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                             <Text style={{ fontSize: 20 }}>🕒</Text>
@@ -266,7 +267,7 @@ export default function NotificationsScreen({ route, navigation }) {
                               {t.hour.toString().padStart(2, "0")}:{t.minute.toString().padStart(2, "0")}
                             </Text>
                           </View>
-                          <TouchableOpacity onPress={() => setFixedTimes(prev => prev.filter((_, i) => i !== index))}>
+                          <TouchableOpacity onPress={() => setFixedTimes(prev => prev.filter((_, i) => i !== index))} testID={`delete-${index}`}>
                             <Trash2 size={22} color="#E53935" />
                           </TouchableOpacity>
                         </View>

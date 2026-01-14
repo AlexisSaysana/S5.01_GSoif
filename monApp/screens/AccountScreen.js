@@ -88,7 +88,7 @@ export default function AccountScreen({ navigation }) {
 
     const rounded = Math.round(valMl);
     // Use context setter so all screens update immediately
-    changeDailyGoal(rounded).catch ? changeDailyGoal(rounded) : changeDailyGoal(rounded);
+    changeDailyGoal(rounded);
     setShowGoalModal(false);
   };
 
@@ -161,7 +161,7 @@ export default function AccountScreen({ navigation }) {
             </View>
 
             {!isChangingPassword ? (
-              <TouchableOpacity style={styles.inputGroup} onPress={togglePasswordMode}>
+              <TouchableOpacity style={styles.inputGroup} onPress={togglePasswordMode} testID="edit-password">
                 <View style={[styles.iconContainer, { backgroundColor: colors.dangerBg }]}>
                   <Lock size={20} color={colors.dangerText} />
                 </View>
@@ -234,6 +234,7 @@ export default function AccountScreen({ navigation }) {
                      String(Number(dailyGoal))} {unit}
                   </Text>
                   <TouchableOpacity
+                    testID="edit-goal"
                     style={[styles.modifierButton, { backgroundColor: colors.border }]}
                     onPress={() => {
                       // Open modal empty so user inputs a fresh value (avoid showing mL raw value)
@@ -263,12 +264,13 @@ export default function AccountScreen({ navigation }) {
                         <Text style={[styles.subLabel, { color: colors.textSecondary }]}>Rappels pour boire</Text>
                     </View>
                     <Switch
+                        testID="notifications-switch" 
                         trackColor={{ false: "#E0E0E0", true: PRIMARY_BLUE }}
                         thumbColor={WHITE}
                         ios_backgroundColor="#E0E0E0"
                         onValueChange={(val) => {
                           setNotificationsEnabled(val);
-                          AsyncStorage.setItem('@notificationsEnabled', String(val)).catch(e => console.log('save notif err', e));
+                          AsyncStorage.setItem('@notificationsEnabled', String(val))?.catch(e => console.log('save notif err', e));
                         }}
                         value={notificationsEnabled}
                         style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
@@ -278,7 +280,7 @@ export default function AccountScreen({ navigation }) {
             </View>
           </View>
 
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+          <TouchableOpacity style={styles.saveButton} onPress={handleSave} testID="save">
             <Text style={styles.saveButtonText}>Enregistrer les modifications</Text>
           </TouchableOpacity>
 
@@ -319,6 +321,7 @@ export default function AccountScreen({ navigation }) {
                 <Text style={[styles.modalButtonText, { color: colors.text }]}>Annuler</Text>
               </TouchableOpacity>
               <TouchableOpacity
+                testID="confirm-goal"
                 style={[styles.modalButton, { backgroundColor: PRIMARY_BLUE }]}
                 onPress={handleGoalConfirm}
               >
