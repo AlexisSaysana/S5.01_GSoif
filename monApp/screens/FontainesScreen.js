@@ -126,21 +126,29 @@ export default function FontainesScreen() {
   const openExternalMaps = async () => {
     if (!selectedPoint) return;
 
-    // 1. SAUVEGARDE DANS L'HISTORIQUE (Relié au Profil)
+    // 1. Enregistrer dans l'historique (serveur)
     try {
-      const historyItem = {
-        id: selectedPoint.id + Date.now(),
-        name: selectedPoint.name,
-        location: selectedPoint.address,
-        type: selectedPoint.type,
-        date: new Date().toISOString(),
-      };
+      await fetch("https://s5-01-gsoif.onrender.com/historique", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: userEmail,
+          name: selectedPoint.name,
+          location: selectedPoint.address,
+          latitude: selectedPoint.coords[0],
+          longitude: selectedPoint.coords[1],
+          date: new Date().toISOString()
+        })
+      });
 
-      const saved = await AsyncStorage.getItem('@fountainHistory');
-      let history = saved ? JSON.parse(saved) : [];
-      history = history.filter(h => h.name !== selectedPoint.name);
-      history.unshift(historyItem);
-      await AsyncStorage.setItem('@fountainHistory', JSON.stringify(history.slice(0, 20)));
+      // 2. Incrémenter clickCount (quêtes)
+      await fetch(`https://s5-01-gsoif.onrender.com/stats/click/${userEmail}`, {
+        method: "PUT"
+      });
+
+    } catch (e) {
+      console.log("Erreur historique/stats:", e);
+    }
 
       // 2. LOGIQUE DES QUÊTES (Compteur de clics pour les badges)
       const savedStats = await AsyncStorage.getItem('@user_stats');

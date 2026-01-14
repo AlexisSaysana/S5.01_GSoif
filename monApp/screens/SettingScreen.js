@@ -39,35 +39,49 @@ export default function SettingsScreen({ navigation, onLogout, userEmail }) {
   const unitOptions = ['mL', 'cL', 'L', 'oz'];
 
   // --- Actions ---
-  const handleDeleteHistory = async () => {
+  const handleDeleteHistory = () => {
     Alert.alert(
       "Supprimer l'historique",
       "Êtes-vous sûr ? Cette action est irréversible.",
       [
         { text: "Annuler", style: "cancel" },
-        { 
-          text: "Supprimer", 
-          style: "destructive", 
+        {
+          text: "Supprimer",
+          style: "destructive",
           onPress: async () => {
             try {
-              await AsyncStorage.removeItem('@fountainHistory');
-              // Naviguer vers le tab Profil et forcer le refresh
-              navigation.navigate('Main', { 
+              const response = await fetch(
+                `https://s5-01-gsoif.onrender.com/historique/user/${userEmail}`,
+                { method: "DELETE" }
+              );
+
+              const data = await response.json();
+
+              if (!response.ok) {
+                Alert.alert("Erreur", data.error || "Impossible de supprimer l'historique");
+                return;
+              }
+
+              // Rafraîchir l'écran Profil
+              navigation.navigate('Main', {
                 screen: 'Profil',
                 params: { refresh: Date.now() }
               });
+
               setTimeout(() => {
                 Alert.alert("Succès", "Historique supprimé avec succès");
               }, 300);
+
             } catch (error) {
-              console.log('Error deleting history:', error);
-              Alert.alert("Erreur", "Impossible de supprimer l'historique");
+              console.log('Erreur suppression historique:', error);
+              Alert.alert("Erreur", "Problème de connexion au serveur");
             }
           }
         }
       ]
     );
   };
+
 
   const handleExportData = () => {
     Alert.alert("Export RGPD", "Vos données seront exportées en JSON.");

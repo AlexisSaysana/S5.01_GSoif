@@ -390,6 +390,103 @@ app.delete('/utilisateurs/:email', (req, res) => {
     return res.json({ message: "Compte supprimé avec succès" });
   });
 });
+//Récuper historique fontaines
+app.get('/historique/:email', (req, res) => {
+  const sql = "SELECT * FROM historique WHERE email = ? ORDER BY date DESC";
+  db.query(sql, [req.params.email], (err, result) => {
+    if (err) return res.status(500).json({ error: "Erreur serveur" });
+    res.json(result);
+  });
+});
+// Supprimer un seul item d'historique
+app.delete('/historique/item/:id', (req, res) => {
+  const sql = "DELETE FROM historique WHERE id = ?";
+  db.query(sql, [req.params.id], (err) => {
+    if (err) return res.status(500).json({ error: "Erreur serveur" });
+    res.json({ message: "Supprimé" });
+  });
+});
+// Supprimer tout l'historique
+app.delete('/historique/user/:email', (req, res) => {
+  const email = req.params.email;
+
+  const sql = "DELETE FROM historique WHERE email = ?";
+  db.query(sql, [email], (err, result) => {
+    if (err) {
+      console.error("Erreur SQL :", err);
+      return res.status(500).json({ error: "Erreur serveur" });
+    }
+
+    return res.json({ message: "Historique supprimé avec succès" });
+  });
+});
+// Ajouter un item dans l'historique
+app.post('/historique', (req, res) => {
+  const { email, name, location, latitude, longitude, date } = req.body;
+
+  const sql = "INSERT INTO historique (email, name, location, latitude, longitude, date) VALUES (?, ?, ?, ?, ?, ?)";
+  db.query(sql, [email, name, location, latitude, longitude, date], (err) => {
+    if (err) return res.status(500).json({ error: "Erreur serveur" });
+    res.json({ message: "Historique ajouté" });
+  });
+});
+//Récupérer les stats d’un utilisateur
+app.get('/stats/:email', (req, res) => {
+  const sql = "SELECT * FROM user_stats WHERE email = ?";
+  db.query(sql, [req.params.email], (err, result) => {
+    if (err) return res.status(500).json({ error: "Erreur serveur" });
+
+    if (result.length === 0) {
+      return res.json({ clickCount: 0, hydrationCount: 0 });
+    }
+
+    res.json(result[0]);
+  });
+});
+//Incrémenter clickCount (pour les quêtes)
+app.put('/stats/click/:email', (req, res) => {
+  const email = req.params.email;
+
+  const sql = `
+    INSERT INTO user_stats (email, clickCount)
+    VALUES (?, 1)
+    ON DUPLICATE KEY UPDATE clickCount = clickCount + 1
+  `;
+
+  db.query(sql, [email], (err) => {
+    if (err) return res.status(500).json({ error: "Erreur serveur" });
+    res.json({ message: "ClickCount mis à jour" });
+  });
+});
+// Récupérer les badges débloqués d’un utilisateur
+app.get('/badges/:email', (req, res) => {
+  const email = req.params.email;
+
+  const sql = "SELECT badge_id, unlocked_at FROM badges WHERE email = ?";
+  db.query(sql, [email], (err, result) => {
+    if (err) return res.status(500).json({ error: "Erreur serveur" });
+    res.json(result);
+  });
+});
+// Enregistrer un badge débloqué
+app.post('/badges', (req, res) => {
+  const { email, badge_id } = req.body;
+
+  if (!email || !badge_id) {
+    return res.status(400).json({ error: "Champs manquants" });
+  }
+
+  const sql = `
+    INSERT INTO badges (email, badge_id, unlocked_at)
+    VALUES (?, ?, NOW())
+    ON DUPLICATE KEY UPDATE unlocked_at = unlocked_at
+  `;
+
+  db.query(sql, [email, badge_id], (err) => {
+    if (err) return res.status(500).json({ error: "Erreur serveur" });
+    res.json({ message: "Badge enregistré" });
+  });
+});
 
 
 

@@ -20,48 +20,45 @@ export default function ProfileScreen({ navigation, userEmail, onLogout, route }
   // Se déclenche à chaque fois que l'écran revient au premier plan
   useFocusEffect(
     useCallback(() => {
-      loadHistory();
-      loadBadges();
+      if (!isGuest) {
+        loadHistory();
+        loadBadges();
+      } else {
+        setHistory([]);
+        setUnlockedBadges([]);
+      }
     }, [route?.params?.refresh])
-  );
+    );
+
 
   // Charger les badges débloqués en comparant les stats avec la liste QUESTS
   const loadBadges = async () => {
     try {
-      const savedStats = await AsyncStorage.getItem('@user_stats');
-      if (savedStats) {
-        const stats = JSON.parse(savedStats);
+      const response = await fetch(`https://s5-01-gsoif.onrender.com/badges/${userEmail}`);
+      const badgeData = await response.json();
 
-        // On filtre QUESTS pour ne garder que celles où l'objectif est atteint
-        const unlocked = QUESTS.filter(quest => {
-          const currentProgress = quest.type === 'click'
-            ? (stats.clickCount || 0)
-            : (stats.hydrationCount || 0);
-          return currentProgress >= quest.goal;
-        });
-        setUnlockedBadges(unlocked);
-      }
+      const unlocked = QUESTS.filter(quest =>
+        badgeData.some(b => parseInt(b.badge_id) === quest.id)
+      );
+
+      setUnlockedBadges(unlocked);
     } catch (e) {
-      console.log('Erreur chargement badges:', e);
+      console.log("Erreur chargement badges:", e);
     }
   };
+
+
 
   const loadHistory = async () => {
     try {
-      const saved = await AsyncStorage.getItem('@fountainHistory');
-      if (saved) {
-        let loadedHistory = JSON.parse(saved);
-        if (isGuest) {
-          const now = new Date().getTime();
-          const maxAge = 72 * 60 * 60 * 1000;
-          loadedHistory = loadedHistory.filter(item => (now - new Date(item.date).getTime()) < maxAge);
-        }
-        setHistory(loadedHistory);
-      }
+      const response = await fetch(`https://s5-01-gsoif.onrender.com/historique/${userEmail}`);
+      const data = await response.json();
+      setHistory(data);
     } catch (error) {
-      console.log('Erreur historique:', error);
+      console.log("Erreur chargement historique:", error);
     }
   };
+
 
   // Afficher la description du badge lors d'un clic
   const showBadgeDetail = (badge) => {
@@ -81,11 +78,20 @@ export default function ProfileScreen({ navigation, userEmail, onLogout, route }
     });
   };
 
-  const deleteHistoryItem = async (indexToDelete) => {
-    const newHistory = history.filter((_, index) => index !== indexToDelete);
-    setHistory(newHistory);
-    await AsyncStorage.setItem('@fountainHistory', JSON.stringify(newHistory));
+  const deleteHistoryItem = async (id) => {
+    try {
+      await fetch(`https://s5-01-gsoif.onrender.com/historique/item/${id}`, {
+        method: "DELETE"
+      });
+
+      // Mise à jour locale immédiate
+      setHistory(prev => prev.filter(item => item.id !== id));
+
+    } catch (error) {
+      console.log("Erreur suppression item:", error);
+    }
   };
+
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -173,7 +179,7 @@ export default function ProfileScreen({ navigation, userEmail, onLogout, route }
                   <Text style={[styles.histDate, { color: colors.textSecondary }]}>{item.location}</Text>
                 </View>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.deleteBtn} onPress={() => deleteHistoryItem(index)}>
+              <TouchableOpacity style={styles.deleteBtn} onPress={() => onPress={() => deleteHistoryItem(item.id)}>
                 <Trash2 size={18} color="#FF5252" />
               </TouchableOpacity>
             </View>
