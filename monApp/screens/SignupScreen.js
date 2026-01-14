@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles';
 import { fonts } from '../styles/fonts';
-import { ChevronLeft, User, Mail, Lock, Eye, EyeOff } from 'lucide-react-native';
+import { ChevronLeft, User, Mail, Lock, Eye, EyeOff, Square, CheckSquare } from 'lucide-react-native';
 
 import CustomInput from '../components/CustomInput';
 import CustomButton from '../components/CustomButton';
@@ -19,6 +19,7 @@ const SignupScreen = ({ navigation, onLogin }) => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
 const handleSignup = async () => {
   if (!prenom.trim() || !nom.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
@@ -27,6 +28,10 @@ const handleSignup = async () => {
 
   if (password !== confirmPassword) {
     return Alert.alert("Erreur", "Les mots de passe ne correspondent pas");
+  }
+
+  if (!acceptedTerms) {
+    return Alert.alert("Erreur", "Vous devez accepter les conditions d'utilisation pour continuer");
   }
 
   // Petite fonction utilitaire pour la majuscule
@@ -204,6 +209,26 @@ const handleSignup = async () => {
               </View>
             </View>
 
+            {/* CHECKBOX CGU */}
+            <View style={styles.termsContainer}>
+              <TouchableOpacity 
+                style={styles.checkboxContainer}
+                onPress={() => setAcceptedTerms(!acceptedTerms)}
+              >
+                {acceptedTerms ? (
+                  <CheckSquare size={24} color={PRIMARY_BLUE} />
+                ) : (
+                  <Square size={24} color="#999" />
+                )}
+              </TouchableOpacity>
+              <View style={styles.termsTextContainer}>
+                <Text style={styles.termsText}>J'accepte les </Text>
+                <TouchableOpacity onPress={() => navigation.navigate('Terms', { fromSignup: true })}>
+                  <Text style={styles.termsLink}>conditions d'utilisation</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
             {/* BUTTONS */}
             <View
               style={{
@@ -333,7 +358,35 @@ const styles = StyleSheet.create({
   },
   inputWithIcon: {
     paddingLeft: 45,
-  }
+  },
+  termsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    paddingHorizontal: 10,
+    marginTop: -20,
+  },
+  checkboxContainer: {
+    marginRight: 10,
+  },
+  termsTextContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    flex: 1,
+    alignItems: 'center',
+  },
+  termsText: {
+    fontSize: 14,
+    color: '#575757',
+    fontFamily: fonts.inter,
+  },
+  termsLink: {
+    fontSize: 14,
+    color: PRIMARY_BLUE,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+    fontFamily: fonts.inter,
+  },
 });
 
 export default SignupScreen;

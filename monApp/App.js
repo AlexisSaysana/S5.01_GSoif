@@ -180,6 +180,8 @@ function AppContent() {
             <Stack.Screen name="Inscription">
               {(props) => <SignupScreen {...props} onLogin={handleLogin} />}
             </Stack.Screen>
+            <Stack.Screen name="Terms" component={TermsScreen} />
+            <Stack.Screen name="Privacy" component={PrivacyScreen} />
           </Stack.Group>
         ) : (
           <Stack.Group>
