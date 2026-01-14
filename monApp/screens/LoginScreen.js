@@ -123,6 +123,7 @@ const LoginScreen = ({ navigation, onLogin  }) => {
                                 style={styles.inputWithIcon}
                             />
                             <TouchableOpacity 
+                                testID='eye-icon'
                                 style={styles.eyeIcon}
                                 onPress={() => setShowPassword(!showPassword)}
                             >
@@ -145,6 +146,7 @@ const LoginScreen = ({ navigation, onLogin  }) => {
 
                     <View style={{ width: '100%', justifyContent: 'center', alignItems: 'center', gap: 30 }}>
                         <CustomButton
+                            testID="se-connecter"
                             title="Se connecter"
                             onPress={handleLogin}
                         />

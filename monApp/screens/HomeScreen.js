@@ -152,6 +152,7 @@ export default function HomeScreen({ navigation }) {
       <View style={[styles.header, { backgroundColor: colors.primary }]}>
         <Text style={styles.headerTitle}>Votre progression</Text>
         <TouchableOpacity
+          testID="settings-button"
           style={styles.settingsButton}
           onPress={() => navigation.getParent()?.navigate('Setting')}
         >

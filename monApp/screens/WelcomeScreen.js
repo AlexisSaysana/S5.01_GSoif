@@ -45,6 +45,7 @@ const WelcomeScreen = ({ navigation }) => {
 						{activeIndex == 0 ? 'Passer' : 'Retour'}
           </Text>
           <TouchableOpacity
+            testID="arrow-button"
             style={styles.arrowButton}
             onPress={nextSlide}
           >
@@ -54,6 +55,7 @@ const WelcomeScreen = ({ navigation }) => {
         <View style={styles.dotsContainer}>
           {welcome.map((_, index) => (
             <View
+              testID={`dot-${index}`}
               key={index}
               style={[
 								styles.dot,

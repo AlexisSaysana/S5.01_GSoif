@@ -177,6 +177,7 @@ const handleSignup = async () => {
                   style={styles.inputWithIcon}
                 />
                 <TouchableOpacity 
+                  testID='eye-icon'
                   style={styles.eyeIcon}
                   onPress={() => setShowPassword(!showPassword)}
                 >
@@ -194,6 +195,7 @@ const handleSignup = async () => {
                   style={styles.inputWithIcon}
                 />
                 <TouchableOpacity 
+                  testID='eye-icon-confirm'
                   style={styles.eyeIcon}
                   onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                 >
@@ -211,7 +213,7 @@ const handleSignup = async () => {
                 gap: 30,
               }}
             >
-              <CustomButton title="S'inscrire" onPress={handleSignup}/>
+              <CustomButton title="S'inscrire" onPress={handleSignup} testID="s-inscrire"/>
 
               <TouchableOpacity onPress={() => navigation.navigate('Login')}>
                 <Text style={styles.smallLink}>

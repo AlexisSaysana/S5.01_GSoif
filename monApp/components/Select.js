@@ -26,6 +26,7 @@ const Select = ({ options, value, onChange }) => {
 
       <Modal transparent animationType="fade" visible={open}>
         <TouchableOpacity
+          testID="overlay"
           style={styles.overlay}
           onPress={() => setOpen(false)}
         >
