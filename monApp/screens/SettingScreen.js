@@ -1,24 +1,24 @@
 import React, { useContext, useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  ScrollView, 
-  Switch, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Switch,
   Alert,
   Modal,
   Linking
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { 
-  ChevronLeft, 
-  Moon, 
-  MapPin, 
-  Trash2, 
-  Download, 
-  FileText, 
-  ShieldAlert, 
+import {
+  ChevronLeft,
+  Moon,
+  MapPin,
+  Trash2,
+  Download,
+  FileText,
+  ShieldAlert,
   Scale,
   ChevronRight,
   Check
@@ -30,7 +30,7 @@ import { PRIMARY_BLUE } from '../styles/baseStyles';
 export default function SettingsScreen({ navigation, onLogout, userEmail }) {
   // On récupère tout depuis notre contexte global
   const { isDarkMode, toggleTheme, colors, unit, changeUnit } = useContext(ThemeContext);
-  
+
   const [isLocationEnabled, setIsLocationEnabled] = useState(true);
   const [showUnitModal, setShowUnitModal] = useState(false);
   const isGuest = userEmail === null;
@@ -125,8 +125,8 @@ export default function SettingsScreen({ navigation, onLogout, userEmail }) {
 
   // Composant Ligne (Row) adapté au thème
   const SettingRow = ({ icon: Icon, iconColor, label, subLabel, action, isDestructive, valueDisplay }) => (
-    <TouchableOpacity 
-      style={styles.row} 
+    <TouchableOpacity
+      style={styles.row}
       onPress={action}
       activeOpacity={0.7}
     >
@@ -137,7 +137,7 @@ export default function SettingsScreen({ navigation, onLogout, userEmail }) {
         <Text style={[styles.label, { color: isDestructive ? colors.dangerText : colors.text }]}>{label}</Text>
         {subLabel && <Text style={[styles.subLabel, { color: colors.textSecondary }]}>{subLabel}</Text>}
       </View>
-      
+
       {/* Affichage optionnel d'une valeur (ex: mL) à droite */}
       {valueDisplay && (
         <Text style={{ marginRight: 10, color: colors.textSecondary, fontFamily: fonts.inter }}>{valueDisplay}</Text>
@@ -151,8 +151,8 @@ export default function SettingsScreen({ navigation, onLogout, userEmail }) {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* HEADER */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
+        <TouchableOpacity
+          style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
           <ChevronLeft color="white" size={30} />
@@ -161,21 +161,21 @@ export default function SettingsScreen({ navigation, onLogout, userEmail }) {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        
+
         {/* 1. PRÉFÉRENCES */}
         <View style={[styles.sectionContainer, { backgroundColor: colors.surface }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Général</Text>
-          
+
           {/* SÉLECTEUR D'UNITÉS */}
-          <SettingRow 
-            icon={Scale} 
-            iconColor={colors.primary} 
-            label="Unités de mesure" 
+          <SettingRow
+            icon={Scale}
+            iconColor={colors.primary}
+            label="Unités de mesure"
             subLabel="Pour les boissons"
             valueDisplay={unit} // Affiche 'mL', 'L', etc.
             action={() => setShowUnitModal(true)}
           />
-          
+
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
           {/* DARK MODE TOGGLE */}
@@ -198,7 +198,7 @@ export default function SettingsScreen({ navigation, onLogout, userEmail }) {
         {/* 2. CONFIDENTIALITÉ (RGPD) */}
         <View style={[styles.sectionContainer, { backgroundColor: colors.surface }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Confidentialité (RGPD)</Text>
-          
+
           <View style={styles.row}>
             <View style={[styles.iconContainer, { backgroundColor: isDarkMode ? '#004D40' : '#E0F7FA' }]}>
               <MapPin size={22} color="#00BCD4" />
@@ -217,20 +217,20 @@ export default function SettingsScreen({ navigation, onLogout, userEmail }) {
 
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-          <SettingRow 
-            icon={Download} 
-            iconColor="#4CAF50" 
-            label="Exporter mes données" 
+          <SettingRow
+            icon={Download}
+            iconColor="#4CAF50"
+            label="Exporter mes données"
             subLabel="Format JSON"
             action={handleExportData}
           />
 
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-          <SettingRow 
-            icon={Trash2} 
-            iconColor="#FF9800" 
-            label="Effacer l'historique" 
+          <SettingRow
+            icon={Trash2}
+            iconColor="#FF9800"
+            label="Effacer l'historique"
             subLabel="Trajets récents"
             action={handleDeleteHistory}
           />
@@ -239,17 +239,17 @@ export default function SettingsScreen({ navigation, onLogout, userEmail }) {
         {/* 3. À PROPOS */}
         <View style={[styles.sectionContainer, { backgroundColor: colors.surface }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>À propos</Text>
-          <SettingRow 
-            icon={FileText} 
-            iconColor="#607D8B" 
-            label="Conditions d'utilisation" 
+          <SettingRow
+            icon={FileText}
+            iconColor="#607D8B"
+            label="Conditions d'utilisation"
             action={() => navigation.navigate('Terms')}
           />
            <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <SettingRow 
-            icon={ShieldAlert} 
-            iconColor="#607D8B" 
-            label="Politique de confidentialité" 
+          <SettingRow
+            icon={ShieldAlert}
+            iconColor="#607D8B"
+            label="Politique de confidentialité"
             action={() => navigation.navigate('Privacy')}
           />
         </View>
@@ -257,16 +257,16 @@ export default function SettingsScreen({ navigation, onLogout, userEmail }) {
         {/* 4. DANGER ZONE - Masqué pour les invités */}
         {!isGuest && (
           <>
-            <TouchableOpacity 
-              style={[styles.dangerButton, { backgroundColor: colors.dangerBg, borderColor: colors.dangerBg }]} 
+            <TouchableOpacity
+              style={[styles.dangerButton, { backgroundColor: colors.dangerBg, borderColor: colors.dangerBg }]}
               onPress={handleDeleteAccount}
             >
               <Text style={[styles.dangerButtonText, { color: colors.dangerText }]}>Supprimer mon compte</Text>
             </TouchableOpacity>
 
             {/* BOUTON DE DÉCONNEXION */}
-            <TouchableOpacity 
-              style={[styles.logoutButton, { backgroundColor: '#FF4747' }]} 
+            <TouchableOpacity
+              style={[styles.logoutButton, { backgroundColor: '#FF4747' }]}
               onPress={() => {
                 Alert.alert(
                   "Déconnexion",
@@ -298,12 +298,12 @@ export default function SettingsScreen({ navigation, onLogout, userEmail }) {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContainer, { backgroundColor: colors.surface }]}>
             <Text style={[styles.modalTitle, { color: colors.text }]}>Choisir une unité</Text>
-            
+
             {unitOptions.map((opt) => (
-              <TouchableOpacity 
+              <TouchableOpacity
                 key={opt}
                 style={[
-                    styles.modalOption, 
+                    styles.modalOption,
                     { borderBottomColor: colors.border, backgroundColor: unit === opt ? (isDarkMode ? '#333' : '#F0F8FF') : 'transparent' }
                 ]}
                 onPress={() => {
@@ -316,8 +316,8 @@ export default function SettingsScreen({ navigation, onLogout, userEmail }) {
               </TouchableOpacity>
             ))}
 
-            <TouchableOpacity 
-              style={styles.modalCloseButton} 
+            <TouchableOpacity
+              style={styles.modalCloseButton}
               onPress={() => setShowUnitModal(false)}
             >
               <Text style={{ color: colors.textSecondary, fontFamily: fonts.inter }}>Annuler</Text>
@@ -332,24 +332,24 @@ export default function SettingsScreen({ navigation, onLogout, userEmail }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { 
+  header: {
     backgroundColor: PRIMARY_BLUE,
-    height: 120, 
-    flexDirection: 'row', 
-    alignItems: 'center', 
+    height: 120,
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
     paddingTop: 40,
     zIndex: 10
   },
   backButton: { position: 'absolute', left: 20, paddingTop: 40 },
-  headerTitle: { 
-    color: 'white', 
-    fontSize: 22, 
-    fontFamily: fonts.bricolageGrotesque, 
-    fontWeight: '700' 
+  headerTitle: {
+    color: 'white',
+    fontSize: 22,
+    fontFamily: fonts.bricolageGrotesque,
+    fontWeight: '700'
   },
   content: { padding: 20 },
-  
+
   sectionContainer: {
     borderRadius: 20,
     padding: 20,
@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 15,
   },
-  
+
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     marginVertical: 10,
-    marginLeft: 55, 
+    marginLeft: 55,
   },
   dangerButton: {
     paddingVertical: 15,

@@ -8,7 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Plus, Map, User, Settings, Home, Search } from 'lucide-react-native'; // Ajout de Search
+import { Plus, Map, User, Settings, Home, Search, Cpu } from 'lucide-react-native'; // Ajout de Search
 
 // Context & Theme
 import { ThemeProvider, ThemeContext } from './context/ThemeContext';
@@ -72,9 +72,17 @@ function TabNavigator({ onLogout, userEmail, userId, userName }) {
       />
       <Tab.Screen
         name="IA"
-        component={ProfilIAScreen}
-        options={{ tabBarIcon: ({ color }) => <Settings color={color} size={28} /> }}
-      />
+        options={{ tabBarIcon: ({ color }) => <Cpu color={color} size={28} /> }}
+      >
+        {(props) => (
+          <ProfilIAScreen
+            {...props}
+            userId={userId}
+          />
+        )}
+      </Tab.Screen>
+
+
 
       <Tab.Screen
         name="Profil"
@@ -189,6 +197,12 @@ function AppContent() {
             <Stack.Screen name="Inscription">
               {(props) => <SignupScreen {...props} onLogin={handleLogin} />}
             </Stack.Screen>
+            <Stack.Screen
+              name="ProfilIA"
+              component={ProfilIAScreen}
+              initialParams={{ userId: userId }}
+            />
+
             <Stack.Screen name="Terms" component={TermsScreen} />
             <Stack.Screen name="Privacy" component={PrivacyScreen} />
           </Stack.Group>

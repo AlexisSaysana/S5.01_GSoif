@@ -112,7 +112,7 @@ const LoginScreen = ({ navigation, onLogin  }) => {
                                 style={styles.inputWithIcon}
                             />
                         </View>
-                        
+
                         <View style={styles.inputContainer}>
                             <Lock size={20} color="#999" style={styles.inputIcon} />
                             <CustomInput
@@ -122,7 +122,7 @@ const LoginScreen = ({ navigation, onLogin  }) => {
                                 onChangeText={setPassword}
                                 style={styles.inputWithIcon}
                             />
-                            <TouchableOpacity 
+                            <TouchableOpacity
                                 testID='eye-icon'
                                 style={styles.eyeIcon}
                                 onPress={() => setShowPassword(!showPassword)}

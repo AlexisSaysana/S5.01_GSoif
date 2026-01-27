@@ -554,37 +554,38 @@ app.post('/profile/calculate', async (req, res) => {
 
     const profile = results[0];
 
-    // 🌦️ Récupération météo réelle
-    const city = "Les Angles"; // tu peux changer plus tard
-    const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${WEATHER_API_KEY}`;
+    // 🌦️ Récupération météo : température MAX du jour
+    const lat = 42.575;   // Les Angles (à ajuster si besoin)
+    const lon = 2.076;
+    const url = `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&units=metric&appid=${WEATHER_API_KEY}`;
 
-    let temperature = 20; // valeur par défaut si API KO
+    let temperature_max = 20; // fallback
 
     try {
       const meteo = await axios.get(url);
-      temperature = meteo.data.main.temp;
+      temperature_max = meteo.data.daily[0].temp.max;
     } catch (e) {
       console.log("❌ Erreur API météo :", e);
     }
 
-    // 🔥 Calcul IA
+    // 🔥 Calcul IA basé sur la température MAX
     const objectif = calculateHydrationGoal({
       age: profile.age,
       sexe: profile.sexe,
       poids: profile.poids,
-      temperature
+      temperature: temperature_max
     });
 
-    // 🔥 Explication IA (on l’ajoutera juste après)
-    const explication = `Objectif basé sur ${profile.poids} kg, ${profile.sexe}, ${profile.age} ans et ${temperature}°C.`;
+    const explication = `Objectif basé sur ${profile.poids} kg, ${profile.sexe}, ${profile.age} ans et ${temperature_max}°C (température maximale du jour).`;
 
     const sqlUpdate = `
       UPDATE user_profile
       SET objectif = ?, last_update = NOW()
       WHERE id_utilisateur = ?
     `;
+
     db.query(sqlUpdate, [objectif, id_utilisateur], () => {
-      res.json({ objectif, explication, temperature });
+      res.json({ objectif, explication, temperature_max });
     });
   });
 });
