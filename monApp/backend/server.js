@@ -1,9 +1,13 @@
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
+const axios = require("axios");
+
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
+const { calculateHydrationGoal } = require('./utils/hydrationAI');
 require('dotenv').config();
+const WEATHER_API_KEY = "703b002e3b8de955c0ff503db47e689a";
 
 const app = express();
 app.use(express.json());
@@ -487,6 +491,104 @@ app.post('/badges', (req, res) => {
     res.json({ message: "Badge enregistré" });
   });
 });
+
+// GET profil IA d’un utilisateur
+app.get('/profile/:id_utilisateur', (req, res) => {
+  const { id_utilisateur } = req.params;
+
+  const sql = `
+    SELECT * FROM user_profile
+    WHERE id_utilisateur = ?
+  `;
+
+  db.query(sql, [id_utilisateur], (err, results) => {
+    if (err) return res.status(500).json({ error: 'Erreur serveur' });
+
+    if (results.length === 0) {
+      return res.status(200).json(null); // pas encore de profil
+    }
+
+    res.json(results[0]);
+  });
+});
+
+// POST mise à jour des infos perso (age, sexe, taille, poids)
+app.post('/profile/update', (req, res) => {
+  const { id_utilisateur, age, sexe, taille, poids } = req.body;
+
+  const sqlCheck = `SELECT * FROM user_profile WHERE id_utilisateur = ?`;
+  db.query(sqlCheck, [id_utilisateur], (err, results) => {
+    if (err) return res.status(500).json({ error: 'Erreur serveur' });
+
+    if (results.length === 0) {
+      const sqlInsert = `
+        INSERT INTO user_profile (id_utilisateur, age, sexe, taille, poids)
+        VALUES (?, ?, ?, ?, ?)
+      `;
+      db.query(sqlInsert, [id_utilisateur, age, sexe, taille, poids], (err2) => {
+        if (err2) return res.status(500).json({ error: 'Erreur insertion' });
+        res.json({ message: 'Profil créé' });
+      });
+    } else {
+      const sqlUpdate = `
+        UPDATE user_profile
+        SET age = ?, sexe = ?, taille = ?, poids = ?
+        WHERE id_utilisateur = ?
+      `;
+      db.query(sqlUpdate, [age, sexe, taille, poids, id_utilisateur], (err2) => {
+        if (err2) return res.status(500).json({ error: 'Erreur mise à jour' });
+        res.json({ message: 'Profil mis à jour' });
+      });
+    }
+  });
+});
+
+// POST recalcul de l’objectif IA
+app.post('/profile/calculate', async (req, res) => {
+  const { id_utilisateur } = req.body;
+
+  const sql = `SELECT * FROM user_profile WHERE id_utilisateur = ?`;
+  db.query(sql, [id_utilisateur], async (err, results) => {
+    if (err) return res.status(500).json({ error: 'Erreur serveur' });
+    if (results.length === 0) return res.status(400).json({ error: 'Profil inexistant' });
+
+    const profile = results[0];
+
+    // 🌦️ Récupération météo réelle
+    const city = "Les Angles"; // tu peux changer plus tard
+    const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${WEATHER_API_KEY}`;
+
+    let temperature = 20; // valeur par défaut si API KO
+
+    try {
+      const meteo = await axios.get(url);
+      temperature = meteo.data.main.temp;
+    } catch (e) {
+      console.log("❌ Erreur API météo :", e);
+    }
+
+    // 🔥 Calcul IA
+    const objectif = calculateHydrationGoal({
+      age: profile.age,
+      sexe: profile.sexe,
+      poids: profile.poids,
+      temperature
+    });
+
+    // 🔥 Explication IA (on l’ajoutera juste après)
+    const explication = `Objectif basé sur ${profile.poids} kg, ${profile.sexe}, ${profile.age} ans et ${temperature}°C.`;
+
+    const sqlUpdate = `
+      UPDATE user_profile
+      SET objectif = ?, last_update = NOW()
+      WHERE id_utilisateur = ?
+    `;
+    db.query(sqlUpdate, [objectif, id_utilisateur], () => {
+      res.json({ objectif, explication, temperature });
+    });
+  });
+});
+
 
 
 

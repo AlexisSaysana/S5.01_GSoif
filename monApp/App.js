@@ -27,6 +27,7 @@ import SettingScreen from './screens/SettingScreen';
 import TermsScreen from './screens/TermsScreen';
 import PrivacyScreen from './screens/PrivacyScreen';
 import QuestsScreen from './screens/QuestsScreen'; // Import de QuestsScreen
+import ProfilIAScreen from './screens/ProfilIAScreen';
 
 // Configuration des notifications
 Notifications.setNotificationHandler({
@@ -70,9 +71,17 @@ function TabNavigator({ onLogout, userEmail, userId, userName }) {
         options={{ tabBarIcon: ({ color }) => <Search color={color} size={28} /> }}
       />
       <Tab.Screen
+        name="IA"
+        component={ProfilIAScreen}
+        options={{ tabBarIcon: ({ color }) => <Settings color={color} size={28} /> }}
+      />
+
+      <Tab.Screen
         name="Profil"
         options={{ tabBarIcon: ({ color }) => <User color={color} size={28} /> }}
       >
+
+
         {(props) => (
           <ProfileScreen
             {...props}
