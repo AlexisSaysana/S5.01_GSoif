@@ -56,9 +56,18 @@ function TabNavigator({ onLogout, userEmail, userId, userName }) {
     >
       <Tab.Screen
         name="Accueil"
-        component={HomeScreen}
         options={{ tabBarIcon: ({ color }) => <Home color={color} size={28} /> }}
-      />
+      >
+        {(props) => (
+          <HomeScreen
+            {...props}
+            userId={userId}
+            userEmail={userEmail}
+            userName={userName}
+          />
+        )}
+      </Tab.Screen>
+
       <Tab.Screen
         name="Rechercher"
         component={FontainesScreen}
