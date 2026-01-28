@@ -69,22 +69,27 @@ export default function HomeScreen({ navigation }) {
   }, []);
 
   const initData = async () => {
-    const today = new Date().toISOString().slice(0, 10);
-    const lastDate = await AsyncStorage.getItem('@dailyCompletedDate');
+    try {
+      const res = await fetch(`${BASE_URL}/profile/${userId}`);
+      const data = await res.json();
 
-    // Récupérer si l'objectif a déjà été compté aujourd'hui
-    const reachedToday = await AsyncStorage.getItem('@goalReached_' + today);
-    setHasGoalBeenReachedToday(reachedToday === 'true');
+      console.log("📥 Profil reçu :", data);
 
-    if (lastDate !== today) {
-      await AsyncStorage.setItem('@dailyCompleted', '0');
-      await AsyncStorage.setItem('@dailyCompletedDate', today);
+      if (data && data.objectif_ia) {
+        setDailyGoal(data.objectif_ia); // objectif IA en mL
+        console.log("🎯 Objectif IA appliqué :", data.objectif_ia);
+      } else {
+        setDailyGoal(2000); // fallback si pas encore de profil
+        console.log("⚠️ Aucun objectif IA trouvé → fallback 2000 mL");
+      }
+
+      // charge aussi completed, weeklyData, etc. si tu les as en backend
+    } catch (e) {
+      console.log("❌ Erreur chargement profil :", e);
+      setDailyGoal(2000);
     }
-    const savedCompleted = await AsyncStorage.getItem('@dailyCompleted');
-    if (savedCompleted) setCompleted(parseInt(savedCompleted, 10));
-    const savedHistory = await AsyncStorage.getItem('@weeklyHistory');
-    if (savedHistory) setWeeklyData(JSON.parse(savedHistory));
   };
+
 
   // LOGIQUE DE MISE À JOUR DES QUÊTES D'HYDRATATION
   const updateHydrationQuest = async () => {

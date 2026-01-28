@@ -1,0 +1,120 @@
+* [33mb83703e[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mia[m[33m, [m[1;31morigin/ia[m[33m)[m feat: intégration objectif IA + objectif utilisateur
+* [33mf3783a9[m Mise à jour IA : Creation de notificationvé V3
+* [33m35956e2[m Mise à jour IA : Creation de notificationvé V2
+* [33ma7cd15a[m Mise à jour IA : Creation de notification
+* [33mba48dcd[m Mise à jour IA : température max du jour + bouton clair + auto-reload
+* [33m4d9dfc8[m[33m ([m[1;32mstatus[m[33m)[m Move hydrationAI to backend utils
+* [33m38371f9[m Add axios dependency
+* [33me4de4aa[m Initialisation de la branche IA
+* [33m560288c[m[33m ([m[1;31morigin/test[m[33m, [m[1;32mtest[m[33m)[m Mise à jour QuestsScreen : rafraîchissement des stats avec useFocusEffect
+* [33m4a7d4b0[m Sync backend stats + badges + QuestScreen fix
+* [33m4d128bb[m Ajout système de quêtes + badges (stats, routes, affichage)
+*   [33m6a36f26[m Merge branch 'test' of https://github.com/AlexisSaysana/S5.01_GSoif into test
+[32m|[m[33m\[m  
+[32m|[m *   [33m20ba7b3[m Merge branch 'test' of https://github.com/AlexisSaysana/S5.01_GSoif into test
+[32m|[m [34m|[m[35m\[m  
+[32m|[m * [35m|[m [33m50c3131[m Ajout des premières suites de tests
+* [35m|[m [35m|[m [33mb50c55e[m Ajout route DELETE utilisateur
+[35m|[m [35m|[m[35m/[m  
+[35m|[m[35m/[m[35m|[m   
+* [35m|[m [33m477ed1d[m Ajout des conditions d'utilissation à cocher pendant l'inscription
+[35m|[m[35m/[m  
+*   [33m230e7e7[m  ajout quetes fix conflits
+[36m|[m[1;31m\[m  
+[36m|[m * [33me7c6c58[m Mode sombre Notifications
+[36m|[m * [33m19cc2c2[m Mode sombre MonCompteScreen et ajout de PrivacyScreen et TermsScreens
+* [1;31m|[m [33me8a27be[m  ajout quetes
+[1;31m|[m[1;31m/[m  
+*   [33ma75c29f[m A Merge branch 'test' of https://github.com/AlexisSaysana/S5.01_GSoif into test
+[1;32m|[m[1;33m\[m  
+[1;32m|[m *   [33m470ebb5[m Merge branch 'test' of https://github.com/AlexisSaysana/S5.01_GSoif into test
+[1;32m|[m [1;34m|[m[1;35m\[m  
+[1;32m|[m * [1;35m|[m [33m72c0ceb[m fontaines et commerces
+* [1;35m|[m [1;35m|[m [33m5c2fdcb[m Fix: HomeScreen syntax error and Android camera alignment
+[1;35m|[m [1;35m|[m[1;35m/[m  
+[1;35m|[m[1;35m/[m[1;35m|[m   
+* [1;35m|[m [33mef070df[m Relier la base à la page profil ainsi que la page profil à MonCompteScreen
+[1;35m|[m[1;35m/[m  
+* [33mdb57e2d[m ajout hebdo et commerce
+* [33mf5d6df7[m Refonte de l'écran HomeScreen et ajouts de logos Connexion/Inscription
+* [33m4435c39[m Corrections d'erreurs, mode invité
+*   [33m13d7c59[m Merge branch 'origin/test' into test
+[1;36m|[m[31m\[m  
+[1;36m|[m *   [33m21ecc3b[m Merge branch 'test' of https://github.com/AlexisSaysana/S5.01_GSoif into test
+[1;36m|[m [32m|[m[33m\[m  
+[1;36m|[m [32m|[m *   [33m4a51635[m Merge branch 'test' of https://github.com/AlexisSaysana/S5.01_GSoif into test
+[1;36m|[m [32m|[m [34m|[m[35m\[m  
+[1;36m|[m [32m|[m [34m|[m * [33m9105bf9[m[33m ([m[1;31morigin/test2[m[33m)[m Correction d'erreurs, ajout bouton déconnecter en mode connecté, mode invité partiellement fait
+[1;36m|[m [32m|[m * [35m|[m [33m6a500f3[m Fix inscription: renvoie utilisateur créé
+[1;36m|[m [32m|[m [35m|[m[35m/[m  
+[1;36m|[m * [35m/[m [33m793d1ab[m fix maps on real android
+[1;36m|[m [35m|[m[35m/[m  
+* [35m|[m [33m90f54d2[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m Document project setup and initial features
+* [35m|[m [33m5414e54[m Update README.md
+* [35m|[m [33mcb8da72[m Update README with recent tasks and contributions
+* [35m|[m [33mc0fb2c0[m Add Alya Ayinde's contributions to README
+* [35m|[m [33me46ac29[m Update README.md
+* [35m|[m [33m5eddcac[m Update README.md with individual tasks #2
+* [35m|[m [33mbf827bf[m Update README with task chronology and individual tasks
+* [35m|[m [33mb36293f[m Update README.md
+* [35m|[m [33m5437059[m Initial commit
+ [35m/[m  
+[35m|[m * [33m9cdfc8b[m[33m ([m[1;31morigin/master[m[33m)[m Correction d'erreurs, ajout bouton déconnecter en mode connecté, mode invité partiellement fait
+[35m|[m[35m/[m  
+* [33ma109294[m historiuqe
+* [33m99e168e[m merge qui marche
+[36m|[m *   [33m87dfa6e[m[33m ([m[1;31morigin/testm[m[33m)[m Merge pull request #25 from AlexisSaysana/test
+[36m|[m [1;31m|[m[36m\[m  
+[36m|[m [1;31m|[m[36m/[m  
+[36m|[m[36m/[m[1;31m|[m   
+* [1;31m|[m [33m7765e13[m Merge branch 'testm' into test
+[1;33m|[m[1;31m\[m[1;31m|[m 
+[1;33m|[m * [33m041931c[m Correction du problème de couleur avec la tabBar
+[1;33m|[m * [33m5ca4df5[m Correction du problème de clavier avec la quantité personnalisée
+[1;33m|[m * [33ma9b846e[m Modification du profil selon les paramètres et retrait des éléments superflus
+[1;33m|[m * [33mcc2ba57[m Ajout du bouton de paramètres dans le header
+[1;33m|[m * [33mf8e165c[m Amélioration de l'écran d'accueil
+[1;33m|[m * [33m43630db[m Correction des erreurs, changement d'affichage aussi
+[1;33m|[m * [33m3bc3ca6[m Petite modif ProfilScreen
+[1;33m|[m * [33ma0a2fea[m Correction de bugs et modification de l'écran Ajouter
+[1;33m|[m * [33ma76a49e[m Ecran Historique (incomplet encore) et quelques corrections
+[1;33m|[m * [33mfff40b7[m Ecran Paramètres ; ajout d'un thème sombre sur l'appli ; utilisation d'async pour sauvegarder les données
+[1;33m|[m * [33m8f296b4[m Ecran de "Mon compte" réalisé (sans back pour le moment)
+[1;33m|[m * [33m64dc92a[m app sans connexion bd
+* [1;34m|[m [33me4efc71[m[33m ([m[1;31morigin/back[m[33m)[m nothing
+* [1;34m|[m [33mb6e9e83[m fix(notifs): API renvoie la dernière ligneV3 + notifs OK
+* [1;34m|[m [33m4c8cb6b[m fix(notifs): API renvoie la dernière ligne + notifs OK
+* [1;34m|[m [33m6ca0784[m fix(notifs): API renvoie la dernière ligne + notifs OK
+* [1;34m|[m [33m6af6649[m Update NotificationsScreen: fixedTimes only + loadPreferences
+* [1;34m|[m [33mc7310f7[m Fix: ajout route /notification/preferences/:userId et correction nom table preferences_notification
+* [1;34m|[m [33m3ca23c2[m Ajout route /notification/preferences/:userId pour sauvegarde notifications
+* [1;34m|[m [33m1c05555[m Ajout notifications locales + message aléatoire
+* [1;34m|[m [33m82a1fd0[m add password route
+* [1;34m|[m [33m25b8480[m minor changement
+* [1;34m|[m   [33m77e984a[m resolution conflits
+[1;35m|[m[1;36m\[m [1;34m\[m  
+[1;35m|[m * [1;34m|[m [33m21dd983[m Ajout des routes GET et PUT /utilisateurs/:email
+[1;35m|[m * [1;34m|[m [33m4654681[m Mise à jour : ajout prénom/nom + ScrollView + page MonCompte
+[1;35m|[m * [1;34m|[m [33m5532357[m Fix signup + login + navigation
+[1;35m|[m * [1;34m|[m [33m337d928[m install mysql2
+[1;35m|[m * [1;34m|[m [33m0268e77[m fix: mysql2 + pool
+[1;35m|[m [1;34m|[m[1;34m/[m  
+* [1;34m/[m [33mcf42b02[m chagement insignifiant
+[1;34m|[m[1;34m/[m  
+* [33m5ea58cb[m connexio app
+* [33mef829e5[m verif err
+* [33mb8385e4[m Ajout .env au gitignore
+* [33mc72ef43[m Préparation backend pour Render
+* [33maf9f502[m ajout itineraire
+* [33ma38db0c[m avncée map et barre de nav
+*   [33m346baa9[m avancement fontaines
+[31m|[m[32m\[m  
+[31m|[m * [33m7acccfd[m arrangements sur FontainesScreen
+* [32m|[m [33m99a3b6d[m avancement fontaines
+[32m|[m[32m/[m  
+* [33m80947e0[m avancement fontaine
+* [33m7673e6c[m Add homescreen
+* [33m0c216ac[m minor changes
+* [33m6622df3[m navigation page
+* [33m7b62c94[m debut monapp
+* [33m445af72[m premier commit

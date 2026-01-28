@@ -542,7 +542,6 @@ app.post('/profile/update', (req, res) => {
     }
   });
 });
-
 // POST recalcul de l’objectif IA
 app.post('/profile/calculate', async (req, res) => {
   console.log("📥 /profile/calculate appelé avec :", req.body);
@@ -576,6 +575,24 @@ app.post('/profile/calculate', async (req, res) => {
       sexe: profile.sexe,
       poids: profile.poids,
       temperature: temperature_max
+    });
+
+    console.log("🎯 Objectif IA généré (L) :", objectif);
+    console.log("🎯 Objectif IA généré (mL) :", objectif * 1000);
+
+    // 💾 Enregistrer objectif IA en base (en mL)
+    const sqlUpdateGoal = `
+      UPDATE user_profile
+      SET objectif_ia = ?
+      WHERE id_utilisateur = ?
+    `;
+
+    db.query(sqlUpdateGoal, [Math.round(objectif * 1000), id_utilisateur], (err) => {
+      if (err) {
+        console.log("❌ Erreur SQL objectif_ia :", err);
+      } else {
+        console.log("💾 objectif_ia enregistré en base pour user :", id_utilisateur);
+      }
     });
 
     const explication = `Objectif basé sur ${profile.poids} kg, ${profile.sexe}, ${profile.age} ans et ${temperature_max}°C (température maximale du jour).`;
@@ -617,10 +634,10 @@ app.post('/profile/calculate', async (req, res) => {
         actif = 1,
         created_at = NOW()
     `;
+
     console.log("🕒 Horaires générés par l’IA :", horaires);
     console.log("🔔 Nombre de notifications :", nbNotif);
     console.log("💧 Quantité par notif :", mlParNotif);
-
 
     db.query(sqlNotif, [id_utilisateur, JSON.stringify(horaires)], (err) => {
       if (err) {
@@ -629,8 +646,10 @@ app.post('/profile/calculate', async (req, res) => {
         console.log("✅ Horaires enregistrés avec succès !");
       }
 
+      // 📤 Réponse envoyée au front
       res.json({
         objectif,
+        objectif_ml: objectif * 1000,
         explication,
         temperature_max,
         nbNotif,
@@ -642,21 +661,6 @@ app.post('/profile/calculate', async (req, res) => {
 
   });
 });
-app.post("/profile/updateGoal", (req, res) => {
-  const { id_utilisateur, objectif_user } = req.body;
-
-  const sql = `
-    UPDATE user_profile
-    SET objectif_ia = ?
-    WHERE id_utilisateur = ?
-  `;
-
-  db.query(sql, [objectif_user, id_utilisateur], (err) => {
-    if (err) return res.status(500).json({ error: "Erreur serveur" });
-    res.json({ success: true });
-  });
-});
-
 
 
 // --------------------------------------
