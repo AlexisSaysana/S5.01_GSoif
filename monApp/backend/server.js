@@ -545,6 +545,8 @@ app.post('/profile/update', (req, res) => {
 
 // POST recalcul de l’objectif IA
 app.post('/profile/calculate', async (req, res) => {
+  console.log("📥 /profile/calculate appelé avec :", req.body);
+
   const { id_utilisateur } = req.body;
 
   const sql = `SELECT * FROM user_profile WHERE id_utilisateur = ?`;
@@ -615,9 +617,18 @@ app.post('/profile/calculate', async (req, res) => {
         actif = 1,
         created_at = NOW()
     `;
+    console.log("🕒 Horaires générés par l’IA :", horaires);
+    console.log("🔔 Nombre de notifications :", nbNotif);
+    console.log("💧 Quantité par notif :", mlParNotif);
 
-    db.query(sqlNotif, [id_utilisateur, JSON.stringify(horaires)], () => {
-      // 🔥 Réponse envoyée au frontend
+
+    db.query(sqlNotif, [id_utilisateur, JSON.stringify(horaires)], (err) => {
+      if (err) {
+        console.log("❌ Erreur SQL lors de l’enregistrement :", err);
+      } else {
+        console.log("✅ Horaires enregistrés avec succès !");
+      }
+
       res.json({
         objectif,
         explication,
@@ -628,6 +639,7 @@ app.post('/profile/calculate', async (req, res) => {
         recommandation
       });
     });
+
   });
 });
 

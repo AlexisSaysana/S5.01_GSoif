@@ -31,6 +31,7 @@ export default function ProfilIAScreen({ route, userId, navigation }) {
   const { colors, isDarkMode } = useContext(ThemeContext);
 
   const id_utilisateur = route?.params?.userId || userId;
+  console.log("🟦 ID UTILISATEUR FRONT :", id_utilisateur);
 
   const [age, setAge] = useState(null);
   const [sexe, setSexe] = useState(null);
