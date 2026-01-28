@@ -51,6 +51,10 @@ export default function ProfilIAScreen({ route, userId, navigation }) {
   const ages = Array.from({ length: 83 }, (_, i) => i + 18);
   const tailles = Array.from({ length: 81 }, (_, i) => i + 140);
   const poidsList = Array.from({ length: 121 }, (_, i) => i + 40);
+  const [nbNotif, setNbNotif] = useState(null);
+  const [mlParNotif, setMlParNotif] = useState(null);
+  const [horaires, setHoraires] = useState([]);
+  const [recommandation, setRecommandation] = useState("");
 
   function generateAdvice(temp, age, poids) {
     let text = "";
@@ -97,7 +101,13 @@ export default function ProfilIAScreen({ route, userId, navigation }) {
         id_utilisateur,
       });
 
-      const temp = res.data.temperature;
+      const temp = res.data.temperature_max;
+
+      setNbNotif(res.data.nbNotif);
+      setMlParNotif(res.data.mlParNotif);
+      setHoraires(res.data.horaires);
+      setRecommandation(res.data.recommandation);
+
 
       setTimeout(() => {
         setConseil(generateAdvice(temp, age, poids));
@@ -245,6 +255,41 @@ export default function ProfilIAScreen({ route, userId, navigation }) {
             </Text>
           </View>
         )}
+        {recommandation !== "" && (
+          <View style={[styles.adviceBox, { marginTop: 10 }]}>
+            <Text style={[styles.adviceText, { color: colors.textSecondary }]}>
+              {recommandation}
+            </Text>
+          </View>
+        )}
+        {horaires.length > 0 && (
+          <View style={[styles.resultBox, { backgroundColor: colors.surface, marginTop: 10 }]}>
+            <Text style={[styles.resultTitle, { color: colors.text }]}>
+              Horaires générés par l’IA
+            </Text>
+
+            {horaires.map((h, index) => (
+              <Text key={index} style={[styles.resultExplain, { color: colors.textSecondary }]}>
+                • {h}
+              </Text>
+            ))}
+          </View>
+        )}
+        <TouchableOpacity
+          onPress={() => navigation.navigate("Notifications")}
+          style={{
+            marginTop: 20,
+            padding: 15,
+            borderRadius: 12,
+            backgroundColor: colors.primary + "33",
+            borderWidth: 1,
+            borderColor: colors.primary
+          }}
+        >
+          <Text style={{ color: colors.primary, textAlign: "center", fontWeight: "700" }}>
+            Modifier les horaires
+          </Text>
+        </TouchableOpacity>
 
         <View style={{ height: 120 }} />
       </ScrollView>

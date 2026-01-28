@@ -544,7 +544,6 @@ app.post('/profile/update', (req, res) => {
 });
 
 // POST recalcul de l’objectif IA
-// POST recalcul de l’objectif IA
 app.post('/profile/calculate', async (req, res) => {
   const { id_utilisateur } = req.body;
 
@@ -609,9 +608,12 @@ app.post('/profile/calculate', async (req, res) => {
 
     // 💾 Enregistrer les horaires générés par l’IA
     const sqlNotif = `
-      INSERT INTO horaires_notifications (id_utilisateur, fixed_times, actif)
-      VALUES (?, ?, 1)
-      ON DUPLICATE KEY UPDATE fixed_times = VALUES(fixed_times), actif = 1
+      INSERT INTO horaires_notifications (id_utilisateur, fixed_times, actif, created_at)
+      VALUES (?, ?, 1, NOW())
+      ON DUPLICATE KEY UPDATE
+        fixed_times = VALUES(fixed_times),
+        actif = 1,
+        created_at = NOW()
     `;
 
     db.query(sqlNotif, [id_utilisateur, JSON.stringify(horaires)], () => {
@@ -628,7 +630,6 @@ app.post('/profile/calculate', async (req, res) => {
     });
   });
 });
-
 
 
 
