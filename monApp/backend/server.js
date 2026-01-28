@@ -544,6 +544,7 @@ app.post('/profile/update', (req, res) => {
 });
 
 // POST recalcul de l’objectif IA
+// POST recalcul de l’objectif IA
 app.post('/profile/calculate', async (req, res) => {
   const { id_utilisateur } = req.body;
 
@@ -555,11 +556,11 @@ app.post('/profile/calculate', async (req, res) => {
     const profile = results[0];
 
     // 🌦️ Récupération météo : température MAX du jour
-    const lat = 42.575;   // Les Angles (à ajuster si besoin)
+    const lat = 42.575;   // Les Angles
     const lon = 2.076;
     const url = `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&units=metric&appid=${WEATHER_API_KEY}`;
 
-    let temperature_max = 20; // fallback
+    let temperature_max = 20;
 
     try {
       const meteo = await axios.get(url);
@@ -578,14 +579,52 @@ app.post('/profile/calculate', async (req, res) => {
 
     const explication = `Objectif basé sur ${profile.poids} kg, ${profile.sexe}, ${profile.age} ans et ${temperature_max}°C (température maximale du jour).`;
 
-    const sqlUpdate = `
-      UPDATE user_profile
-      SET objectif = ?, last_update = NOW()
-      WHERE id_utilisateur = ?
+    // 🔥 IA choisit le nombre de notifications (entre 4 et 7)
+    const nbNotif = Math.floor(Math.random() * 4) + 4;
+
+    // 🔥 IA génère les horaires automatiquement (entre 9h et 21h)
+    const horaires = [];
+    const start = 9;
+    const end = 21;
+    const interval = Math.floor((end - start) * 60 / nbNotif);
+
+    for (let i = 0; i < nbNotif; i++) {
+      const minutes = start * 60 + i * interval;
+      const h = Math.floor(minutes / 60);
+      const m = minutes % 60;
+      horaires.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
+    }
+
+    // 🔥 Quantité à boire par notification
+    const mlParNotif = Math.round((objectif * 1000) / nbNotif);
+
+    // 🤖 Phrase drôle IA
+    const phrasesIA = [
+      `Bon… j’ai décidé que tu recevras ${nbNotif} notifications aujourd’hui. Bois ${mlParNotif} ml à chaque fois. Oui, je suis exigeante.`,
+      `J’ai fait mes calculs. Résultat : ${nbNotif} rappels. ${mlParNotif} ml chacun. Courage champion.`,
+      `Breaking news : ${nbNotif} notifications aujourd’hui. À chaque fois, tu bois ${mlParNotif} ml. Je surveille.`,
+      `Ton IA préférée a choisi ${nbNotif} rappels. Bois ${mlParNotif} ml à chaque fois. Pas de négociation.`,
+    ];
+    const recommandation = phrasesIA[Math.floor(Math.random() * phrasesIA.length)];
+
+    // 💾 Enregistrer les horaires générés par l’IA
+    const sqlNotif = `
+      INSERT INTO horaires_notifications (id_utilisateur, fixed_times, actif)
+      VALUES (?, ?, 1)
+      ON DUPLICATE KEY UPDATE fixed_times = VALUES(fixed_times), actif = 1
     `;
 
-    db.query(sqlUpdate, [objectif, id_utilisateur], () => {
-      res.json({ objectif, explication, temperature_max });
+    db.query(sqlNotif, [id_utilisateur, JSON.stringify(horaires)], () => {
+      // 🔥 Réponse envoyée au frontend
+      res.json({
+        objectif,
+        explication,
+        temperature_max,
+        nbNotif,
+        mlParNotif,
+        horaires,
+        recommandation
+      });
     });
   });
 });
