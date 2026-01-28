@@ -14,10 +14,10 @@ import {
 import axios from "axios";
 import { ThemeContext } from "../context/ThemeContext";
 import { fonts } from "../styles/fonts";
-import { Settings } from "lucide-react-native";
 
 import {
   ChevronRight,
+  Settings,
   Calendar,
   User,
   Ruler,
@@ -29,10 +29,8 @@ const BASE_URL = "https://s5-01-gsoif.onrender.com";
 
 export default function ProfilIAScreen({ route, userId, navigation }) {
   const { colors, isDarkMode } = useContext(ThemeContext);
-
+  const { unit } = useContext(ThemeContext);
   const id_utilisateur = route?.params?.userId || userId;
-  console.log("🟦 ID UTILISATEUR FRONT :", id_utilisateur);
-
   const [age, setAge] = useState(null);
   const [sexe, setSexe] = useState(null);
   const [taille, setTaille] = useState("");
@@ -52,10 +50,13 @@ export default function ProfilIAScreen({ route, userId, navigation }) {
   const ages = Array.from({ length: 83 }, (_, i) => i + 18);
   const tailles = Array.from({ length: 81 }, (_, i) => i + 140);
   const poidsList = Array.from({ length: 121 }, (_, i) => i + 40);
+
   const [nbNotif, setNbNotif] = useState(null);
   const [mlParNotif, setMlParNotif] = useState(null);
   const [horaires, setHoraires] = useState([]);
   const [recommandation, setRecommandation] = useState("");
+
+  const [showIAResultModal, setShowIAResultModal] = useState(false);
 
   function generateAdvice(temp, age, poids) {
     let text = "";
@@ -66,6 +67,26 @@ export default function ProfilIAScreen({ route, userId, navigation }) {
     if (age > 50) text += "💡 Avec l’âge, l’hydratation devient encore plus importante. ";
 
     return text || "💡 Votre objectif a été calculé selon vos données personnelles.";
+  }
+  function convertGoal(valueL, unit) {
+    const ml = valueL * 1000;
+
+    switch (unit) {
+      case "mL":
+        return `${Math.round(ml)} mL`;
+
+      case "cL":
+        return `${Math.round(ml / 10)} cL`;
+
+      case "L":
+        return `${valueL.toFixed(1)} L`;
+
+      case "oz":
+        return `${(ml / 29.5735).toFixed(1)} oz`;
+
+      default:
+        return `${valueL.toFixed(1)} L`;
+    }
   }
 
   useEffect(() => {
@@ -109,19 +130,19 @@ export default function ProfilIAScreen({ route, userId, navigation }) {
       setHoraires(res.data.horaires);
       setRecommandation(res.data.recommandation);
 
-
       setTimeout(() => {
         setConseil(generateAdvice(temp, age, poids));
         setStep("advice");
-      }, 1500); // apparition du conseil
+      }, 1500);
 
       setTimeout(() => {
         setObjectif(res.data.objectif);
         setExplication(res.data.explication);
         setStep("result");
         setIsLoading(false);
-      }, 6000); // résultat après 3 secondes de conseil
 
+        setShowIAResultModal(true);
+      }, 6000);
 
     } catch (error) {
       setIsLoading(false);
@@ -198,6 +219,7 @@ export default function ProfilIAScreen({ route, userId, navigation }) {
             onPress={() => setShowPoidsModal(true)}
           />
         </View>
+
         {step === "loading" && (
           <View style={styles.loaderContainer}>
             <ActivityIndicator size="large" color={colors.primary} />
@@ -207,14 +229,12 @@ export default function ProfilIAScreen({ route, userId, navigation }) {
           </View>
         )}
 
-
-        {/* BOUTON BLEU STYLE "SUPPRIMER MON COMPTE" */}
         {step !== "loading" && (
           <TouchableOpacity
             style={[
               styles.dangerButton,
               {
-                backgroundColor: colors.primary +"99",
+                backgroundColor: colors.primary + "99",
                 borderColor: colors.primary,
                 marginTop: 30,
                 marginBottom: 40,
@@ -222,12 +242,7 @@ export default function ProfilIAScreen({ route, userId, navigation }) {
             ]}
             onPress={handleSaveAndCalculate}
           >
-            <Text
-              style={[
-                styles.dangerButtonText,
-                { color: "white" }
-              ]}
-            >
+            <Text style={[styles.dangerButtonText, { color: "white" }]}>
               Enregistrer et calculer
             </Text>
           </TouchableOpacity>
@@ -244,11 +259,11 @@ export default function ProfilIAScreen({ route, userId, navigation }) {
         {step === "result" && (
           <View style={[styles.resultBox, { backgroundColor: colors.secondary }]}>
             <Text style={[styles.resultTitle, { color: colors.text }]}>
-              Objectif : {objectif} L
+              Objectif : {convertGoal(objectif, unit)}
             </Text>
 
             <Text style={[styles.iaConclusion, { color: colors.text }]}>
-              Après analyse de vos données et des conditions météo, votre objectif optimal est de {objectif} L.
+              Après analyse de vos données et des conditions météo, votre objectif optimal est de {convertGoal(objectif, unit)}.
             </Text>
 
             <Text style={[styles.resultExplain, { color: colors.textSecondary }]}>
@@ -256,44 +271,60 @@ export default function ProfilIAScreen({ route, userId, navigation }) {
             </Text>
           </View>
         )}
-        {recommandation !== "" && (
-          <View style={[styles.adviceBox, { marginTop: 10 }]}>
-            <Text style={[styles.adviceText, { color: colors.textSecondary }]}>
-              {recommandation}
-            </Text>
-          </View>
-        )}
-        {horaires.length > 0 && (
-          <View style={[styles.resultBox, { backgroundColor: colors.surface, marginTop: 10 }]}>
-            <Text style={[styles.resultTitle, { color: colors.text }]}>
-              Horaires générés par l’IA
-            </Text>
-
-            {horaires.map((h, index) => (
-              <Text key={index} style={[styles.resultExplain, { color: colors.textSecondary }]}>
-                • {h}
-              </Text>
-            ))}
-          </View>
-        )}
-        <TouchableOpacity
-          onPress={() => navigation.navigate("Notifications")}
-          style={{
-            marginTop: 20,
-            padding: 15,
-            borderRadius: 12,
-            backgroundColor: colors.primary + "33",
-            borderWidth: 1,
-            borderColor: colors.primary
-          }}
-        >
-          <Text style={{ color: colors.primary, textAlign: "center", fontWeight: "700" }}>
-            Modifier les horaires
-          </Text>
-        </TouchableOpacity>
 
         <View style={{ height: 120 }} />
       </ScrollView>
+
+      {/* POPUP IA */}
+      <Modal visible={showIAResultModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalBox, { backgroundColor: colors.surface }]}>
+
+            {recommandation !== "" && (
+              <Text style={[styles.modalText, { color: colors.textSecondary }]}>
+                {recommandation}
+              </Text>
+            )}
+
+            {horaires.length > 0 && (
+              <View style={{ marginTop: 15 }}>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>
+                  Horaires générés
+                </Text>
+
+                {horaires.map((h, index) => (
+                  <Text
+                    key={index}
+                    style={[styles.modalSubText, { color: colors.textSecondary }]}
+                  >
+                    • {h}
+                  </Text>
+                ))}
+              </View>
+            )}
+
+            <TouchableOpacity
+              onPress={() => {
+                setShowIAResultModal(false);
+                navigation.navigate("Notifications", { userId: id_utilisateur });
+              }}
+              style={[styles.modalButton, { borderColor: colors.primary }]}
+            >
+              <Text style={{ color: colors.primary, fontWeight: "700" }}>
+                Modifier les horaires
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => setShowIAResultModal(false)}
+              style={{ marginTop: 10 }}
+            >
+              <Text style={{ color: colors.textSecondary }}>Fermer</Text>
+            </TouchableOpacity>
+
+          </View>
+        </View>
+      </Modal>
 
       {renderModal("Choisir votre âge", ages, age, setAge, showAgeModal, setShowAgeModal, colors, isDarkMode)}
       {renderModal("Choisir votre sexe", ["homme", "femme"], sexe, setSexe, showSexeModal, setShowSexeModal, colors, isDarkMode)}
@@ -472,6 +503,48 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 14,
     fontFamily: fonts.inter,
+  },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+
+  modalBox: {
+    width: "100%",
+    borderRadius: 20,
+    padding: 25,
+    alignItems: "center",
+  },
+
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    fontFamily: fonts.bricolageGrotesque,
+    marginBottom: 10,
+  },
+
+  modalText: {
+    fontSize: 15,
+    fontFamily: fonts.inter,
+    textAlign: "center",
+  },
+
+  modalSubText: {
+    fontSize: 14,
+    fontFamily: fonts.inter,
+    marginTop: 5,
+  },
+
+  modalButton: {
+    marginTop: 25,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    borderWidth: 1,
   },
 });
 

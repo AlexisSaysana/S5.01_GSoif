@@ -66,6 +66,12 @@ export default function MonCompteScreen({ navigation, route, userEmail }) {
         setNom(data.nom);
         setEmail(data.email);
         setUserId(data.id_utilisateur);
+        setDailyGoal(
+          data.objectif_user ??
+          data.objectif_ia ??
+          "2000"
+        );
+
       } catch (error) {
         Alert.alert("Erreur", "Impossible de charger vos informations");
       }
@@ -360,6 +366,17 @@ export default function MonCompteScreen({ navigation, route, userEmail }) {
                   }
                   setDailyGoal(tempGoal);
                   setShowGoalModal(false);
+
+                  // Enregistrer dans la base
+                  fetch(`${BASE_URL}/profile/updateGoal`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      id_utilisateur: userId,
+                      objectif_user: Number(tempGoal)
+                    })
+                  });
+
                 }}
               >
                 <Text style={[styles.modalButtonText, { color: WHITE }]}>Confirmer</Text>

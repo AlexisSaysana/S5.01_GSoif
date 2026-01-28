@@ -117,8 +117,17 @@ export default function NotificationsScreen({ route, navigation }) {
       const lastEntry = Array.isArray(data) ? data[data.length - 1] : data;
 
       if (lastEntry && lastEntry.fixed_times && lastEntry.fixed_times.length > 0) {
-        setFixedTimes(lastEntry.fixed_times);
-      } else {
+        const converted = lastEntry.fixed_times.map((timeStr) => {
+          if (typeof timeStr === "string") {
+            const [h, m] = timeStr.split(":").map(Number);
+            return { hour: h, minute: m };
+          }
+          return timeStr; // déjà au bon format
+        });
+
+        setFixedTimes(converted);
+      }
+ else {
         // Aucun horaire → valeurs par défaut
         setFixedTimes([
           { hour: 10, minute: 0 },

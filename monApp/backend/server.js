@@ -642,6 +642,20 @@ app.post('/profile/calculate', async (req, res) => {
 
   });
 });
+app.post("/profile/updateGoal", (req, res) => {
+  const { id_utilisateur, objectif_user } = req.body;
+
+  const sql = `
+    UPDATE user_profile
+    SET objectif_ia = ?
+    WHERE id_utilisateur = ?
+  `;
+
+  db.query(sql, [objectif_user, id_utilisateur], (err) => {
+    if (err) return res.status(500).json({ error: "Erreur serveur" });
+    res.json({ success: true });
+  });
+});
 
 
 
