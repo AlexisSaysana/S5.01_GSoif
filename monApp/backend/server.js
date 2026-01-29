@@ -262,9 +262,10 @@ app.get('/notification/random/:id_utilisateur', (req, res) => {
 app.post('/preferences/horaires', (req, res) => {
   const { id_utilisateur, horaires } = req.body;
 
-  if (!id_utilisateur || !Array.isArray(horaires)) {
-    return res.status(400).json({ error: "Champs manquants ou format invalide" });
+  if (id_utilisateur == null || amount_ml == null) {
+      return res.status(400).json({ error: "Missing fields" });
   }
+
 
   const values = horaires.map(h => [
     id_utilisateur,
