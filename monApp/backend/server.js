@@ -162,18 +162,15 @@ app.get('/utilisateurs/:email', (req, res) => {
     const email = req.params.email;
 
     const sql = "SELECT * FROM utilisateur WHERE email = ?";
-    db.query(sql, [email], (err, data) => {
-        if (err) {
-            console.error("Erreur SQL :", err);
-            return res.status(500).json({ error: "Erreur serveur" });
-        }
+   try {
+       const [data] = await db.query(sql, [email]);
+       if (data.length === 0) return res.status(404).json({ error: "Utilisateur non trouvé" });
+       return res.json(data[0]);
+   } catch (err) {
+       console.error("Erreur SQL :", err);
+       return res.status(500).json({ error: "Erreur serveur" });
+   }
 
-        if (data.length === 0) {
-            return res.status(404).json({ error: "Utilisateur non trouvé" });
-        }
-
-        return res.json(data[0]);
-    });
 });
 
 // Modifier un utilisateur
@@ -382,18 +379,15 @@ app.delete('/utilisateurs/:email', (req, res) => {
   const email = req.params.email;
 
   const sql = "DELETE FROM utilisateur WHERE email = ?";
-  db.query(sql, [email], (err, result) => {
-    if (err) {
+  try {
+      const [result] = await db.query(sql, [email]);
+      if (result.affectedRows === 0) return res.status(404).json({ error: "Utilisateur non trouvé" });
+      return res.json({ message: "Compte supprimé avec succès" });
+  } catch (err) {
       console.error("Erreur SQL :", err);
       return res.status(500).json({ error: "Erreur serveur" });
-    }
+  }
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: "Utilisateur non trouvé" });
-    }
-
-    return res.json({ message: "Compte supprimé avec succès" });
-  });
 });
 //Récuper historique fontaines
 app.get('/historique/:email', (req, res) => {
@@ -416,14 +410,13 @@ app.delete('/historique/user/:email', (req, res) => {
   const email = req.params.email;
 
   const sql = "DELETE FROM historique WHERE email = ?";
-  db.query(sql, [email], (err, result) => {
-    if (err) {
-      console.error("Erreur SQL :", err);
+  try {
+      await db.query(sql, [email]);
+      return res.json({ message: "Historique supprimé avec succès" });
+  } catch (err) {
       return res.status(500).json({ error: "Erreur serveur" });
-    }
+  }
 
-    return res.json({ message: "Historique supprimé avec succès" });
-  });
 });
 // Ajouter un item dans l'historique
 app.post('/historique', (req, res) => {
@@ -458,20 +451,26 @@ app.put('/stats/click/:email', (req, res) => {
     ON DUPLICATE KEY UPDATE clickCount = clickCount + 1
   `;
 
-  db.query(sql, [email], (err) => {
-    if (err) return res.status(500).json({ error: "Erreur serveur" });
-    res.json({ message: "ClickCount mis à jour" });
-  });
+  try {
+      await db.query(sql, [email]);
+      return res.json({ message: "ClickCount mis à jour" });
+  } catch (err) {
+      return res.status(500).json({ error: "Erreur serveur" });
+  }
+
 });
 // Récupérer les badges débloqués d’un utilisateur
 app.get('/badges/:email', (req, res) => {
   const email = req.params.email;
 
   const sql = "SELECT badge_id, unlocked_at FROM badges WHERE email = ?";
-  db.query(sql, [email], (err, result) => {
-    if (err) return res.status(500).json({ error: "Erreur serveur" });
-    res.json(result);
-  });
+  try {
+      const [result] = await db.query(sql, [email]);
+      return res.json(result);
+  } catch (err) {
+      return res.status(500).json({ error: "Erreur serveur" });
+  }
+
 });
 // Enregistrer un badge débloqué
 app.post('/badges', (req, res) => {
