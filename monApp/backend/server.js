@@ -661,6 +661,108 @@ app.post('/profile/calculate', async (req, res) => {
 
   });
 });
+// ➤ Ajoute une quantité d’eau pour l’utilisateur.
+//    - Vérifie si une entrée existe déjà pour aujourd’hui
+//    - Si non : crée une nouvelle ligne (nouvelle journée)
+//    - Si oui : met simplement à jour la quantité totale du jour
+app.post("/hydration/add", async (req, res) => {
+    const { id_utilisateur, amount_ml } = req.body;
+
+    if (!id_utilisateur || !amount_ml) {
+        return res.status(400).json({ error: "Missing fields" });
+    }
+
+    const today = new Date().toISOString().split("T")[0];
+
+    try {
+        const [rows] = await db.execute(
+            "SELECT * FROM hydration_logs WHERE id_utilisateur = ? AND date = ?",
+            [id_utilisateur, today]
+        );
+
+        if (rows.length === 0) {
+            await db.execute(
+                "INSERT INTO hydration_logs (id_utilisateur, date, amount_ml) VALUES (?, ?, ?)",
+                [id_utilisateur, today, amount_ml]
+            );
+        } else {
+            await db.execute(
+                "UPDATE hydration_logs SET amount_ml = amount_ml + ? WHERE id_utilisateur = ? AND date = ?",
+                [amount_ml, id_utilisateur, today]
+            );
+        }
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+// ➤ Récupère la progression d’hydratation du jour pour un utilisateur.
+//    - Si aucune entrée n’existe pour aujourd’hui → renvoie amount_ml = 0
+//    - Sinon → renvoie la ligne du jour (quantité + goal_reached)
+app.get("/hydration/today/:id", async (req, res) => {
+    const id = req.params.id;
+    const today = new Date().toISOString().split("T")[0];
+
+    try {
+        const [rows] = await db.execute(
+            "SELECT * FROM hydration_logs WHERE id_utilisateur = ? AND date = ?",
+            [id, today]
+        );
+
+        if (rows.length === 0) {
+            return res.json({ amount_ml: 0, goal_reached: false });
+        }
+
+        res.json(rows[0]);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+// ➤ Récupère l’historique complet d’hydratation d’un utilisateur.
+//    - Renvoie toutes les entrées classées par date décroissante
+//    - Utilisé pour les graphiques, stats, IA, historique hebdo/mensuel
+app.get("/hydration/history/:id", async (req, res) => {
+    const id = req.params.id;
+
+    try {
+        const [rows] = await db.execute(
+            "SELECT * FROM hydration_logs WHERE id_utilisateur = ? ORDER BY date DESC",
+            [id]
+        );
+
+        res.json(rows);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+// ➤ Marque l’objectif d’hydratation comme atteint pour aujourd’hui.
+//    - Utilisé lorsque l’utilisateur atteint son objectif IA
+//    - Met à jour uniquement la ligne du jour
+app.put("/hydration/goal-reached", async (req, res) => {
+    const { id_utilisateur } = req.body;
+
+    if (!id_utilisateur) {
+        return res.status(400).json({ error: "Missing id_utilisateur" });
+    }
+
+    const today = new Date().toISOString().split("T")[0];
+
+    try {
+        await db.execute(
+            "UPDATE hydration_logs SET goal_reached = TRUE WHERE id_utilisateur = ? AND date = ?",
+            [id_utilisateur, today]
+        );
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Server error" });
+    }
+});
 
 
 // --------------------------------------
