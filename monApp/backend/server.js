@@ -375,7 +375,7 @@ app.get('/notification/preferences/:userId', (req, res) => {
   });
 });
 // SUPPRESSION DE COMPTE
-app.delete('/utilisateurs/:email', (req, res) => {
+app.delete('/utilisateurs/:email', async (req, res) => {
   const email = req.params.email;
 
   const sql = "DELETE FROM utilisateur WHERE email = ?";
@@ -406,7 +406,7 @@ app.delete('/historique/item/:id', (req, res) => {
   });
 });
 // Supprimer tout l'historique
-app.delete('/historique/user/:email', (req, res) => {
+app.delete('/historique/user/:email', async(req, res) => {
   const email = req.params.email;
 
   const sql = "DELETE FROM historique WHERE email = ?";
@@ -442,7 +442,7 @@ app.get('/stats/:email', (req, res) => {
   });
 });
 //Incrémenter clickCount (pour les quêtes)
-app.put('/stats/click/:email', (req, res) => {
+app.put('/stats/click/:email', async(req, res) => {
   const email = req.params.email;
 
   const sql = `
@@ -460,7 +460,7 @@ app.put('/stats/click/:email', (req, res) => {
 
 });
 // Récupérer les badges débloqués d’un utilisateur
-app.get('/badges/:email', (req, res) => {
+app.get('/badges/:email', async(req, res) => {
   const email = req.params.email;
 
   const sql = "SELECT badge_id, unlocked_at FROM badges WHERE email = ?";
