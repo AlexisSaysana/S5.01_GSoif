@@ -107,48 +107,63 @@ export default function HomeScreen({ navigation, userId, userEmail, userName }) 
 
   console.log("ID userId reçu dans HomeScreen :", userId);
 
-  // --- CHARGER OBJECTIF IA + PROGRESSION + HISTORIQUE ---
-  const initData = useCallback(async () => {
-    console.log("🔄 initData() lancé…");
+ // --- CHARGER OBJECTIF IA + PROGRESSION + HISTORIQUE ---
+ const initData = useCallback(async () => {
+   console.log("🔄 initData() lancé…");
 
-    try {
-      const today = new Date().toISOString().slice(0, 10);
+   try {
+     const today = new Date().toISOString().slice(0, 10);
 
-      // Objectif IA
-      console.log("➡️ Fetch profil :", `${BASE_URL}/profile/${userId}`);
-      const resProfile = await fetch(`${BASE_URL}/profile/${userId}`);
-      const profile = await resProfile.json();
-      console.log("📥 Profil reçu :", profile);
+     // -------------------------
+     // 1) Objectif IA
+     // -------------------------
+     console.log("➡️ Fetch profil :", `${BASE_URL}/profile/${userId}`);
+     const resProfile = await fetch(`${BASE_URL}/profile/${userId}`);
+     const profile = await resProfile.json();
+     console.log("📥 Profil reçu :", profile);
 
-      if (profile?.objectif_ia) {
-        setDailyGoal(profile.objectif_ia);
-      }
+     if (profile?.objectif_ia) {
+       setDailyGoal(profile.objectif_ia);
+     }
 
-      // Progression du jour
-      console.log("➡️ Fetch today :", `${BASE_URL}/hydration/today/${userId}`);
-      const resToday = await fetch(`${BASE_URL}/hydration/today/${userId}`);
-      const todayData = await resToday.json();
-      console.log("📥 Today reçu :", todayData);
+     // -------------------------
+     // 2) Progression du jour
+     // -------------------------
+     console.log("➡️ Fetch today :", `${BASE_URL}/hydration/today/${userId}`);
+     const resToday = await fetch(`${BASE_URL}/hydration/today/${userId}`);
+     const todayData = await resToday.json();
+     console.log("📥 Today reçu :", todayData);
 
-      setCompleted(todayData.amount_ml || 0);
-      setHasGoalBeenReachedToday(!!todayData.goal_reached);
+     setCompleted(todayData.amount_ml || 0);
+     setHasGoalBeenReachedToday(!!todayData.goal_reached);
 
-      // Historique
-      console.log("➡️ Fetch history :", `${BASE_URL}/hydration/history/${userId}`);
-      const resHistory = await fetch(`${BASE_URL}/hydration/history/${userId}`);
-      const historyData = await resHistory.json();
-      console.log("📥 Historique reçu :", historyData);
+     // -------------------------
+     // 3) Historique complet
+     // -------------------------
+     console.log("➡️ Fetch history :", `${BASE_URL}/hydration/history/${userId}`);
+     const resHistory = await fetch(`${BASE_URL}/hydration/history/${userId}`);
+     const historyData = await resHistory.json();
+     console.log("📥 Historique reçu :", historyData);
 
-      const historyObj = {};
-      historyData.forEach((entry) => {
-        historyObj[entry.date] = entry.amount_ml;
-      });
+     // Transformer l’historique pour le weekly
+     const historyObj = {};
 
-      setWeeklyData(historyObj);
-    } catch (e) {
-      console.log("❌ Erreur initData :", e);
-    }
-  }, [userId]);
+     historyData.forEach((entry) => {
+       // Convertir la date UTC → locale (yyyy-mm-dd)
+       const localDate = new Date(entry.date);
+       const yyyyMMdd = localDate.toISOString().split("T")[0];
+
+       historyObj[yyyyMMdd] = entry.amount_ml;
+     });
+
+     console.log("📊 WeeklyData construit :", historyObj);
+
+     setWeeklyData(historyObj);
+
+   } catch (e) {
+     console.log("❌ Erreur initData :", e);
+   }
+ }, [userId]);
 
 
   // Au premier montage
