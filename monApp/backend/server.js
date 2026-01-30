@@ -2,11 +2,11 @@ const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
 const axios = require("axios");
-
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
 const { calculateHydrationGoal } = require('./utils/hydrationAI');
 require('dotenv').config();
+
 const WEATHER_API_KEY = "703b002e3b8de955c0ff503db47e689a";
 
 const app = express();
@@ -15,7 +15,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // --------------------------------------
-// 🔥 Connexion MySQL via POOL
+// 🔥 Connexion MySQL via POOL (PROMISE)
 // --------------------------------------
 const db = mysql.createPool({
     host: process.env.DB_HOST,
@@ -28,14 +28,15 @@ const db = mysql.createPool({
 }).promise();
 
 // Test de connexion
-db.getConnection((err, connection) => {
-    if (err) {
-        console.error("❌ Erreur de connexion MySQL :", err);
-    } else {
+(async () => {
+    try {
+        const conn = await db.getConnection();
         console.log("✅ Connexion MySQL réussie !");
-        connection.release();
+        conn.release();
+    } catch (err) {
+        console.error("❌ Erreur de connexion MySQL :", err);
     }
-});
+})();
 
 // --------------------------------------
 // ROUTES
@@ -46,16 +47,21 @@ app.get('/', (req, res) => {
     return res.json("Backend opérationnel !");
 });
 
-// Récupérer tous les utilisateurs
-app.get('/utilisateurs', (req, res) => {
-    const sql = "SELECT * FROM utilisateur";
-    db.query(sql, (err, data) => {
-        if (err) return res.status(500).json({ error: "Erreur SQL", details: err });
-        return res.json(data);
-    });
+// --------------------------------------
+// 👤 Récupérer tous les utilisateurs
+// --------------------------------------
+app.get('/utilisateurs', async (req, res) => {
+    try {
+        const [rows] = await db.query("SELECT * FROM utilisateur");
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: "Erreur SQL", details: err });
+    }
 });
 
-// INSCRIPTION
+// --------------------------------------
+// 👤 INSCRIPTION
+// --------------------------------------
 app.post('/utilisateurs', async (req, res) => {
     const { email, nom, prenom, mot_de_passe } = req.body;
 
@@ -76,638 +82,658 @@ app.post('/utilisateurs', async (req, res) => {
         const hash = await bcrypt.hash(mot_de_passe, 10);
 
         const sql = "INSERT INTO utilisateur (email, nom, prenom, mot_de_passe) VALUES (?, ?, ?, ?)";
-        db.query(sql, [email, nom, prenom, hash], (err, result) => {
-            if (err) {
-                if (err.code === 'ER_DUP_ENTRY') {
-                    return res.status(409).json({ error: "Email déjà utilisé" });
-                }
-                return res.status(500).json({ error: "Erreur serveur" });
-            }
+        const [result] = await db.query(sql, [email, nom, prenom, hash]);
 
-            return res.status(201).json({
-                message: "Utilisateur ajouté avec succès",
-                utilisateur: {
-                    id: result.insertId,
-                    email,
-                    nom,
-                    prenom
-                }
-            });
+        return res.status(201).json({
+            message: "Utilisateur ajouté avec succès",
+            utilisateur: {
+                id: result.insertId,
+                email,
+                nom,
+                prenom
+            }
         });
 
-    } catch (error) {
-        return res.status(500).json({ error: "Erreur lors du hachage du mot de passe" });
+    } catch (err) {
+        if (err.code === 'ER_DUP_ENTRY') {
+            return res.status(409).json({ error: "Email déjà utilisé" });
+        }
+        return res.status(500).json({ error: "Erreur serveur" });
     }
 });
 
-// LOGIN
-app.post('/login', (req, res) => {
+// --------------------------------------
+// 🔐 LOGIN
+// --------------------------------------
+app.post('/login', async (req, res) => {
     const { email, mot_de_passe } = req.body;
 
-    const champsManquants = [];
-    if (!email?.trim()) champsManquants.push("email");
-    if (!mot_de_passe?.trim()) champsManquants.push("mot_de_passe");
-
-    if (champsManquants.length > 0) {
-        return res.status(400).json({
-            error: "Champs manquants",
-            details: champsManquants
-        });
+    if (!email?.trim() || !mot_de_passe?.trim()) {
+        return res.status(400).json({ error: "Champs manquants" });
     }
 
-    const sql = "SELECT * FROM utilisateur WHERE email = ?";
-    db.query(sql, [email], async (err, data) => {
+    try {
+        const [rows] = await db.query("SELECT * FROM utilisateur WHERE email = ?", [email]);
 
-        if (err) {
-            console.error("Erreur SQL :", err);
-            return res.status(500).json({ error: "Erreur serveur" });
-        }
-
-        if (data.length === 0) {
+        if (rows.length === 0) {
             return res.status(404).json({ error: "Utilisateur non trouvé" });
         }
 
-        const utilisateur = data[0];
+        const utilisateur = rows[0];
+        const match = await bcrypt.compare(mot_de_passe, utilisateur.mot_de_passe);
 
-        try {
-            const match = await bcrypt.compare(mot_de_passe, utilisateur.mot_de_passe);
-
-            if (!match) {
-                return res.status(401).json({ error: "Mot de passe incorrect" });
-            }
-
-            return res.json({
-                message: "Connexion réussie",
-                utilisateur: {
-                    id: utilisateur.id_utilisateur,
-                    email: utilisateur.email,
-                    nom: utilisateur.nom,
-                    prenom: utilisateur.prenom
-                }
-            });
-
-        } catch (error) {
-            console.error("Erreur bcrypt :", error);
-            return res.status(500).json({ error: "Erreur serveur" });
+        if (!match) {
+            return res.status(401).json({ error: "Mot de passe incorrect" });
         }
-    });
+
+        return res.json({
+            message: "Connexion réussie",
+            utilisateur: {
+                id: utilisateur.id_utilisateur,
+                email: utilisateur.email,
+                nom: utilisateur.nom,
+                prenom: utilisateur.prenom
+            }
+        });
+
+    } catch (err) {
+        return res.status(500).json({ error: "Erreur serveur" });
+    }
 });
 
 // --------------------------------------
-// ⭐ AJOUT DES ROUTES MANQUANTES
+// 👤 Récupérer un utilisateur par email
 // --------------------------------------
-
-// Récupérer un utilisateur par email
-app.get('/utilisateurs/:email', async(req, res) => {
+app.get('/utilisateurs/:email', async (req, res) => {
     const email = req.params.email;
 
-    const sql = "SELECT * FROM utilisateur WHERE email = ?";
-   try {
-       const [data] = await db.query(sql, [email]);
-       if (data.length === 0) return res.status(404).json({ error: "Utilisateur non trouvé" });
-       return res.json(data[0]);
-   } catch (err) {
-       console.error("Erreur SQL :", err);
-       return res.status(500).json({ error: "Erreur serveur" });
-   }
+    try {
+        const [rows] = await db.query("SELECT * FROM utilisateur WHERE email = ?", [email]);
 
+        if (rows.length === 0) {
+            return res.status(404).json({ error: "Utilisateur non trouvé" });
+        }
+
+        return res.json(rows[0]);
+
+    } catch (err) {
+        return res.status(500).json({ error: "Erreur serveur" });
+    }
 });
 
-// Modifier un utilisateur
-app.put('/utilisateurs/:email', (req, res) => {
+// --------------------------------------
+// ✏️ Modifier un utilisateur
+// --------------------------------------
+app.put('/utilisateurs/:email', async (req, res) => {
     const email = req.params.email;
     const { nom, prenom, email: newEmail } = req.body;
 
-    const sql = "UPDATE utilisateur SET nom = ?, prenom = ?, email = ? WHERE email = ?";
-    db.query(sql, [nom, prenom, newEmail, email], (err, result) => {
-        if (err) {
-            console.error("Erreur SQL :", err);
-            return res.status(500).json({ error: "Erreur serveur" });
-        }
+    try {
+        const [result] = await db.query(
+            "UPDATE utilisateur SET nom = ?, prenom = ?, email = ? WHERE email = ?",
+            [nom, prenom, newEmail, email]
+        );
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: "Utilisateur non trouvé" });
         }
 
         return res.json({ message: "Utilisateur mis à jour avec succès" });
-    });
-});
-// 🔐 Route pour changer le mot de passe
-app.put('/utilisateurs/:email/motdepasse', (req, res) => {
-  const email = req.params.email;
-  const { oldPassword, newPassword } = req.body;
 
-  if (!oldPassword || !newPassword) {
-    return res.status(400).json({ error: "Champs manquants" });
-  }
-
-  // ✔ TABLE = utilisateur
-  // ✔ COLONNE = mot_de_passe
-  const sqlCheck = "SELECT mot_de_passe FROM utilisateur WHERE email = ?";
-  db.query(sqlCheck, [email], async (err, results) => {
-    if (err) {
-      console.error("Erreur SQL :", err);
-      return res.status(500).json({ error: "Erreur serveur" });
+    } catch (err) {
+        return res.status(500).json({ error: "Erreur serveur" });
     }
-
-    if (results.length === 0) {
-      return res.status(404).json({ error: "Utilisateur introuvable" });
-    }
-
-    const currentPasswordHash = results[0].mot_de_passe;
-
-    // ✔ Vérification bcrypt
-    const match = await bcrypt.compare(oldPassword, currentPasswordHash);
-    if (!match) {
-      return res.status(400).json({ error: "Ancien mot de passe incorrect" });
-    }
-
-    // ✔ Hash du nouveau mot de passe
-    const newHash = await bcrypt.hash(newPassword, 10);
-
-    const sqlUpdate = "UPDATE utilisateur SET mot_de_passe = ? WHERE email = ?";
-    db.query(sqlUpdate, [newHash, email], (err) => {
-      if (err) {
-        console.error("Erreur SQL :", err);
-        return res.status(500).json({ error: "Erreur lors de la mise à jour" });
-      }
-
-      return res.json({ message: "Mot de passe mis à jour !" });
-    });
-  });
 });
-app.get('/notification/random/:id_utilisateur', (req, res) => {
-  const id = req.params.id_utilisateur;
 
-  const sql = `
-    SELECT message 
-    FROM notification 
-    WHERE id_utilisateur = ? OR id_utilisateur IS NULL
-    ORDER BY RAND()
-    LIMIT 1
-  `;
-
-  db.query(sql, [id], (err, data) => {
-    if (err) return res.status(500).json({ error: "Erreur SQL" });
-    if (data.length === 0) return res.status(404).json({ error: "Aucun message trouvé" });
-    return res.json(data[0]);
-  });
-});
 // --------------------------------------
-// ⭐ ROUTE : Enregistrer les horaires fixes
+// 🔐 Changer le mot de passe
 // --------------------------------------
-app.post('/preferences/horaires', (req, res) => {
-  const { id_utilisateur, horaires } = req.body;
+app.put('/utilisateurs/:email/motdepasse', async (req, res) => {
+    const email = req.params.email;
+    const { oldPassword, newPassword } = req.body;
 
-  if (id_utilisateur == null || amount_ml == null) {
-      return res.status(400).json({ error: "Missing fields" });
-  }
-
-
-  const values = horaires.map(h => [
-    id_utilisateur,
-    null,              // intervalle_heures
-    h.heure,           // heure_debut
-    h.heure,           // heure_fin
-    1                  // actif
-  ]);
-
-  const sql = `
-    INSERT INTO preferences (id_utilisateur, intervalle_heures, heure_debut, heure_fin, actif)
-    VALUES ?
-  `;
-
-  db.query(sql, [values], (err, result) => {
-    if (err) {
-      console.error("❌ Erreur SQL insertion horaires :", err);
-      return res.status(500).json({ error: "Erreur SQL" });
+    if (!oldPassword || !newPassword) {
+        return res.status(400).json({ error: "Champs manquants" });
     }
-
-    return res.json({ message: "Horaires enregistrés", inserted: result.affectedRows });
-  });
-});
-// --------------------------------------
-// ⭐ ROUTE : Récupérer les horaires fixes
-// --------------------------------------
-app.get('/preferences/horaires/:id_utilisateur', (req, res) => {
-  const id = req.params.id_utilisateur;
-
-  const sql = `
-    SELECT heure_debut 
-    FROM preferences 
-    WHERE id_utilisateur = ? AND actif = 1 AND heure_debut = heure_fin
-    ORDER BY heure_debut ASC
-  `;
-
-  db.query(sql, [id], (err, data) => {
-    if (err) {
-      console.error("❌ Erreur SQL récupération horaires :", err);
-      return res.status(500).json({ error: "Erreur SQL" });
-    }
-
-    return res.json(data);
-  });
-});
-// --------------------------------------
-// ⭐ ROUTE : Enregistrer les horaires fixes (NOUVELLE VERSION)
-// --------------------------------------
-app.post('/notification/preferences/:userId', (req, res) => {
-  const userId = req.params.userId;
-  const { fixedTimes } = req.body;
-
-  if (!fixedTimes || !Array.isArray(fixedTimes)) {
-    return res.status(400).json({ error: "fixedTimes manquant ou invalide" });
-  }
-
-  console.log("📥 Données reçues :", { userId, fixedTimes });
-
-  const sql = `
-    INSERT INTO horaires_notifications (id_utilisateur, fixed_times, actif)
-    VALUES (?, ?, 1)
-    ON DUPLICATE KEY UPDATE
-      fixed_times = VALUES(fixed_times),
-      actif = 1
-  `;
-
-  db.query(
-    sql,
-    [userId, JSON.stringify(fixedTimes)],
-    (err, result) => {
-      if (err) {
-        console.error("❌ Erreur SQL :", err);
-        return res.status(500).json({ error: "Erreur SQL", details: err });
-      }
-
-      return res.json({
-        message: "Horaires enregistrés avec succès",
-        saved: true
-      });
-    }
-  );
-});
-// --------------------------------------
-// ⭐ ROUTE : Récupérer les horaires fixes
-// --------------------------------------
-app.get('/notification/preferences/:userId', (req, res) => {
-  const userId = req.params.userId;
-
-  const sql = `
-    SELECT fixed_times
-    FROM horaires_notifications
-    WHERE id_utilisateur = ?
-    ORDER BY created_at DESC
-    LIMIT 1
-  `;
-
-  db.query(sql, [userId], (err, data) => {
-    if (err) {
-      console.error("❌ Erreur SQL :", err);
-      return res.status(500).json({ error: "Erreur SQL" });
-    }
-
-    if (data.length === 0) {
-      return res.json({ fixed_times: [] });
-    }
-
-    return res.json({
-      fixed_times: JSON.parse(data[0].fixed_times || "[]")
-    });
-  });
-});
-// SUPPRESSION DE COMPTE
-app.delete('/utilisateurs/:email', async (req, res) => {
-  const email = req.params.email;
-
-  const sql = "DELETE FROM utilisateur WHERE email = ?";
-  try {
-      const [result] = await db.query(sql, [email]);
-      if (result.affectedRows === 0) return res.status(404).json({ error: "Utilisateur non trouvé" });
-      return res.json({ message: "Compte supprimé avec succès" });
-  } catch (err) {
-      console.error("Erreur SQL :", err);
-      return res.status(500).json({ error: "Erreur serveur" });
-  }
-
-});
-//Récuper historique fontaines
-app.get('/historique/:email', (req, res) => {
-  const sql = "SELECT * FROM historique WHERE email = ? ORDER BY date DESC";
-  db.query(sql, [req.params.email], (err, result) => {
-    if (err) return res.status(500).json({ error: "Erreur serveur" });
-    res.json(result);
-  });
-});
-// Supprimer un seul item d'historique
-app.delete('/historique/item/:id', (req, res) => {
-  const sql = "DELETE FROM historique WHERE id = ?";
-  db.query(sql, [req.params.id], (err) => {
-    if (err) return res.status(500).json({ error: "Erreur serveur" });
-    res.json({ message: "Supprimé" });
-  });
-});
-// Supprimer tout l'historique
-app.delete('/historique/user/:email', async(req, res) => {
-  const email = req.params.email;
-
-  const sql = "DELETE FROM historique WHERE email = ?";
-  try {
-      await db.query(sql, [email]);
-      return res.json({ message: "Historique supprimé avec succès" });
-  } catch (err) {
-      return res.status(500).json({ error: "Erreur serveur" });
-  }
-
-});
-// Ajouter un item dans l'historique
-app.post('/historique', (req, res) => {
-  const { email, name, location, latitude, longitude, date } = req.body;
-
-  const sql = "INSERT INTO historique (email, name, location, latitude, longitude, date) VALUES (?, ?, ?, ?, ?, ?)";
-  db.query(sql, [email, name, location, latitude, longitude, date], (err) => {
-    if (err) return res.status(500).json({ error: "Erreur serveur" });
-    res.json({ message: "Historique ajouté" });
-  });
-});
-//Récupérer les stats d’un utilisateur
-app.get('/stats/:email', (req, res) => {
-  const sql = "SELECT * FROM user_stats WHERE email = ?";
-  db.query(sql, [req.params.email], (err, result) => {
-    if (err) return res.status(500).json({ error: "Erreur serveur" });
-
-    if (result.length === 0) {
-      return res.json({ clickCount: 0, hydrationCount: 0 });
-    }
-
-    res.json(result[0]);
-  });
-});
-//Incrémenter clickCount (pour les quêtes)
-app.put('/stats/click/:email', async(req, res) => {
-  const email = req.params.email;
-
-  const sql = `
-    INSERT INTO user_stats (email, clickCount)
-    VALUES (?, 1)
-    ON DUPLICATE KEY UPDATE clickCount = clickCount + 1
-  `;
-
-  try {
-      await db.query(sql, [email]);
-      return res.json({ message: "ClickCount mis à jour" });
-  } catch (err) {
-      return res.status(500).json({ error: "Erreur serveur" });
-  }
-
-});
-// Récupérer les badges débloqués d’un utilisateur
-app.get('/badges/:email', async(req, res) => {
-  const email = req.params.email;
-
-  const sql = "SELECT badge_id, unlocked_at FROM badges WHERE email = ?";
-  try {
-      const [result] = await db.query(sql, [email]);
-      return res.json(result);
-  } catch (err) {
-      return res.status(500).json({ error: "Erreur serveur" });
-  }
-
-});
-// Enregistrer un badge débloqué
-app.post('/badges', (req, res) => {
-  const { email, badge_id } = req.body;
-
-  if (!email || !badge_id) {
-    return res.status(400).json({ error: "Champs manquants" });
-  }
-
-  const sql = `
-    INSERT INTO badges (email, badge_id, unlocked_at)
-    VALUES (?, ?, NOW())
-    ON DUPLICATE KEY UPDATE unlocked_at = unlocked_at
-  `;
-
-  db.query(sql, [email, badge_id], (err) => {
-    if (err) return res.status(500).json({ error: "Erreur serveur" });
-    res.json({ message: "Badge enregistré" });
-  });
-});
-
-// GET profil IA d’un utilisateur
-app.get('/profile/:id_utilisateur', (req, res) => {
-  const { id_utilisateur } = req.params;
-
-  const sql = `
-    SELECT * FROM user_profile
-    WHERE id_utilisateur = ?
-  `;
-
-  db.query(sql, [id_utilisateur], (err, results) => {
-    if (err) return res.status(500).json({ error: 'Erreur serveur' });
-
-    if (results.length === 0) {
-      return res.status(200).json(null); // pas encore de profil
-    }
-
-    res.json(results[0]);
-  });
-});
-
-// POST mise à jour des infos perso (age, sexe, taille, poids)
-app.post('/profile/update', (req, res) => {
-  const { id_utilisateur, age, sexe, taille, poids } = req.body;
-
-  const sqlCheck = `SELECT * FROM user_profile WHERE id_utilisateur = ?`;
-  db.query(sqlCheck, [id_utilisateur], (err, results) => {
-    if (err) return res.status(500).json({ error: 'Erreur serveur' });
-
-    if (results.length === 0) {
-      const sqlInsert = `
-        INSERT INTO user_profile (id_utilisateur, age, sexe, taille, poids)
-        VALUES (?, ?, ?, ?, ?)
-      `;
-      db.query(sqlInsert, [id_utilisateur, age, sexe, taille, poids], (err2) => {
-        if (err2) return res.status(500).json({ error: 'Erreur insertion' });
-        res.json({ message: 'Profil créé' });
-      });
-    } else {
-      const sqlUpdate = `
-        UPDATE user_profile
-        SET age = ?, sexe = ?, taille = ?, poids = ?
-        WHERE id_utilisateur = ?
-      `;
-      db.query(sqlUpdate, [age, sexe, taille, poids, id_utilisateur], (err2) => {
-        if (err2) return res.status(500).json({ error: 'Erreur mise à jour' });
-        res.json({ message: 'Profil mis à jour' });
-      });
-    }
-  });
-});
-// POST recalcul de l’objectif IA
-app.post('/profile/calculate', async (req, res) => {
-  console.log("📥 /profile/calculate appelé avec :", req.body);
-
-  const { id_utilisateur } = req.body;
-
-  const sql = `SELECT * FROM user_profile WHERE id_utilisateur = ?`;
-  db.query(sql, [id_utilisateur], async (err, results) => {
-    if (err) return res.status(500).json({ error: 'Erreur serveur' });
-    if (results.length === 0) return res.status(400).json({ error: 'Profil inexistant' });
-
-    const profile = results[0];
-
-    // 🌦️ Récupération météo : température MAX du jour
-    const lat = 42.575;   // Les Angles
-    const lon = 2.076;
-    const url = `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&units=metric&appid=${WEATHER_API_KEY}`;
-
-    let temperature_max = 20;
 
     try {
-      const meteo = await axios.get(url);
-      temperature_max = meteo.data.daily[0].temp.max;
-    } catch (e) {
-      console.log("❌ Erreur API météo :", e);
+        const [rows] = await db.query(
+            "SELECT mot_de_passe FROM utilisateur WHERE email = ?",
+            [email]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: "Utilisateur introuvable" });
+        }
+
+        const match = await bcrypt.compare(oldPassword, rows[0].mot_de_passe);
+        if (!match) {
+            return res.status(400).json({ error: "Ancien mot de passe incorrect" });
+        }
+
+        const newHash = await bcrypt.hash(newPassword, 10);
+
+        await db.query(
+            "UPDATE utilisateur SET mot_de_passe = ? WHERE email = ?",
+            [newHash, email]
+        );
+
+        return res.json({ message: "Mot de passe mis à jour !" });
+
+    } catch (err) {
+        return res.status(500).json({ error: "Erreur serveur" });
     }
-
-    // 🔥 Calcul IA basé sur la température MAX
-    const objectif = calculateHydrationGoal({
-      age: profile.age,
-      sexe: profile.sexe,
-      poids: profile.poids,
-      temperature: temperature_max
-    });
-
-    console.log("🎯 Objectif IA généré (L) :", objectif);
-    console.log("🎯 Objectif IA généré (mL) :", objectif * 1000);
-
-    // 💾 Enregistrer objectif IA en base (en mL)
-    const sqlUpdateGoal = `
-      UPDATE user_profile
-      SET objectif_ia = ?
-      WHERE id_utilisateur = ?
-    `;
-
-    db.query(sqlUpdateGoal, [Math.round(objectif * 1000), id_utilisateur], (err) => {
-      if (err) {
-        console.log("❌ Erreur SQL objectif_ia :", err);
-      } else {
-        console.log("💾 objectif_ia enregistré en base pour user :", id_utilisateur);
-      }
-    });
-
-    const explication = `Objectif basé sur ${profile.poids} kg, ${profile.sexe}, ${profile.age} ans et ${temperature_max}°C (température maximale du jour).`;
-
-    // 🔥 IA choisit le nombre de notifications (entre 4 et 7)
-    const nbNotif = Math.floor(Math.random() * 4) + 4;
-
-    // 🔥 IA génère les horaires automatiquement (entre 9h et 21h)
-    const horaires = [];
-    const start = 9;
-    const end = 21;
-    const interval = Math.floor((end - start) * 60 / nbNotif);
-
-    for (let i = 0; i < nbNotif; i++) {
-      const minutes = start * 60 + i * interval;
-      const h = Math.floor(minutes / 60);
-      const m = minutes % 60;
-      horaires.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
-    }
-
-    // 🔥 Quantité à boire par notification
-    const mlParNotif = Math.round((objectif * 1000) / nbNotif);
-
-    // 🤖 Phrase drôle IA
-    const phrasesIA = [
-      `Bon… j’ai décidé que tu recevras ${nbNotif} notifications aujourd’hui. Bois ${mlParNotif} ml à chaque fois. Oui, je suis exigeante.`,
-      `J’ai fait mes calculs. Résultat : ${nbNotif} rappels. ${mlParNotif} ml chacun. Courage champion.`,
-      `Breaking news : ${nbNotif} notifications aujourd’hui. À chaque fois, tu bois ${mlParNotif} ml. Je surveille.`,
-      `Ton IA préférée a choisi ${nbNotif} rappels. Bois ${mlParNotif} ml à chaque fois. Pas de négociation.`,
-    ];
-    const recommandation = phrasesIA[Math.floor(Math.random() * phrasesIA.length)];
-
-    // 💾 Enregistrer les horaires générés par l’IA
-    const sqlNotif = `
-      INSERT INTO horaires_notifications (id_utilisateur, fixed_times, actif, created_at)
-      VALUES (?, ?, 1, NOW())
-      ON DUPLICATE KEY UPDATE
-        fixed_times = VALUES(fixed_times),
-        actif = 1,
-        created_at = NOW()
-    `;
-
-    console.log("🕒 Horaires générés par l’IA :", horaires);
-    console.log("🔔 Nombre de notifications :", nbNotif);
-    console.log("💧 Quantité par notif :", mlParNotif);
-
-    db.query(sqlNotif, [id_utilisateur, JSON.stringify(horaires)], (err) => {
-      if (err) {
-        console.log("❌ Erreur SQL lors de l’enregistrement :", err);
-      } else {
-        console.log("✅ Horaires enregistrés avec succès !");
-      }
-
-      // 📤 Réponse envoyée au front
-      res.json({
-        objectif,
-        objectif_ml: objectif * 1000,
-        explication,
-        temperature_max,
-        nbNotif,
-        mlParNotif,
-        horaires,
-        recommandation
-      });
-    });
-
-  });
 });
-// ➤ Ajoute une quantité d’eau pour l’utilisateur.
-//    - Vérifie si une entrée existe déjà pour aujourd’hui
-//    - Si non : crée une nouvelle ligne (nouvelle journée)
-//    - Si oui : met simplement à jour la quantité totale du jour
+// --------------------------------------
+// 🔔 Notification aléatoire
+// --------------------------------------
+app.get('/notification/random/:id_utilisateur', async (req, res) => {
+    const id = req.params.id_utilisateur;
+
+    const sql = `
+        SELECT message
+        FROM notification
+        WHERE id_utilisateur = ? OR id_utilisateur IS NULL
+        ORDER BY RAND()
+        LIMIT 1
+    `;
+
+    try {
+        const [rows] = await db.query(sql, [id]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: "Aucun message trouvé" });
+        }
+
+        return res.json(rows[0]);
+
+    } catch (err) {
+        return res.status(500).json({ error: "Erreur SQL" });
+    }
+});
+
+// --------------------------------------
+// ⭐ Enregistrer les horaires fixes (ancienne version)
+// --------------------------------------
+app.post('/preferences/horaires', async (req, res) => {
+    const { id_utilisateur, horaires } = req.body;
+
+    if (!id_utilisateur || !horaires) {
+        return res.status(400).json({ error: "Missing fields" });
+    }
+
+    const values = horaires.map(h => [
+        id_utilisateur,
+        null,
+        h.heure,
+        h.heure,
+        1
+    ]);
+
+    const sql = `
+        INSERT INTO preferences (id_utilisateur, intervalle_heures, heure_debut, heure_fin, actif)
+        VALUES ?
+    `;
+
+    try {
+        const [result] = await db.query(sql, [values]);
+        return res.json({ message: "Horaires enregistrés", inserted: result.affectedRows });
+
+    } catch (err) {
+        return res.status(500).json({ error: "Erreur SQL" });
+    }
+});
+
+// --------------------------------------
+// ⭐ Récupérer les horaires fixes
+// --------------------------------------
+app.get('/preferences/horaires/:id_utilisateur', async (req, res) => {
+    const id = req.params.id_utilisateur;
+
+    const sql = `
+        SELECT heure_debut
+        FROM preferences
+        WHERE id_utilisateur = ? AND actif = 1 AND heure_debut = heure_fin
+        ORDER BY heure_debut ASC
+    `;
+
+    try {
+        const [rows] = await db.query(sql, [id]);
+        return res.json(rows);
+
+    } catch (err) {
+        return res.status(500).json({ error: "Erreur SQL" });
+    }
+});
+
+// --------------------------------------
+// ⭐ Enregistrer les horaires fixes (nouvelle version)
+// --------------------------------------
+app.post('/notification/preferences/:userId', async (req, res) => {
+    const userId = req.params.userId;
+    const { fixedTimes } = req.body;
+
+    if (!fixedTimes || !Array.isArray(fixedTimes)) {
+        return res.status(400).json({ error: "fixedTimes manquant ou invalide" });
+    }
+
+    const sql = `
+        INSERT INTO horaires_notifications (id_utilisateur, fixed_times, actif)
+        VALUES (?, ?, 1)
+        ON DUPLICATE KEY UPDATE
+            fixed_times = VALUES(fixed_times),
+            actif = 1
+    `;
+
+    try {
+        await db.query(sql, [userId, JSON.stringify(fixedTimes)]);
+        return res.json({ message: "Horaires enregistrés avec succès", saved: true });
+
+    } catch (err) {
+        return res.status(500).json({ error: "Erreur SQL", details: err });
+    }
+});
+
+// --------------------------------------
+// ⭐ Récupérer les horaires fixes (nouvelle version)
+// --------------------------------------
+app.get('/notification/preferences/:userId', async (req, res) => {
+    const userId = req.params.userId;
+
+    const sql = `
+        SELECT fixed_times
+        FROM horaires_notifications
+        WHERE id_utilisateur = ?
+        ORDER BY created_at DESC
+        LIMIT 1
+    `;
+
+    try {
+        const [rows] = await db.query(sql, [userId]);
+
+        if (rows.length === 0) {
+            return res.json({ fixed_times: [] });
+        }
+
+        return res.json({
+            fixed_times: JSON.parse(rows[0].fixed_times || "[]")
+        });
+
+    } catch (err) {
+        return res.status(500).json({ error: "Erreur SQL" });
+    }
+});
+
+// --------------------------------------
+// 🗑️ Supprimer un utilisateur
+// --------------------------------------
+app.delete('/utilisateurs/:email', async (req, res) => {
+    const email = req.params.email;
+
+    try {
+        const [result] = await db.query("DELETE FROM utilisateur WHERE email = ?", [email]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Utilisateur non trouvé" });
+        }
+
+        return res.json({ message: "Compte supprimé avec succès" });
+
+    } catch (err) {
+        return res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+// --------------------------------------
+// 🏞️ Récupérer historique fontaines
+// --------------------------------------
+app.get('/historique/:email', async (req, res) => {
+    const sql = "SELECT * FROM historique WHERE email = ? ORDER BY date DESC";
+
+    try {
+        const [rows] = await db.query(sql, [req.params.email]);
+        return res.json(rows);
+
+    } catch (err) {
+        return res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+// --------------------------------------
+// 🗑️ Supprimer un item d'historique
+// --------------------------------------
+app.delete('/historique/item/:id', async (req, res) => {
+    try {
+        await db.query("DELETE FROM historique WHERE id = ?", [req.params.id]);
+        return res.json({ message: "Supprimé" });
+
+    } catch (err) {
+        return res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+// --------------------------------------
+// 🗑️ Supprimer tout l'historique d'un utilisateur
+// --------------------------------------
+app.delete('/historique/user/:email', async (req, res) => {
+    try {
+        await db.query("DELETE FROM historique WHERE email = ?", [req.params.email]);
+        return res.json({ message: "Historique supprimé avec succès" });
+
+    } catch (err) {
+        return res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+// --------------------------------------
+// ➕ Ajouter un item dans l'historique
+// --------------------------------------
+app.post('/historique', async (req, res) => {
+    const { email, name, location, latitude, longitude, date } = req.body;
+
+    const sql = `
+        INSERT INTO historique (email, name, location, latitude, longitude, date)
+        VALUES (?, ?, ?, ?, ?, ?)
+    `;
+
+    try {
+        await db.query(sql, [email, name, location, latitude, longitude, date]);
+        return res.json({ message: "Historique ajouté" });
+
+    } catch (err) {
+        return res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+// --------------------------------------
+// 📊 Récupérer les stats d’un utilisateur
+// --------------------------------------
+app.get('/stats/:email', async (req, res) => {
+    try {
+        const [rows] = await db.query("SELECT * FROM user_stats WHERE email = ?", [req.params.email]);
+
+        if (rows.length === 0) {
+            return res.json({ clickCount: 0, hydrationCount: 0 });
+        }
+
+        return res.json(rows[0]);
+
+    } catch (err) {
+        return res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+// --------------------------------------
+// ➕ Incrémenter clickCount
+// --------------------------------------
+app.put('/stats/click/:email', async (req, res) => {
+    const email = req.params.email;
+
+    const sql = `
+        INSERT INTO user_stats (email, clickCount)
+        VALUES (?, 1)
+        ON DUPLICATE KEY UPDATE clickCount = clickCount + 1
+    `;
+
+    try {
+        await db.query(sql, [email]);
+        return res.json({ message: "ClickCount mis à jour" });
+
+    } catch (err) {
+        return res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+// --------------------------------------
+// 🏅 Récupérer les badges d’un utilisateur
+// --------------------------------------
+app.get('/badges/:email', async (req, res) => {
+    const email = req.params.email;
+
+    try {
+        const [rows] = await db.query(
+            "SELECT badge_id, unlocked_at FROM badges WHERE email = ?",
+            [email]
+        );
+
+        return res.json(rows);
+
+    } catch (err) {
+        return res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+// --------------------------------------
+// 🏅 Enregistrer un badge
+// --------------------------------------
+app.post('/badges', async (req, res) => {
+    const { email, badge_id } = req.body;
+
+    if (!email || !badge_id) {
+        return res.status(400).json({ error: "Champs manquants" });
+    }
+
+    const sql = `
+        INSERT INTO badges (email, badge_id, unlocked_at)
+        VALUES (?, ?, NOW())
+        ON DUPLICATE KEY UPDATE unlocked_at = unlocked_at
+    `;
+
+    try {
+        await db.query(sql, [email, badge_id]);
+        return res.json({ message: "Badge enregistré" });
+
+    } catch (err) {
+        return res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+// --------------------------------------
+// 🧠 GET profil IA d’un utilisateur
+// --------------------------------------
+app.get('/profile/:id_utilisateur', async (req, res) => {
+    const { id_utilisateur } = req.params;
+
+    const sql = `
+        SELECT * FROM user_profile
+        WHERE id_utilisateur = ?
+    `;
+
+    try {
+        const [rows] = await db.query(sql, [id_utilisateur]);
+
+        if (rows.length === 0) {
+            return res.status(200).json(null); // pas encore de profil
+        }
+
+        return res.json(rows[0]);
+
+    } catch (err) {
+        return res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// --------------------------------------
+// 🧠 POST mise à jour des infos perso
+// --------------------------------------
+app.post('/profile/update', async (req, res) => {
+    const { id_utilisateur, age, sexe, taille, poids } = req.body;
+
+    try {
+        const [rows] = await db.query(
+            "SELECT * FROM user_profile WHERE id_utilisateur = ?",
+            [id_utilisateur]
+        );
+
+        if (rows.length === 0) {
+            // INSERT
+            await db.query(
+                `INSERT INTO user_profile (id_utilisateur, age, sexe, taille, poids)
+                 VALUES (?, ?, ?, ?, ?)`,
+                [id_utilisateur, age, sexe, taille, poids]
+            );
+            return res.json({ message: 'Profil créé' });
+        }
+
+        // UPDATE
+        await db.query(
+            `UPDATE user_profile
+             SET age = ?, sexe = ?, taille = ?, poids = ?
+             WHERE id_utilisateur = ?`,
+            [age, sexe, taille, poids, id_utilisateur]
+        );
+
+        return res.json({ message: 'Profil mis à jour' });
+
+    } catch (err) {
+        return res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// --------------------------------------
+// 🧠 POST recalcul de l’objectif IA
+// --------------------------------------
+app.post('/profile/calculate', async (req, res) => {
+    console.log("📥 /profile/calculate appelé avec :", req.body);
+
+    const { id_utilisateur } = req.body;
+
+    try {
+        const [rows] = await db.query(
+            "SELECT * FROM user_profile WHERE id_utilisateur = ?",
+            [id_utilisateur]
+        );
+
+        if (rows.length === 0) {
+            return res.status(400).json({ error: 'Profil inexistant' });
+        }
+
+        const profile = rows[0];
+
+        // 🌦️ Récupération météo : température MAX du jour
+        const lat = 42.575;
+        const lon = 2.076;
+        const url = `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&units=metric&appid=${WEATHER_API_KEY}`;
+
+        let temperature_max = 20;
+
+        try {
+            const meteo = await axios.get(url);
+            temperature_max = meteo.data.daily[0].temp.max;
+        } catch (e) {
+            console.log("❌ Erreur API météo :", e);
+        }
+
+        // 🔥 Calcul IA
+        const objectif = calculateHydrationGoal({
+            age: profile.age,
+            sexe: profile.sexe,
+            poids: profile.poids,
+            temperature: temperature_max
+        });
+
+        const objectif_ml = Math.round(objectif * 1000);
+
+        // 💾 Enregistrer objectif IA
+        await db.query(
+            "UPDATE user_profile SET objectif_ia = ? WHERE id_utilisateur = ?",
+            [objectif_ml, id_utilisateur]
+        );
+
+        // 🔔 Génération des horaires IA
+        const nbNotif = Math.floor(Math.random() * 4) + 4;
+        const horaires = [];
+        const start = 9;
+        const end = 21;
+        const interval = Math.floor((end - start) * 60 / nbNotif);
+
+        for (let i = 0; i < nbNotif; i++) {
+            const minutes = start * 60 + i * interval;
+            const h = Math.floor(minutes / 60);
+            const m = minutes % 60;
+            horaires.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
+        }
+
+        const mlParNotif = Math.round(objectif_ml / nbNotif);
+
+        const phrasesIA = [
+            `Bon… j’ai décidé que tu recevras ${nbNotif} notifications aujourd’hui. Bois ${mlParNotif} ml à chaque fois.`,
+            `J’ai fait mes calculs. Résultat : ${nbNotif} rappels. ${mlParNotif} ml chacun.`,
+            `Breaking news : ${nbNotif} notifications aujourd’hui. À chaque fois, tu bois ${mlParNotif} ml.`,
+            `Ton IA préférée a choisi ${nbNotif} rappels. Bois ${mlParNotif} ml à chaque fois.`
+        ];
+
+        const recommandation = phrasesIA[Math.floor(Math.random() * phrasesIA.length)];
+
+        // 💾 Enregistrer les horaires IA
+        await db.query(
+            `INSERT INTO horaires_notifications (id_utilisateur, fixed_times, actif, created_at)
+             VALUES (?, ?, 1, NOW())
+             ON DUPLICATE KEY UPDATE fixed_times = VALUES(fixed_times), actif = 1, created_at = NOW()`,
+            [id_utilisateur, JSON.stringify(horaires)]
+        );
+
+        return res.json({
+            objectif,
+            objectif_ml,
+            explication: `Objectif basé sur ${profile.poids} kg, ${profile.sexe}, ${profile.age} ans et ${temperature_max}°C.`,
+            temperature_max,
+            nbNotif,
+            mlParNotif,
+            horaires,
+            recommandation
+        });
+
+    } catch (err) {
+        return res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// --------------------------------------
+// 💧 Ajouter une quantité d’eau
+// --------------------------------------
 app.post("/hydration/add", async (req, res) => {
-  const { id_utilisateur, amount_ml } = req.body;
+    const { id_utilisateur, amount_ml } = req.body;
 
-  if (id_utilisateur == null || amount_ml == null) {
-    return res.status(400).json({ error: "Missing fields" });
-  }
-
-  const today = new Date().toISOString().split("T")[0];
-
-  try {
-    const [rows] = await db.execute(
-      "SELECT * FROM hydration_logs WHERE id_utilisateur = ? AND date = ?",
-      [id_utilisateur, today]
-    );
-
-    if (rows.length === 0) {
-      await db.execute(
-        "INSERT INTO hydration_logs (id_utilisateur, date, amount_ml, goal_reached) VALUES (?, ?, ?, ?)",
-        [id_utilisateur, today, amount_ml, false]
-      );
-    } else {
-      await db.execute(
-        "UPDATE hydration_logs SET amount_ml = amount_ml + ? WHERE id_utilisateur = ? AND date = ?",
-        [amount_ml, id_utilisateur, today]
-      );
+    if (id_utilisateur == null || amount_ml == null) {
+        return res.status(400).json({ error: "Missing fields" });
     }
 
-    res.json({ success: true });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Server error" });
-  }
+    const today = new Date().toISOString().split("T")[0];
+
+    try {
+        const [rows] = await db.query(
+            "SELECT * FROM hydration_logs WHERE id_utilisateur = ? AND date = ?",
+            [id_utilisateur, today]
+        );
+
+        if (rows.length === 0) {
+            await db.query(
+                "INSERT INTO hydration_logs (id_utilisateur, date, amount_ml, goal_reached) VALUES (?, ?, ?, ?)",
+                [id_utilisateur, today, amount_ml, false]
+            );
+        } else {
+            await db.query(
+                "UPDATE hydration_logs SET amount_ml = amount_ml + ? WHERE id_utilisateur = ? AND date = ?",
+                [amount_ml, id_utilisateur, today]
+            );
+        }
+
+        return res.json({ success: true });
+
+    } catch (err) {
+        return res.status(500).json({ error: "Server error" });
+    }
 });
 
-// ➤ Récupère la progression d’hydratation du jour pour un utilisateur.
-//    - Si aucune entrée n’existe pour aujourd’hui → renvoie amount_ml = 0
-//    - Sinon → renvoie la ligne du jour (quantité + goal_reached)
+// --------------------------------------
+// 💧 Récupérer la progression du jour
+// --------------------------------------
 app.get("/hydration/today/:id", async (req, res) => {
     const id = req.params.id;
     const today = new Date().toISOString().split("T")[0];
 
     try {
-        const [rows] = await db.execute(
+        const [rows] = await db.query(
             "SELECT * FROM hydration_logs WHERE id_utilisateur = ? AND date = ?",
             [id, today]
         );
@@ -716,58 +742,59 @@ app.get("/hydration/today/:id", async (req, res) => {
             return res.json({ amount_ml: 0, goal_reached: false });
         }
 
-        res.json(rows[0]);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Server error" });
+        return res.json(rows[0]);
+
+    } catch (err) {
+        return res.status(500).json({ error: "Server error" });
     }
 });
-// ➤ Récupère l’historique complet d’hydratation d’un utilisateur.
-//    - Renvoie toutes les entrées classées par date décroissante
-//    - Utilisé pour les graphiques, stats, IA, historique hebdo/mensuel
+
+// --------------------------------------
+// 💧 Récupérer l’historique complet
+// --------------------------------------
 app.get("/hydration/history/:id", async (req, res) => {
     const id = req.params.id;
 
     try {
-        const [rows] = await db.execute(
+        const [rows] = await db.query(
             "SELECT * FROM hydration_logs WHERE id_utilisateur = ? ORDER BY date DESC",
             [id]
         );
 
-        res.json(rows);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Server error" });
+        return res.json(rows);
+
+    } catch (err) {
+        return res.status(500).json({ error: "Server error" });
     }
 });
-// ➤ Marque l’objectif d’hydratation comme atteint pour aujourd’hui.
-//    - Utilisé lorsque l’utilisateur atteint son objectif IA
-//    - Met à jour uniquement la ligne du jour
-app.put("/hydration/goal-reached", async (req, res) => {
-  const { id_utilisateur } = req.body;
-
-  if (id_utilisateur == null) {
-    return res.status(400).json({ error: "Missing id_utilisateur" });
-  }
-
-  const today = new Date().toISOString().split("T")[0];
-
-  try {
-    await db.execute(
-      "UPDATE hydration_logs SET goal_reached = TRUE WHERE id_utilisateur = ? AND date = ?",
-      [id_utilisateur, today]
-    );
-
-    res.json({ success: true });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Server error" });
-  }
-});
-
 
 // --------------------------------------
-// LANCEMENT SERVEUR
+// 💧 Marquer objectif atteint
+// --------------------------------------
+app.put("/hydration/goal-reached", async (req, res) => {
+    const { id_utilisateur } = req.body;
+
+    if (!id_utilisateur) {
+        return res.status(400).json({ error: "Missing id_utilisateur" });
+    }
+
+    const today = new Date().toISOString().split("T")[0];
+
+    try {
+        await db.query(
+            "UPDATE hydration_logs SET goal_reached = TRUE WHERE id_utilisateur = ? AND date = ?",
+            [id_utilisateur, today]
+        );
+
+        return res.json({ success: true });
+
+    } catch (err) {
+        return res.status(500).json({ error: "Server error" });
+    }
+});
+
+// --------------------------------------
+// 🚀 LANCEMENT SERVEUR
 // --------------------------------------
 const PORT = process.env.PORT || 8080;
 console.log("PORT utilisé :", PORT);
@@ -775,3 +802,5 @@ console.log("PORT utilisé :", PORT);
 app.listen(PORT, () => {
     console.log("🚀 Serveur lancé sur le port " + PORT);
 });
+
+
