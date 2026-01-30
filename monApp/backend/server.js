@@ -158,7 +158,7 @@ app.post('/login', (req, res) => {
 // --------------------------------------
 
 // Récupérer un utilisateur par email
-app.get('/utilisateurs/:email', (req, res) => {
+app.get('/utilisateurs/:email', async(req, res) => {
     const email = req.params.email;
 
     const sql = "SELECT * FROM utilisateur WHERE email = ?";
