@@ -30,6 +30,23 @@ const handleSignup = async () => {
     return Alert.alert("Erreur", "Les mots de passe ne correspondent pas");
   }
 
+  // 🔒 A07:2025 - Authentication Failures : Validation mot de passe fort
+  if (password.length < 8) {
+    return Alert.alert("Erreur", "Le mot de passe doit contenir au moins 8 caractères");
+  }
+  if (!/(?=.*[a-z])/.test(password)) {
+    return Alert.alert("Erreur", "Le mot de passe doit contenir au moins une minuscule");
+  }
+  if (!/(?=.*[A-Z])/.test(password)) {
+    return Alert.alert("Erreur", "Le mot de passe doit contenir au moins une majuscule");
+  }
+  if (!/(?=.*\d)/.test(password)) {
+    return Alert.alert("Erreur", "Le mot de passe doit contenir au moins un chiffre");
+  }
+  if (!/(?=.*[@$!%*?&])/.test(password)) {
+    return Alert.alert("Erreur", "Le mot de passe doit contenir au moins un caractère spécial (@$!%*?&)");
+  }
+
   if (!acceptedTerms) {
     return Alert.alert("Erreur", "Vous devez accepter les conditions d'utilisation pour continuer");
   }
@@ -50,23 +67,19 @@ const handleSignup = async () => {
     });
 
     const textData = await response.text();
-    console.log("📥 Réponse brute du serveur :", textData);
-
-    // 2. Essayer de transformer en JSON manuellement
     const data = JSON.parse(textData);
 
     if (!response.ok) {
-      if (data.error === "Champs manquants") {
-        return Alert.alert("Erreur", `Champs manquants : ${data.details.join(", ")}`);
+      if (data.error === "Données invalides") {
+        return Alert.alert("Erreur", data.details.join("\n"));
       }
       if (data.error === "Email déjà utilisé") {
         return Alert.alert("Erreur", "Cet email est déjà utilisé");
       }
-      return res.status(500).json({ error: "Erreur serveur", details: err });    }
+      return Alert.alert("Erreur", data.error || "Une erreur est survenue");
+    }
 
     // --- LOGIQUE DE SUCCÈS ---
-
-    // On récupère l'objet utilisateur (vérifiez si votre backend renvoie "utilisateur" ou les clés en direct)
     const user = data.utilisateur || data;
 
     const formattedPrenom = capitalize(user.prenom);
@@ -75,7 +88,10 @@ const handleSignup = async () => {
 
     Alert.alert("Succès", `Bienvenue ${formattedPrenom} !`);
 
-    // 🔥 Sauvegarde locale
+    // 🔒 A01:2025 - Broken Access Control : Stockage JWT sécurisé
+    if (data.token) {
+      await AsyncStorage.setItem("authToken", data.token);
+    }
     await AsyncStorage.setItem("userId", user.id.toString());
     await AsyncStorage.setItem("userEmail", user.email);
     await AsyncStorage.setItem("userName", fullName);
@@ -84,7 +100,6 @@ const handleSignup = async () => {
     onLogin(user.email, user.id, fullName);
 
   } catch (error) {
-    console.log("🔥 Erreur Signup:", error);
     Alert.alert("Erreur", "Impossible de se connecter au serveur");
   }
 };

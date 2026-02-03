@@ -5,14 +5,61 @@ const axios = require("axios");
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
 const { calculateHydrationGoal } = require('./utils/hydrationAI');
+const rateLimit = require('express-rate-limit');
+const { body, validationResult } = require('express-validator');
+const helmet = require('helmet');
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
-const WEATHER_API_KEY = "703b002e3b8de955c0ff503db47e689a";
+// 🔒 Middleware d'authentification JWT
+const { authenticateToken, checkUserOwnership } = require('./middleware/auth');
+
+// 🔒 A02:2025 - Security Misconfiguration : Clé API sécurisée
+const WEATHER_API_KEY = process.env.WEATHER_API_KEY;
+const JWT_SECRET = process.env.JWT_SECRET || 'changez_cette_valeur_en_production';
 
 const app = express();
-app.use(express.json());
-app.use(cors());
+
+// 🔒 A02:2025 - Security Misconfiguration : Headers de sécurité
+app.use(helmet());
+
+// 🔒 A02:2025 - Security Misconfiguration : CORS restreint
+const allowedOrigins = [
+    process.env.FRONTEND_URL || 'http://localhost:8081',
+    'http://localhost:19006', // Expo
+    'http://localhost:19000'  // Expo
+];
+app.use(cors({
+    origin: function (origin, callback) {
+        // Autoriser les requêtes sans origin (mobile apps)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Non autorisé par CORS'));
+        }
+    },
+    credentials: true
+}));
+
+app.use(express.json({ limit: '10mb' }));
 app.use(bodyParser.json());
+
+// 🔒 A07:2025 - Authentication Failures : Rate limiting global
+const globalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // 100 requêtes max
+    message: 'Trop de requêtes, veuillez réessayer plus tard.'
+});
+app.use(globalLimiter);
+
+// 🔒 A07:2025 - Authentication Failures : Rate limiting authentification
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // 5 tentatives max
+    skipSuccessfulRequests: true,
+    message: 'Trop de tentatives de connexion. Réessayez dans 15 minutes.'
+});
 
 // --------------------------------------
 // 🔥 Connexion MySQL via POOL (PROMISE)
@@ -62,24 +109,32 @@ app.get('/utilisateurs', async (req, res) => {
 // --------------------------------------
 // 👤 INSCRIPTION
 // --------------------------------------
-app.post('/utilisateurs', async (req, res) => {
-    const { email, nom, prenom, mot_de_passe } = req.body;
-
-    const champsManquants = [];
-    if (!email?.trim()) champsManquants.push("email");
-    if (!nom?.trim()) champsManquants.push("nom");
-    if (!prenom?.trim()) champsManquants.push("prenom");
-    if (!mot_de_passe?.trim()) champsManquants.push("mot_de_passe");
-
-    if (champsManquants.length > 0) {
-        return res.status(400).json({
-            error: "Champs manquants",
-            details: champsManquants
+app.post('/utilisateurs', 
+    authLimiter,
+    // 🔒 A05:2025 - Injection : Validation des entrées
+    [
+        body('email').isEmail().normalizeEmail().withMessage('Email invalide'),
+        body('nom').trim().isLength({ min: 2, max: 50 }).matches(/^[a-zA-ZÀ-ÿ\s-]+$/).withMessage('Nom invalide'),
+        body('prenom').trim().isLength({ min: 2, max: 50 }).matches(/^[a-zA-ZÀ-ÿ\s-]+$/).withMessage('Prénom invalide'),
+        // 🔒 A07:2025 - Authentication Failures : Politique de mot de passe fort
+        body('mot_de_passe')
+            .isLength({ min: 8 }).withMessage('Le mot de passe doit contenir au moins 8 caractères')
+            .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/).withMessage('Le mot de passe doit contenir: majuscule, minuscule, chiffre et caractère spécial')
+    ],
+    async (req, res) => {
+    // Vérifier les erreurs de validation
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ 
+            error: 'Données invalides', 
+            details: errors.array().map(e => e.msg) 
         });
     }
 
+    const { email, nom, prenom, mot_de_passe } = req.body;
+
     try {
-        const hash = await bcrypt.hash(mot_de_passe, 10);
+        const hash = await bcrypt.hash(mot_de_passe, 12); // Augmenté à 12 rounds
 
         const sql = "INSERT INTO utilisateur (email, nom, prenom, mot_de_passe) VALUES (?, ?, ?, ?)";
         const [result] = await db.query(sql, [email, nom, prenom, hash]);
@@ -105,29 +160,53 @@ app.post('/utilisateurs', async (req, res) => {
 // --------------------------------------
 // 🔐 LOGIN
 // --------------------------------------
-app.post('/login', async (req, res) => {
-    const { email, mot_de_passe } = req.body;
-
-    if (!email?.trim() || !mot_de_passe?.trim()) {
-        return res.status(400).json({ error: "Champs manquants" });
+app.post('/login', 
+    authLimiter,
+    // 🔒 A05:2025 - Injection : Validation
+    [
+        body('email').isEmail().normalizeEmail(),
+        body('mot_de_passe').notEmpty()
+    ],
+    async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ error: "Données invalides" });
     }
+
+    const { email, mot_de_passe } = req.body;
 
     try {
         const [rows] = await db.query("SELECT * FROM utilisateur WHERE email = ?", [email]);
 
         if (rows.length === 0) {
-            return res.status(404).json({ error: "Utilisateur non trouvé" });
+            // 🔒 A10:2025 - Mishandling of Exceptional Conditions : Message générique
+            return res.status(401).json({ error: "Email ou mot de passe incorrect" });
         }
 
         const utilisateur = rows[0];
         const match = await bcrypt.compare(mot_de_passe, utilisateur.mot_de_passe);
 
         if (!match) {
-            return res.status(401).json({ error: "Mot de passe incorrect" });
+            // 🔒 A10:2025 - Mishandling of Exceptional Conditions : Message générique
+            return res.status(401).json({ error: "Email ou mot de passe incorrect" });
         }
+
+        // 🔒 A01:2025 - Broken Access Control : Génération JWT
+        const token = jwt.sign(
+            { 
+                id: utilisateur.id_utilisateur, 
+                email: utilisateur.email 
+            },
+            JWT_SECRET,
+            { expiresIn: '24h' }
+        );
+
+        // 🔒 A09:2025 - Security Logging : Log sécurisé (sans mot de passe)
+        console.log(`✅ Connexion réussie pour: ${email}`);
 
         return res.json({
             message: "Connexion réussie",
+            token,
             utilisateur: {
                 id: utilisateur.id_utilisateur,
                 email: utilisateur.email,
@@ -691,7 +770,8 @@ app.post('/profile/calculate', async (req, res) => {
 // --------------------------------------
 // 💧 Ajouter une quantité d’eau
 // --------------------------------------
-app.post("/hydration/add", async (req, res) => {
+// 🔒 A01:2025 - Broken Access Control : Route protégée
+app.post("/hydration/add", authenticateToken, checkUserOwnership, async (req, res) => {
     const { id_utilisateur, amount_ml } = req.body;
 
     if (id_utilisateur == null || amount_ml == null) {
@@ -728,8 +808,14 @@ app.post("/hydration/add", async (req, res) => {
 // --------------------------------------
 // 💧 Récupérer la progression du jour
 // --------------------------------------
-app.get("/hydration/today/:id", async (req, res) => {
+// 🔒 A01:2025 - Broken Access Control : Route protégée
+app.get("/hydration/today/:id", authenticateToken, async (req, res) => {
     const id = req.params.id;
+    
+    // Vérifier que l'utilisateur accède à ses propres données
+    if (parseInt(id) !== parseInt(req.user.id)) {
+        return res.status(403).json({ error: "Accès refusé" });
+    }
     const today = new Date().toISOString().split("T")[0];
 
     try {

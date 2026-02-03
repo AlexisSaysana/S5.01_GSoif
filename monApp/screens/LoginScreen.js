@@ -26,10 +26,8 @@ const LoginScreen = ({ navigation, onLogin  }) => {
     }
 
     try {
-        console.log("📤 Envoi au backend :", {
-            email: email,
-            mot_de_passe: password
-        });
+        // 🔒 A09:2025 - Security Logging : Suppression logs sensibles
+        // console.log ne doit JAMAIS afficher de mot de passe
 
         const response = await fetch(`${BASE_URL}/login`, {
             method: "POST",
@@ -44,43 +42,37 @@ const LoginScreen = ({ navigation, onLogin  }) => {
 
         const data = await response.json();
 
-        console.log("📥 Réponse brute backend :", data);
-        console.log("📡 Statut HTTP :", response.status);
-
         if (!response.ok) {
-            console.log("❌ Erreur backend :", data.error);
-
-            if (data.error === "Champs manquants") {
-                return Alert.alert("Erreur", `Champs manquants : ${data.details.join(", ")}`);
+            // 🔒 A10:2025 - Messages d'erreur génériques
+            if (response.status === 401) {
+                return Alert.alert("Erreur", "Email ou mot de passe incorrect");
             }
-            if (data.error === "Utilisateur non trouvé") {
-                return Alert.alert("Erreur", "Aucun compte trouvé avec cet email");
+            if (response.status === 429) {
+                return Alert.alert("Erreur", "Trop de tentatives. Réessayez dans 15 minutes.");
             }
-            if (data.error === "Mot de passe incorrect") {
-                return Alert.alert("Erreur", "Mot de passe incorrect");
-            }
-
-            return Alert.alert("Erreur", "Une erreur est survenue");
+            return Alert.alert("Erreur", data.error || "Une erreur est survenue");
         }
 
         Alert.alert("Succès", "Connexion réussie !");
 
-                const user = data.utilisateur;
-                // Fonction pour mettre la première lettre en majuscule
-                const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+        const user = data.utilisateur;
+        // Fonction pour mettre la première lettre en majuscule
+        const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 
-                const fullName = `${capitalize(user.prenom)} ${capitalize(user.nom)}`;                    // Sauvegarde locale
-                    await AsyncStorage.setItem("userId", user.id.toString());
-                    await AsyncStorage.setItem("userEmail", user.email);
-                    await AsyncStorage.setItem("userName", fullName);
+        const fullName = `${capitalize(user.prenom)} ${capitalize(user.nom)}`;
+        
+        // 🔒 A01:2025 - Broken Access Control : Stockage JWT sécurisé
+        await AsyncStorage.setItem("authToken", data.token);
+        await AsyncStorage.setItem("userId", user.id.toString());
+        await AsyncStorage.setItem("userEmail", user.email);
+        await AsyncStorage.setItem("userName", fullName);
 
-                    // On transmet les infos à App.js
-
-                    onLogin(data.utilisateur.email, data.utilisateur.id, fullName);
+        // On transmet les infos à App.js
+        onLogin(data.utilisateur.email, data.utilisateur.id, fullName);
 
 
     } catch (error) {
-        console.log("🔥 Erreur FETCH :", error);
+        // 🔒 A09:2025 - Pas de log d'erreurs sensibles
         Alert.alert("Erreur", "Impossible de se connecter au serveur");
     }
 };
