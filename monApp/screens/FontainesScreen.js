@@ -6,8 +6,17 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
+  Platform,
 } from "react-native";
-import MapView, { Marker } from "react-native-maps";
+
+// Import conditionnel : on ne charge react-native-maps que si on n'est PAS sur le web
+let MapView, Marker;
+if (Platform.OS !== 'web') {
+  const MapModule = require("react-native-maps");
+  MapView = MapModule.default;
+  Marker = MapModule.Marker;
+}
+
 import * as Location from "expo-location";
 import { showLocation } from "react-native-map-link";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -118,17 +127,19 @@ export default function FontainesScreen() {
 
   const focusOnPoint = (p) => {
     setSelectedPoint(p);
-    mapRef.current?.animateCamera({
-      center: { latitude: p.coords[0], longitude: p.coords[1] },
-      zoom: 17
-    }, { duration: 800 });
+    // On n'appelle animateCamera que sur mobile
+    if (Platform.OS !== 'web') {
+      mapRef.current?.animateCamera({
+        center: { latitude: p.coords[0], longitude: p.coords[1] },
+        zoom: 17
+      }, { duration: 800 });
+    }
   };
 
   const openExternalMaps = async () => {
     if (!selectedPoint) return;
 
     try {
-      // 1️⃣ AJOUTER DANS L'HISTORIQUE
       await fetch("https://s5-01-gsoif.onrender.com/historique", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -142,65 +153,70 @@ export default function FontainesScreen() {
         })
       });
 
-      // 2️⃣ INCRÉMENTER LE CLICKCOUNT
       await fetch(`https://s5-01-gsoif.onrender.com/stats/click/${userEmail}`, {
         method: "PUT"
       });
 
-      // 3️⃣ VÉRIFIER LES QUÊTES ET ENREGISTRER LES BADGES
       const statsRes = await fetch(`https://s5-01-gsoif.onrender.com/stats/${userEmail}`);
       const stats = await statsRes.json();
 
       for (const quest of QUESTS) {
         const progress = quest.type === "click" ? stats.clickCount : 0;
-
         if (progress >= quest.goal) {
           await fetch("https://s5-01-gsoif.onrender.com/badges", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email: userEmail,
-              badge_id: quest.id
-            })
+            body: JSON.stringify({ email: userEmail, badge_id: quest.id })
           });
         }
       }
-
     } catch (e) {
       console.log("Erreur historique/stats/badges:", e);
     }
 
-    // 4️⃣ OUVERTURE GPS
-    showLocation({
-      latitude: selectedPoint.coords[0],
-      longitude: selectedPoint.coords[1],
-      title: selectedPoint.name,
-      appsWhiteList: ['google-maps', 'apple-maps', 'waze']
-    });
+    if (Platform.OS === 'web') {
+      // Sur Web, on ouvre directement Google Maps
+      const url = `https://www.google.com/maps/search/?api=1&query=${selectedPoint.coords[0]},${selectedPoint.coords[1]}`;
+      window.open(url, '_blank');
+    } else {
+      showLocation({
+        latitude: selectedPoint.coords[0],
+        longitude: selectedPoint.coords[1],
+        title: selectedPoint.name,
+        appsWhiteList: ['google-maps', 'apple-maps', 'waze']
+      });
+    }
   };
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.primary }}>
       <View style={styles.topBlue}>
-        <MapView
-          ref={mapRef}
-          style={StyleSheet.absoluteFillObject}
-          showsUserLocation={true}
-          initialRegion={{
-            latitude: 48.8566, longitude: 2.3522,
-            latitudeDelta: 0.05, longitudeDelta: 0.05,
-          }}
-          onPress={() => setSelectedPoint(null)}
-        >
-          {filteredPoints.map((p) => (
-            <Marker
-              key={p.id}
-              coordinate={{ latitude: p.coords[0], longitude: p.coords[1] }}
-              pinColor={!p.isAvailable ? '#B0B0B0' : (p.type === 'fontaine' ? colors.primary : '#4CAF50')}
-              onPress={() => setSelectedPoint(p)}
-            />
-          ))}
-        </MapView>
+        {Platform.OS === 'web' ? (
+          <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#cbd5e1', justifyContent: 'center', alignItems: 'center' }]}>
+             <Text style={{ fontWeight: '600', color: '#475569' }}>Carte indisponible sur PC</Text>
+             {selectedPoint && <Text style={{ marginTop: 10 }}>📍 {selectedPoint.name}</Text>}
+          </View>
+        ) : (
+          <MapView
+            ref={mapRef}
+            style={StyleSheet.absoluteFillObject}
+            showsUserLocation={true}
+            initialRegion={{
+              latitude: 48.8566, longitude: 2.3522,
+              latitudeDelta: 0.05, longitudeDelta: 0.05,
+            }}
+            onPress={() => setSelectedPoint(null)}
+          >
+            {filteredPoints.map((p) => (
+              <Marker
+                key={p.id}
+                coordinate={{ latitude: p.coords[0], longitude: p.coords[1] }}
+                pinColor={!p.isAvailable ? '#B0B0B0' : (p.type === 'fontaine' ? colors.primary : '#4CAF50')}
+                onPress={() => setSelectedPoint(p)}
+              />
+            ))}
+          </MapView>
+        )}
       </View>
 
       <View style={[styles.bottomWhite, { backgroundColor: colors.background }]}>
@@ -242,7 +258,7 @@ export default function FontainesScreen() {
           <View style={[styles.detailContainer, { backgroundColor: colors.background }]}>
             <View style={[styles.handle, { backgroundColor: colors.border }]} />
 
-            <View style={[styles.badge, { backgroundColor: selectedPoint.type === 'fontaine' ? colors.primary : '#4CAF50', marginBottom: 10, marginLeft: 0 }]}>
+            <View style={[styles.badge, { backgroundColor: selectedPoint.type === 'fontaine' ? colors.primary : '#4CAF50', marginBottom: 10, alignSelf: 'center', marginLeft: 0 }]}>
               <Text style={styles.badgeText}>{selectedPoint.type === 'fontaine' ? 'FONTAINE' : 'COMMERCE'}</Text>
             </View>
 
@@ -303,9 +319,9 @@ const styles = StyleSheet.create({
   badgeText: { color: 'white', fontSize: 10, fontWeight: '900' },
   detailContainer: { alignItems: 'center', width: '100%' },
   handle: { width: 40, height: 5, borderRadius: 10, marginBottom: 15 },
-  detailTitle: { fontFamily: fonts.bricolageGrotesque, fontSize: 24, fontWeight: '800', textAlign: 'center', marginBottom: 5 },
-  detailSub: { fontFamily: fonts.inter, fontSize: 16, marginBottom: 15, textAlign: 'center', opacity: 0.8 },
-  motifTextDetail: { fontFamily: fonts.inter, color: '#FF5252', fontSize: 14, marginBottom: 20, fontStyle: 'italic' },
+  detailTitle: { fontSize: 24, fontWeight: '800', textAlign: 'center', marginBottom: 5 },
+  detailSub: { fontSize: 16, marginBottom: 15, textAlign: 'center', opacity: 0.8 },
+  motifTextDetail: { color: '#FF5252', fontSize: 14, marginBottom: 20, fontStyle: 'italic' },
   mainButton: { width: '100%', height: 55, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
   mainButtonText: { fontSize: 18, fontWeight: '700' },
   loadingOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.7)' }
