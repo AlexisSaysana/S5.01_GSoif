@@ -18,6 +18,36 @@ import { ThemeContext } from "../context/ThemeContext";
 import CustomInput from "../components/CustomInput";
 import FountainTab from "../components/FountainTab";
 import { QUESTS } from "../utils/questsData";
+import { WHITE } from "../styles/baseStyles";
+
+const COMMENTAIRES = {
+  "c800e3c0b0bbc69fea035558bc8c6c080fe4f03b": [
+    {
+      utilisateur: "Alya",
+      note: 4,
+      commentaire: "Eau fraîche et propre 👍"
+    },
+    {
+      utilisateur: "Alexis",
+      note: 5,
+      commentaire: "Très pratique après le sport"
+    }
+  ],
+
+  "e2d4f277d8ec58ee425a74387f1b84e058b5cda8": [
+    {
+      utilisateur: "Kenza",
+      note: 3
+    },
+  ]
+};
+
+const getNoteMoyenne = (avis) => {
+  if (!avis || avis.length === 0) return 0;
+  const sum = avis.reduce((acc, r) => acc + r.rating, 0);
+  return sum / avis.length;
+};
+
 
 export default function FontainesScreen() {
   const { colors, email: userEmail } = useContext(ThemeContext);
@@ -27,6 +57,7 @@ export default function FontainesScreen() {
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState(null);
   const [selectedPoint, setSelectedPoint] = useState(null);
+  const [avis, setAvis] = useState([]);
 
   const mapRef = useRef(null);
 
@@ -106,6 +137,14 @@ export default function FontainesScreen() {
       }
     })();
   }, []);
+
+  useEffect(() => {
+    if (!selectedPoint) return;
+    
+    const comments = COMMENTAIRES[selectedPoint.id] || [];
+    setAvis(comments);
+  }, [selectedPoint]);
+
 
   const handleSearch = (text) => {
     setSearchText(text);
@@ -232,6 +271,7 @@ export default function FontainesScreen() {
                     isAvailable={p.isAvailable}
                     motif={p.motif}
                     nearest={index === 0 && !searchText}
+                    avis={COMMENTAIRES[p.id] || []}
                     onPress={() => focusOnPoint(p)}
                   />
                 </View>
@@ -239,20 +279,50 @@ export default function FontainesScreen() {
             </ScrollView>
           </>
         ) : (
-          <View style={[styles.detailContainer, { backgroundColor: colors.background }]}>
+          <ScrollView contentContainerStyle={[styles.detailContainer, { backgroundColor: colors.background, paddingBottom: 100, }]}>
             <View style={[styles.handle, { backgroundColor: colors.border }]} />
 
             <View style={[styles.badge, { backgroundColor: selectedPoint.type === 'fontaine' ? colors.primary : '#4CAF50', marginBottom: 10, marginLeft: 0 }]}>
               <Text style={styles.badgeText}>{selectedPoint.type === 'fontaine' ? 'FONTAINE' : 'COMMERCE'}</Text>
             </View>
-
+            <View
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
             <Text style={[styles.detailTitle, { color: colors.text }]}>{selectedPoint.name}</Text>
+            {avis.length > 0 && <View
+              style={
+                {
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  backgroundColor: colors.primary,
+                  paddingVertical: 5,
+                  paddingHorizontal: 5,
+                  borderRadius: 15,
+                  marginBottom: 5,
+                }
+              }
+            >
+              <Text
+                style={{ fontSize: 12, fontWeight: "600", color: WHITE}}
+              >
+                💧{getNoteMoyenne(avis).toFixed(1)}/5
+              </Text>
+            </View>}
+              
+            </View>
             <Text style={[styles.detailSub, { color: colors.textSecondary }]}>{selectedPoint.address}</Text>
-
+          
             {!selectedPoint.isAvailable && (
                  <Text style={styles.motifTextDetail}>Ce point d'eau est actuellement indisponible.</Text>
             )}
-
+            
             <TouchableOpacity
               disabled={!selectedPoint.isAvailable}
               style={[styles.mainButton, { backgroundColor: selectedPoint.isAvailable ? colors.primary : colors.border }]}
@@ -266,7 +336,81 @@ export default function FontainesScreen() {
             <TouchableOpacity onPress={() => setSelectedPoint(null)} style={{marginTop: 20}}>
               <Text style={{color: colors.primary, fontWeight: '700', fontSize: 16}}>Retour à la liste</Text>
             </TouchableOpacity>
-          </View>
+
+            <View
+              style={
+                {
+                  backgroundColor: WHITE,
+                  width: "100%",
+                  gap: 0,
+                  marginTop: 25,
+                  paddingVertical: 40,
+                  borderRadius: 25,
+                }
+              }
+            >
+              <Text style={{ fontFamily: fonts.bricolageGrotesque, fontSize: 20, fontWeight: '800', textAlign: 'center', marginBottom: 15 }}>
+                Avis des utilisateurs
+              </Text>
+              
+              {avis.length === 0 && (
+                <Text style={{ alignSelf: "center" }}>
+                  Aucun avis pour le moment
+                </Text>
+              )}
+              
+              {avis.map((r, i) => (
+                <View
+                  key={i}
+                  style={
+                    {
+                      borderTopWidth: (i == 0 ? 0 : 1),
+                      borderColor: colors.border,
+                      padding: 20,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 10
+                    }
+                  }>
+                  <View
+                    style={
+                      {
+                        display: "flex",
+                        flexDirection: "row",
+                        gap: 8,
+                      }
+                    }
+                  >
+                    <Text
+                      style={{ fontWeight: "700", paddingVertical: 3, fontFamily: fonts.bricolageGrotesque, fontSize: 18}}
+                    >
+                      {r.user} 
+                    </Text>
+                    <View
+                      style={
+                        {
+                          display: "flex",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          backgroundColor: colors.primary,
+                          paddingHorizontal: 6,
+                          borderRadius: 15,
+                        }
+                      }
+                    >
+                      <Text
+                        style={{ fontSize: 10, fontWeight: "600", color: WHITE}}
+                      >
+                        💧{r.rating}/5
+                      </Text>
+                    </View>
+                  </View>
+                  {r.comment && <Text>{r.comment}</Text>}
+                </View>
+              ))}
+            </View>
+
+          </ScrollView>
         )}
       </View>
 

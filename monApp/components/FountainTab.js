@@ -3,14 +3,22 @@ import { useContext } from "react";
 import { fonts } from "../styles/fonts";
 import { ThemeContext } from "../context/ThemeContext";
 
+const getNoteMoyenne = (avis) => {
+  if (!avis || avis.length === 0)
+    return 0;
+  const somme = avis.reduce((acc, a) => acc + a.note, 0);
+  return somme / avis.length;
+};
+
 export default function FountainTab({
   name,
   location,
   distance,
   time,
   nearest,
-  isAvailable, // Nouveau prop
-  motif,       // Nouveau prop
+  isAvailable,
+  motif,
+  avis,
   onPress,
 }) {
   const { colors } = useContext(ThemeContext);
@@ -23,8 +31,29 @@ export default function FountainTab({
     >
       {/* LEFT */}
       <View style={styles.left}>
-        <View style={styles.titleRow}>
-          <Text style={[styles.name, { color: colors.text }]}>{name}</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+          <View style={styles.titleRow}>
+            <Text style={[styles.name, { color: colors.text }]}>{name}</Text>
+          </View>
+          {avis.length > 0 && <View
+                        style={
+                          {
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            backgroundColor: colors.primary,
+                            paddingVertical: 4,
+                            paddingHorizontal: 5,
+                            borderRadius: 15,
+                          }
+                        }
+                      >
+                        <Text
+                          style={{ fontSize: 10, fontWeight: "600", color: 'white'}}
+                        >
+                          💧{getNoteMoyenne(avis).toFixed(1)}/5
+                        </Text>
+                      </View>}
         </View>
 
         <Text style={[styles.location, { color: colors.textSecondary }]}>{location}</Text>
