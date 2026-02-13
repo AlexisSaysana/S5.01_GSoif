@@ -7,9 +7,11 @@ import {
   ScrollView,
   TouchableOpacity,
   Platform,
+  TextInput,
+  Alert
 } from "react-native";
 
-// Import conditionnel : on ne charge react-native-maps que si on n'est PAS sur le web
+// Import conditionnel pour react-native-maps
 let MapView, Marker;
 if (Platform.OS !== 'web') {
   const MapModule = require("react-native-maps");
@@ -19,44 +21,18 @@ if (Platform.OS !== 'web') {
 
 import * as Location from "expo-location";
 import { showLocation } from "react-native-map-link";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-
 import { fonts } from "../styles/fonts";
 import { ThemeContext } from "../context/ThemeContext";
 
 import CustomInput from "../components/CustomInput";
 import FountainTab from "../components/FountainTab";
-import { QUESTS } from "../utils/questsData";
 import { WHITE } from "../styles/baseStyles";
-
-const COMMENTAIRES = {
-  "c800e3c0b0bbc69fea035558bc8c6c080fe4f03b": [
-    {
-      utilisateur: "Alya",
-      note: 4,
-      commentaire: "Eau fraîche et propre 👍"
-    },
-    {
-      utilisateur: "Alexis",
-      note: 5,
-      commentaire: "Très pratique après le sport"
-    }
-  ],
-
-  "e2d4f277d8ec58ee425a74387f1b84e058b5cda8": [
-    {
-      utilisateur: "Kenza",
-      note: 3
-    },
-  ]
-};
 
 const getNoteMoyenne = (avis) => {
   if (!avis || avis.length === 0) return 0;
-  const sum = avis.reduce((acc, r) => acc + r.rating, 0);
+  const sum = avis.reduce((acc, r) => acc + (r.rating || 0), 0);
   return sum / avis.length;
 };
-
 
 export default function FontainesScreen() {
   const { colors, email: userEmail } = useContext(ThemeContext);
@@ -68,46 +44,61 @@ export default function FontainesScreen() {
   const [selectedPoint, setSelectedPoint] = useState(null);
   const [avis, setAvis] = useState([]);
 
+  // États pour le nouveau commentaire
+  const [showForm, setShowForm] = useState(false);
+  const [rating, setRating] = useState(5);
+  const [commentText, setCommentText] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
   const mapRef = useRef(null);
 
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371;
     const dLat = (lat2 - lat1) * (Math.PI / 180);
     const dLon = (lon2 - lon1) * (Math.PI / 180);
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
+  };
+
+  // --- FONCTION DE RÉCUPÉRATION DES AVIS ---
+  const fetchAvis = async (fountainId) => {
+    try {
+      const response = await fetch(`https://s5-01-gsoif.onrender.com/commentaires/${fountainId}`);
+
+      // Sécurité si le serveur renvoie du HTML (Erreur)
+      const contentType = response.headers.get("content-type");
+      if (!response.ok || !contentType || !contentType.includes("application/json")) {
+        console.error("Le serveur n'a pas renvoyé de JSON valide");
+        setAvis([]);
+        return;
+      }
+
+      const data = await response.json();
+      setAvis(data);
+    } catch (err) {
+      console.error("Erreur avis:", err);
+      setAvis([]);
+    }
   };
 
   useEffect(() => {
     (async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
       let currentUserLoc = null;
-
       if (status === "granted") {
         const location = await Location.getCurrentPositionAsync({});
         currentUserLoc = location.coords;
         setUserLocation(currentUserLoc);
       }
-
       try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 10000);
-
         const urlFontaines = "https://opendata.paris.fr/api/records/1.0/search/?dataset=fontaines-a-boire&rows=50";
         const urlCommerces = "https://opendata.paris.fr/api/records/1.0/search/?dataset=commerces-eau-de-paris&rows=50";
-
-        const [resF, resC] = await Promise.all([
-          fetch(urlFontaines, { signal: controller.signal }),
-          fetch(urlCommerces, { signal: controller.signal })
-        ]);
-
+        const [resF, resC] = await Promise.all([fetch(urlFontaines), fetch(urlCommerces)]);
         const dataF = await resF.json();
         const dataC = await resC.json();
-        clearTimeout(timeout);
 
         const cleanF = (dataF.records || []).map(item => ({
           id: item.recordid,
@@ -129,31 +120,24 @@ export default function FontainesScreen() {
         }));
 
         let allPoints = [...cleanF, ...cleanC];
-
         if (currentUserLoc) {
           allPoints = allPoints.map((p) => ({
             ...p,
             distanceKm: calculateDistance(currentUserLoc.latitude, currentUserLoc.longitude, p.coords[0], p.coords[1])
           })).sort((a, b) => a.distanceKm - b.distanceKm);
         }
-
         setPointsDEau(allPoints);
         setFilteredPoints(allPoints);
-      } catch (err) {
-        console.error('Fetch error:', err);
-      } finally {
-        setLoading(false);
-      }
+      } catch (err) { console.error(err); } finally { setLoading(false); }
     })();
   }, []);
 
   useEffect(() => {
-    if (!selectedPoint) return;
-    
-    const comments = COMMENTAIRES[selectedPoint.id] || [];
-    setAvis(comments);
+    if (selectedPoint) {
+      fetchAvis(selectedPoint.id);
+      setShowForm(false);
+    }
   }, [selectedPoint]);
-
 
   const handleSearch = (text) => {
     setSearchText(text);
@@ -164,21 +148,44 @@ export default function FontainesScreen() {
     setFilteredPoints(filtered);
   };
 
-  const focusOnPoint = (p) => {
-    setSelectedPoint(p);
-    // On n'appelle animateCamera que sur mobile
-    if (Platform.OS !== 'web') {
-      mapRef.current?.animateCamera({
-        center: { latitude: p.coords[0], longitude: p.coords[1] },
-        zoom: 17
-      }, { duration: 800 });
+  // --- FONCTION POUR ENVOYER UN AVIS ---
+  const envoyerAvis = async () => {
+    if (!commentText.trim()) {
+      Alert.alert("Erreur", "Veuillez écrire un commentaire.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const response = await fetch("https://s5-01-gsoif.onrender.com/commentaires", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fountain_id: selectedPoint.id,
+          email: userEmail,
+          rating: rating,
+          comment: commentText
+        })
+      });
+
+      if (response.ok) {
+        setCommentText("");
+        setShowForm(false);
+        fetchAvis(selectedPoint.id); // Rafraîchir la liste
+        Alert.alert("Succès", "Votre avis a été ajouté !");
+      } else {
+        Alert.alert("Erreur", "Le serveur a refusé l'avis.");
+      }
+    } catch (e) {
+      Alert.alert("Erreur", "Impossible d'envoyer l'avis.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const openExternalMaps = async () => {
     if (!selectedPoint) return;
-
     try {
+      // Log historique
       await fetch("https://s5-01-gsoif.onrender.com/historique", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -192,39 +199,16 @@ export default function FontainesScreen() {
         })
       });
 
-      await fetch(`https://s5-01-gsoif.onrender.com/stats/click/${userEmail}`, {
-        method: "PUT"
-      });
-
-      const statsRes = await fetch(`https://s5-01-gsoif.onrender.com/stats/${userEmail}`);
-      const stats = await statsRes.json();
-
-      for (const quest of QUESTS) {
-        const progress = quest.type === "click" ? stats.clickCount : 0;
-        if (progress >= quest.goal) {
-          await fetch("https://s5-01-gsoif.onrender.com/badges", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: userEmail, badge_id: quest.id })
-          });
-        }
+      if (Platform.OS === 'web') {
+        window.open(`https://www.google.com/maps?q=${selectedPoint.coords[0]},${selectedPoint.coords[1]}`, '_blank');
+      } else {
+        showLocation({
+          latitude: selectedPoint.coords[0],
+          longitude: selectedPoint.coords[1],
+          title: selectedPoint.name,
+        });
       }
-    } catch (e) {
-      console.log("Erreur historique/stats/badges:", e);
-    }
-
-    if (Platform.OS === 'web') {
-      // Sur Web, on ouvre directement Google Maps
-      const url = `https://www.google.com/maps/search/?api=1&query=${selectedPoint.coords[0]},${selectedPoint.coords[1]}`;
-      window.open(url, '_blank');
-    } else {
-      showLocation({
-        latitude: selectedPoint.coords[0],
-        longitude: selectedPoint.coords[1],
-        title: selectedPoint.name,
-        appsWhiteList: ['google-maps', 'apple-maps', 'waze']
-      });
-    }
+    } catch (e) { console.log(e); }
   };
 
   return (
@@ -233,17 +217,13 @@ export default function FontainesScreen() {
         {Platform.OS === 'web' ? (
           <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#cbd5e1', justifyContent: 'center', alignItems: 'center' }]}>
              <Text style={{ fontWeight: '600', color: '#475569' }}>Carte indisponible sur PC</Text>
-             {selectedPoint && <Text style={{ marginTop: 10 }}>📍 {selectedPoint.name}</Text>}
           </View>
         ) : (
           <MapView
             ref={mapRef}
             style={StyleSheet.absoluteFillObject}
             showsUserLocation={true}
-            initialRegion={{
-              latitude: 48.8566, longitude: 2.3522,
-              latitudeDelta: 0.05, longitudeDelta: 0.05,
-            }}
+            initialRegion={{ latitude: 48.8566, longitude: 2.3522, latitudeDelta: 0.05, longitudeDelta: 0.05 }}
             onPress={() => setSelectedPoint(null)}
           >
             {filteredPoints.map((p) => (
@@ -261,24 +241,13 @@ export default function FontainesScreen() {
       <View style={[styles.bottomWhite, { backgroundColor: colors.background }]}>
         {!selectedPoint ? (
           <>
-            <CustomInput
-              placeholder="Rechercher fontaine ou commerce"
-              value={searchText}
-              onChangeText={handleSearch}
-            />
-
+            <CustomInput placeholder="Rechercher fontaine ou commerce" value={searchText} onChangeText={handleSearch} />
             <ScrollView contentContainerStyle={styles.listContainer} showsVerticalScrollIndicator={false}>
               {filteredPoints.map((p, index) => (
                 <View key={p.id} style={styles.itemWrapper}>
-                  <View style={[
-                    styles.badge,
-                    { backgroundColor: p.type === 'fontaine' ? colors.primary : '#4CAF50' }
-                  ]}>
-                    <Text style={styles.badgeText}>
-                      {p.type === 'fontaine' ? 'FONTAINE' : 'COMMERCE'}
-                    </Text>
+                   <View style={[styles.badge, { backgroundColor: p.type === 'fontaine' ? colors.primary : '#4CAF50' }]}>
+                    <Text style={styles.badgeText}>{p.type === 'fontaine' ? 'FONTAINE' : 'COMMERCE'}</Text>
                   </View>
-
                   <FountainTab
                     name={p.name}
                     location={p.address}
@@ -287,186 +256,105 @@ export default function FontainesScreen() {
                     isAvailable={p.isAvailable}
                     motif={p.motif}
                     nearest={index === 0 && !searchText}
-                    avis={COMMENTAIRES[p.id] || []}
-                    onPress={() => focusOnPoint(p)}
+                    avis={[]}
+                    onPress={() => { setSelectedPoint(p); }}
                   />
                 </View>
               ))}
             </ScrollView>
           </>
         ) : (
-          <ScrollView contentContainerStyle={[styles.detailContainer, { backgroundColor: colors.background, paddingBottom: 100, }]}>
+          <ScrollView contentContainerStyle={[styles.detailContainer, { backgroundColor: colors.background, paddingBottom: 100 }]}>
             <View style={[styles.handle, { backgroundColor: colors.border }]} />
-
-            <View style={[styles.badge, { backgroundColor: selectedPoint.type === 'fontaine' ? colors.primary : '#4CAF50', marginBottom: 10, alignSelf: 'center', marginLeft: 0 }]}>
-              <Text style={styles.badgeText}>{selectedPoint.type === 'fontaine' ? 'FONTAINE' : 'COMMERCE'}</Text>
-            </View>
-            <View
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                justifyContent: "center",
-                alignItems: "center",
-                gap: 8,
-              }}
-            >
             <Text style={[styles.detailTitle, { color: colors.text }]}>{selectedPoint.name}</Text>
-            {avis.length > 0 && <View
-              style={
-                {
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  backgroundColor: colors.primary,
-                  paddingVertical: 5,
-                  paddingHorizontal: 5,
-                  borderRadius: 15,
-                  marginBottom: 5,
-                }
-              }
-            >
-              <Text
-                style={{ fontSize: 12, fontWeight: "600", color: WHITE}}
-              >
-                💧{getNoteMoyenne(avis).toFixed(1)}/5
-              </Text>
-            </View>}
-              
-            </View>
-            <Text style={[styles.detailSub, { color: colors.textSecondary }]}>{selectedPoint.address}</Text>
-          
-            {!selectedPoint.isAvailable && (
-                 <Text style={styles.motifTextDetail}>Ce point d'eau est actuellement indisponible.</Text>
+
+            {avis.length > 0 && (
+              <View style={{ backgroundColor: colors.primary, paddingVertical: 4, paddingHorizontal: 10, borderRadius: 15, marginBottom: 10 }}>
+                <Text style={{ fontSize: 14, fontWeight: "600", color: WHITE }}>💧 {getNoteMoyenne(avis).toFixed(1)}/5</Text>
+              </View>
             )}
-            
+
+            <Text style={[styles.detailSub, { color: colors.textSecondary }]}>{selectedPoint.address}</Text>
+
             <TouchableOpacity
               disabled={!selectedPoint.isAvailable}
-              style={[styles.mainButton, { backgroundColor: selectedPoint.isAvailable ? colors.primary : colors.border }]}
+              style={[styles.mainButton, { backgroundColor: selectedPoint.isAvailable ? colors.primary : colors.border, marginBottom: 10 }]}
               onPress={openExternalMaps}
             >
-              <Text style={[styles.mainButtonText, { color: 'white' }]}>
-                {selectedPoint.isAvailable ? "Itinéraire" : "Indisponible"}
-              </Text>
+              <Text style={[styles.mainButtonText, { color: 'white' }]}>Itinéraire</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => setSelectedPoint(null)} style={{marginTop: 20}}>
-              <Text style={{color: colors.primary, fontWeight: '700', fontSize: 16}}>Retour à la liste</Text>
+            <TouchableOpacity onPress={() => setSelectedPoint(null)}>
+              <Text style={{color: colors.primary, fontWeight: '700'}}>Retour à la liste</Text>
             </TouchableOpacity>
 
-            <View
-              style={
-                {
-                  backgroundColor: WHITE,
-                  width: "100%",
-                  gap: 0,
-                  marginTop: 25,
-                  paddingVertical: 40,
-                  borderRadius: 25,
-                }
-              }
-            >
-              <Text style={{ fontFamily: fonts.bricolageGrotesque, fontSize: 20, fontWeight: '800', textAlign: 'center', marginBottom: 15 }}>
-                Avis des utilisateurs
-              </Text>
-              
-              {avis.length === 0 && (
-                <Text style={{ alignSelf: "center" }}>
-                  Aucun avis pour le moment
-                </Text>
-              )}
-              
-              {avis.map((r, i) => (
-                <View
-                  key={i}
-                  style={
-                    {
-                      borderTopWidth: (i == 0 ? 0 : 1),
-                      borderColor: colors.border,
-                      padding: 20,
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 10
-                    }
-                  }>
-                  <View
-                    style={
-                      {
-                        display: "flex",
-                        flexDirection: "row",
-                        gap: 8,
-                      }
-                    }
-                  >
-                    <Text
-                      style={{ fontWeight: "700", paddingVertical: 3, fontFamily: fonts.bricolageGrotesque, fontSize: 18}}
-                    >
-                      {r.user} 
-                    </Text>
-                    <View
-                      style={
-                        {
-                          display: "flex",
-                          justifyContent: "center",
-                          alignItems: "center",
-                          backgroundColor: colors.primary,
-                          paddingHorizontal: 6,
-                          borderRadius: 15,
-                        }
-                      }
-                    >
-                      <Text
-                        style={{ fontSize: 10, fontWeight: "600", color: WHITE}}
-                      >
-                        💧{r.rating}/5
-                      </Text>
-                    </View>
+            <View style={{ width: '100%', marginTop: 30, backgroundColor: WHITE, borderRadius: 20, padding: 15 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
+                <Text style={{ fontSize: 18, fontWeight: '800' }}>Avis</Text>
+                <TouchableOpacity
+                  onPress={() => setShowForm(!showForm)}
+                  style={{ backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 }}
+                >
+                  <Text style={{ color: WHITE, fontWeight: '700' }}>{showForm ? "Annuler" : "Noter"}</Text>
+                </TouchableOpacity>
+              </View>
+
+              {showForm && (
+                <View style={{ marginBottom: 20, padding: 10, borderBottomWidth: 1, borderColor: colors.border }}>
+                  <Text style={{ marginBottom: 5, fontWeight: '600' }}>Note : {rating} 💧</Text>
+                  <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
+                    {[1, 2, 3, 4, 5].map(num => (
+                      <TouchableOpacity key={num} onPress={() => setRating(num)}>
+                        <Text style={{ fontSize: 24 }}>{num <= rating ? "💧" : "⚪"}</Text>
+                      </TouchableOpacity>
+                    ))}
                   </View>
-                  {r.comment && <Text>{r.comment}</Text>}
+                  <TextInput
+                    style={{ backgroundColor: '#f0f0f0', borderRadius: 10, padding: 10, height: 60, textAlignVertical: 'top' }}
+                    placeholder="Votre avis..."
+                    multiline
+                    value={commentText}
+                    onChangeText={setCommentText}
+                  />
+                  <TouchableOpacity
+                    onPress={envoyerAvis}
+                    disabled={submitting}
+                    style={{ backgroundColor: colors.primary, marginTop: 10, padding: 12, borderRadius: 10, alignItems: 'center' }}
+                  >
+                    {submitting ? <ActivityIndicator color={WHITE} /> : <Text style={{ color: WHITE, fontWeight: '700' }}>Envoyer</Text>}
+                  </TouchableOpacity>
                 </View>
-              ))}
-            </View>
+              )}
 
+              {avis.length === 0 ? (
+                <Text style={{ textAlign: 'center', opacity: 0.5 }}>Aucun avis</Text>
+              ) : (
+                avis.map((r, i) => (
+                  <View key={i} style={{ paddingVertical: 10, borderBottomWidth: i === avis.length - 1 ? 0 : 1, borderColor: '#eee' }}>
+                    <Text style={{ fontWeight: '700' }}>{r.user} <Text style={{ color: colors.primary }}>{r.rating}/5 💧</Text></Text>
+                    <Text style={{ marginTop: 3 }}>{r.comment}</Text>
+                  </View>
+                ))
+              )}
+            </View>
           </ScrollView>
         )}
       </View>
-
-      {loading && (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   topBlue: { height: "50%" },
-  bottomWhite: {
-    height: "55%",
-    padding: 20,
-    borderTopLeftRadius: 40,
-    borderTopRightRadius: 40,
-    gap: 15,
-    marginTop: -40,
-  },
-  listContainer: { paddingBottom: 100, gap: 20, width: '100%' },
+  bottomWhite: { height: "55%", padding: 20, borderTopLeftRadius: 40, borderTopRightRadius: 40, marginTop: -40 },
+  listContainer: { paddingBottom: 100, gap: 20 },
   itemWrapper: { width: '100%' },
-  badge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-    marginBottom: -12,
-    marginLeft: 15,
-    zIndex: 10,
-  },
+  badge: { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginBottom: -12, marginLeft: 15, zIndex: 10 },
   badgeText: { color: 'white', fontSize: 10, fontWeight: '900' },
-  detailContainer: { alignItems: 'center', width: '100%' },
+  detailContainer: { alignItems: 'center' },
   handle: { width: 40, height: 5, borderRadius: 10, marginBottom: 15 },
-  detailTitle: { fontSize: 24, fontWeight: '800', textAlign: 'center', marginBottom: 5 },
-  detailSub: { fontSize: 16, marginBottom: 15, textAlign: 'center', opacity: 0.8 },
-  motifTextDetail: { color: '#FF5252', fontSize: 14, marginBottom: 20, fontStyle: 'italic' },
-  mainButton: { width: '100%', height: 55, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
-  mainButtonText: { fontSize: 18, fontWeight: '700' },
-  loadingOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.7)' }
+  detailTitle: { fontSize: 22, fontWeight: '800', textAlign: 'center' },
+  detailSub: { fontSize: 14, marginBottom: 15, textAlign: 'center', opacity: 0.6 },
+  mainButton: { width: '100%', height: 50, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
+  mainButtonText: { fontSize: 16, fontWeight: '700' },
 });
