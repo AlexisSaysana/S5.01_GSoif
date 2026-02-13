@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/S5.01_GSoif.iml" filepath="$PROJECT_DIR$/.idea/S5.01_GSoif.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/GSoif.iml" filepath="$PROJECT_DIR$/.idea/GSoif.iml" />
     </modules>
   </component>
 </project>
