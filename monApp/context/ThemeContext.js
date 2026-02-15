@@ -1,25 +1,32 @@
-// context/ThemeContext.js
 import React, { createContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles'; // Ajustez le chemin selon votre structure
+import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles';
 
 export const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
-  // --- États globaux ---
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [unit, setUnit] = useState('mL'); // mL, cL, L
-  const [dailyGoal, setDailyGoal] = useState(2000); // stored in mL
-  const [name, setName] = useState("Alya Ayinde");
-  const [email, setEmail] = useState("alya.ayinde@gsoif.fr");
+  const [unit, setUnit] = useState('mL');
+  const [dailyGoal, setDailyGoal] = useState(2000);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [token, setToken] = useState(null);
+  const [userId, setUserId] = useState(null);
 
-  // --- Chargement initial ---
   useEffect(() => {
     loadPreferences();
   }, []);
 
   const loadPreferences = async () => {
     try {
+      const storedToken = await AsyncStorage.getItem('userToken');
+      const storedUserId = await AsyncStorage.getItem('userId');
+
+      console.log("🛠️ Chargement stockage - ID:", storedUserId, "Token présent:", !!storedToken);
+
+      if (storedToken) setToken(storedToken);
+      if (storedUserId) setUserId(storedUserId);
+
       const storedTheme = await AsyncStorage.getItem('appTheme');
       const storedUnit = await AsyncStorage.getItem('appUnit');
       const storedGoal = await AsyncStorage.getItem('@dailyGoal');
@@ -29,15 +36,36 @@ export const ThemeProvider = ({ children }) => {
       if (storedTheme !== null) setIsDarkMode(storedTheme === 'dark');
       if (storedUnit !== null) setUnit(storedUnit);
       if (storedGoal !== null) setDailyGoal(parseInt(storedGoal, 10));
-      if (storedName !== null) setName(storedName);
-      if (storedEmail !== null) setEmail(storedEmail);
-    
+      if (storedName !== null) setName(storedName || "");
+      if (storedEmail !== null) setEmail(storedEmail || "");
     } catch (e) {
       console.error("Erreur chargement préférences", e);
     }
   };
 
-  // --- Actions ---
+  const saveUserSession = async (userToken, id) => {
+    console.log("💾 saveUserSession APPELÉE - Nouvel ID:", id);
+    setToken(userToken);
+    setUserId(String(id));
+
+    try {
+      await AsyncStorage.setItem('userToken', userToken);
+      await AsyncStorage.setItem('userId', String(id));
+      console.log("✅ Session sauvegardée dans AsyncStorage");
+    } catch (e) {
+      console.error("❌ Erreur sauvegarde AsyncStorage", e);
+    }
+  };
+
+  const logout = async () => {
+    console.log("🚪 Déconnexion...");
+    setToken(null);
+    setUserId(null);
+    setName("");
+    setEmail("");
+    await AsyncStorage.multiRemove(['userToken', 'userId', '@name', '@email']);
+  };
+
   const toggleTheme = async () => {
     const newMode = !isDarkMode;
     setIsDarkMode(newMode);
@@ -54,18 +82,16 @@ export const ThemeProvider = ({ children }) => {
     await AsyncStorage.setItem('@dailyGoal', String(goalMl));
   };
 
-  const changeName = async (name) => {
-    setName(name);
-    await AsyncStorage.setItem('@name', name)
-  }
+  const changeName = async (newName) => {
+    setName(newName);
+    await AsyncStorage.setItem('@name', newName);
+  };
 
-  const changeEmail = async (email) => {
-    setEmail(email);
-    await AsyncStorage.setItem('@email', email)
-  }
+  const changeEmail = async (newEmail) => {
+    setEmail(newEmail);
+    await AsyncStorage.setItem('@email', newEmail);
+  };
 
-  // --- Définition des couleurs dynamiques ---
-  // C'est ici qu'on définit les couleurs pour chaque mode
   const theme = {
     isDarkMode,
     colors: {
@@ -89,7 +115,10 @@ export const ThemeProvider = ({ children }) => {
     changeName,
     email,
     changeEmail,
-
+    token,
+    userId,
+    saveUserSession,
+    logout
   };
 
   return (

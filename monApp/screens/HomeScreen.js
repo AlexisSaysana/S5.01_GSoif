@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState, useCallback } from "react";
+import React, { useContext, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -81,458 +81,214 @@ const WeeklyCalendar = ({ weeklyData, dailyGoal, colors }) => {
 };
 
 // --- HOME SCREEN ---
-export default function HomeScreen({ navigation, userId, userEmail, userName }) {
-  const { colors, isDarkMode, unit } = useContext(ThemeContext);
+export default function HomeScreen({ navigation, userId }) {
+  const { colors, isDarkMode, unit, token, logout } = useContext(ThemeContext);
 
-  // Objectif IA (en mL)
   const [dailyGoal, setDailyGoal] = useState(2000);
-
-  // Progression & historique
   const [completed, setCompleted] = useState(0);
   const [weeklyData, setWeeklyData] = useState({});
-  const [hasGoalBeenReachedToday, setHasGoalBeenReachedToday] = useState(false);
-
-  // UI
+  const [hasGoalReachedToday, setHasGoalReachedToday] = useState(false);
   const [margin, setMargin] = useState(0);
   const [customAmount, setCustomAmount] = useState("");
+  const [selectedOption, setSelectedOption] = useState("Ajouter");
 
-  // Ajouter / Retirer
   const options = ["Ajouter", "Retirer"];
-  const [selectedOption, setSelectedOption] = useState(options[0]);
   const isAddMode = selectedOption === "Ajouter";
   const actionColor = isAddMode ? colors.primary : colors.dangerText;
   const sign = isAddMode ? "+" : "-";
-
   const progression = dailyGoal > 0 ? completed / dailyGoal : 0;
 
-  console.log("ID userId reçu dans HomeScreen :", userId);
+  // --- HELPER POUR HEADERS ---
+  // On remet Bearer par défaut car c'est la norme standard
+  const getHeaders = useCallback(() => ({
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${token}`
+  }), [token]);
 
- // --- CHARGER OBJECTIF IA + PROGRESSION + HISTORIQUE ---
- const initData = useCallback(async () => {
-   console.log("🔄 initData() lancé…");
+  // --- CHARGEMENT ---
+  const initData = useCallback(async () => {
+    if (!userId || !token) return;
 
-   try {
-     const today = new Date().toISOString().slice(0, 10);
+    try {
+      const headers = getHeaders();
 
-     // -------------------------
-     // 1) Objectif IA
-     // -------------------------
-     console.log("➡️ Fetch profil :", `${BASE_URL}/profile/${userId}`);
-     const resProfile = await fetch(`${BASE_URL}/profile/${userId}`);
-     const profile = await resProfile.json();
-     console.log("📥 Profil reçu :", profile);
+      const resProfile = await fetch(`${BASE_URL}/profile/${userId}`, { headers });
+      if (resProfile.status === 403) {
+          console.log("🛑 Session expirée sur Profile");
+          await logout();
+          return;
+      }
+      const profile = await resProfile.json();
+      if (profile?.objectif_ia) setDailyGoal(profile.objectif_ia);
 
-     if (profile?.objectif_ia) {
-       setDailyGoal(profile.objectif_ia);
-     }
+      const resToday = await fetch(`${BASE_URL}/hydration/today/${userId}`, { headers });
+      const todayData = await resToday.json();
+      setCompleted(todayData.amount_ml || 0);
+      setHasGoalReachedToday(!!todayData.goal_reached);
 
-     // -------------------------
-     // 2) Progression du jour
-     // -------------------------
-     console.log("➡️ Fetch today :", `${BASE_URL}/hydration/today/${userId}`);
-     const resToday = await fetch(`${BASE_URL}/hydration/today/${userId}`);
-     const todayData = await resToday.json();
-     console.log("📥 Today reçu :", todayData);
+      const resHistory = await fetch(`${BASE_URL}/hydration/history/${userId}`, { headers });
+      const historyData = await resHistory.json();
+      const historyObj = {};
+      if (Array.isArray(historyData)) {
+        historyData.forEach((entry) => {
+          const dateStr = new Date(entry.date).toISOString().split("T")[0];
+          historyObj[dateStr] = entry.amount_ml;
+        });
+      }
+      setWeeklyData(historyObj);
 
-     setCompleted(todayData.amount_ml || 0);
-     setHasGoalBeenReachedToday(!!todayData.goal_reached);
+    } catch (e) {
+      console.log("❌ Erreur initData :", e);
+    }
+  }, [userId, token, getHeaders, logout]);
 
-     // -------------------------
-     // 3) Historique complet
-     // -------------------------
-     console.log("➡️ Fetch history :", `${BASE_URL}/hydration/history/${userId}`);
-     const resHistory = await fetch(`${BASE_URL}/hydration/history/${userId}`);
-     const historyData = await resHistory.json();
-     console.log("📥 Historique reçu :", historyData);
-
-     // Transformer l’historique pour le weekly
-     const historyObj = {};
-
-     historyData.forEach((entry) => {
-       // Convertir la date UTC → locale (yyyy-mm-dd)
-       const localDate = new Date(entry.date);
-       const yyyyMMdd = localDate.toISOString().split("T")[0];
-
-       historyObj[yyyyMMdd] = entry.amount_ml;
-     });
-
-     console.log("📊 WeeklyData construit :", historyObj);
-
-     setWeeklyData(historyObj);
-
-   } catch (e) {
-     console.log("❌ Erreur initData :", e);
-   }
- }, [userId]);
-
-
-  // Au premier montage
-  useEffect(() => {
-    initData();
-  }, [initData]);
-
-  // À chaque fois que l'écran redevient actif
   useFocusEffect(
     useCallback(() => {
-      console.log("HomeScreen redevient actif > rafraîchissement");
       initData();
     }, [initData])
   );
 
-  // --- OBJECTIF ATTEINT ---
   const handleGoalReached = async () => {
-    if (!userId) return;
-
-    console.log("➡️ Envoi goal_reached pour :", userId);
-
+    if (!userId || !token) return;
     try {
-      const res = await fetch(`${BASE_URL}/hydration/goal-reached`, {
+      await fetch(`${BASE_URL}/hydration/goal-reached`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: getHeaders(),
         body: JSON.stringify({ id_utilisateur: userId }),
       });
-
-      console.log("⬅️ Réponse goal_reached :", res.status);
-
-      setHasGoalBeenReachedToday(true);
+      setHasGoalReachedToday(true);
     } catch (e) {
       console.log("❌ Erreur goal_reached :", e);
     }
   };
 
-
-  // --- MISE À JOUR PROGRESSION ---
   const updateWaterProgress = async (amountMl) => {
-    if (!userId) {
-      console.log("❌ Aucun userId, impossible d’envoyer au backend");
-      return;
-    }
+    if (!userId || !token) return;
 
     const delta = isAddMode ? amountMl : -amountMl;
-    console.log("➡️ Envoi au backend :", {
-      id_utilisateur: userId,
-      amount_ml: delta,
-    });
+    const headers = getHeaders();
 
     try {
-      // 1) Envoi au backend
       const resAdd = await fetch(`${BASE_URL}/hydration/add`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: headers,
         body: JSON.stringify({
           id_utilisateur: Number(userId),
           amount_ml: Number(delta),
         }),
       });
 
-      console.log("⬅️ Réponse /hydration/add :", resAdd.status);
+      if (!resAdd.ok) {
+        const errorDetail = await resAdd.text();
+        console.log(`❌ Erreur ${resAdd.status}:`, errorDetail);
 
-      // 2) Recharger la progression du jour
-      const resToday = await fetch(`${BASE_URL}/hydration/today/${userId}`);
+        // Si 403, on force la déconnexion car le token est mort
+        if (resAdd.status === 403) {
+            alert("Votre session a expiré. Veuillez vous reconnecter.");
+            await logout();
+            return;
+        }
+        throw new Error("Erreur lors de l'ajout");
+      }
+
+      const resToday = await fetch(`${BASE_URL}/hydration/today/${userId}`, { headers });
       const todayData = await resToday.json();
-
-      console.log("📥 Données du jour reçues :", todayData);
-
       const newVal = todayData.amount_ml || 0;
       setCompleted(newVal);
 
-      // 3) Mise à jour mini calendrier
-      const today = new Date().toISOString().slice(0, 10);
-      setWeeklyData((prev) => ({
-        ...prev,
-        [today]: newVal,
-      }));
+      const todayStr = new Date().toISOString().slice(0, 10);
+      setWeeklyData(prev => ({ ...prev, [todayStr]: newVal }));
 
-
-      // 4) Objectif atteint ?
-      if (newVal >= dailyGoal && dailyGoal > 0 && !hasGoalBeenReachedToday) {
-        console.log("🏆 Objectif atteint, envoi au backend…");
+      if (newVal >= dailyGoal && !hasGoalReachedToday) {
         await handleGoalReached();
       }
     } catch (e) {
-      console.log("❌ Erreur updateWaterProgress :", e);
+      console.log("❌ updateWaterProgress :", e.message);
     }
   };
 
-
-  // --- AFFICHAGE SELON UNITÉ ---
+  // --- Reste du rendu UI identique ---
   const displayForUnit = (valueMl) => {
-    if (valueMl === undefined || valueMl === null)
-      return `0 ${unit || "mL"}`;
     if (unit === "L") return `${(valueMl / 1000).toFixed(1)} L`;
     if (unit === "cL") return `${Math.round(valueMl / 10)} cL`;
-    if (unit === "oz") return `${(valueMl / 29.5735).toFixed(1)} oz`;
     return `${valueMl} mL`;
   };
 
-  // --- SUBMIT QUANTITÉ PERSONNALISÉE ---
   const handleCustomSubmit = () => {
     let val = parseFloat(customAmount.replace(",", ".")) || 0;
-    let toAddMl = 0;
-
-    if (unit === "L") toAddMl = Math.round(val * 1000);
-    else if (unit === "cL") toAddMl = Math.round(val * 10);
-    else if (unit === "oz") toAddMl = Math.round(val * 29.5735);
-    else toAddMl = Math.round(val);
-
-    updateWaterProgress(toAddMl);
+    let toAddMl = unit === "L" ? val * 1000 : unit === "cL" ? val * 10 : val;
+    updateWaterProgress(Math.round(toAddMl));
     setCustomAmount("");
     Keyboard.dismiss();
   };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar
-        barStyle="light-content"
-        translucent
-        backgroundColor="transparent"
-      />
-
-      {/* HEADER */}
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       <View style={[styles.header, { backgroundColor: colors.primary }]}>
-        <Text style={styles.headerTitle}>Votre progression</Text>
-        <TouchableOpacity
-          testID="settings-button"
-          style={styles.settingsButton}
-          onPress={() => navigation.getParent()?.navigate("Setting")}
-        >
+        <Text style={styles.headerTitle}>GSoif</Text>
+        <TouchableOpacity style={styles.settingsButton} onPress={() => navigation.navigate("Setting")}>
           <Settings color="white" size={30} />
         </TouchableOpacity>
       </View>
-
-      {/* CONTENU */}
-      <ScrollView
-        contentContainerStyle={[styles.content, { marginTop: margin }]}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* PROGRESSION */}
+      <ScrollView contentContainerStyle={[styles.content, { marginTop: margin }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <View style={styles.progressContainer}>
-          <ProgressCircle
-            size={210}
-            strokeWidth={12}
-            color={colors.primary}
-            backgroundColor={colors.secondary}
-            progress={progression > 1 ? 1 : progression}
-          >
-            <Image
-              source={
-                isDarkMode
-                  ? require("../assets/bottle_icon_white.png")
-                  : require("../assets/bottle_icon.png")
-              }
-              style={styles.bottleIcon}
-            />
-            <Text style={[styles.percentage, { color: colors.text }]}>
-              {Math.round(progression * 100)}%
-            </Text>
+          <ProgressCircle size={210} strokeWidth={12} color={colors.primary} backgroundColor={colors.secondary} progress={progression > 1 ? 1 : progression}>
+            <Image source={isDarkMode ? require("../assets/bottle_icon_white.png") : require("../assets/bottle_icon.png")} style={styles.bottleIcon} />
+            <Text style={[styles.percentage, { color: colors.text }]}>{Math.round(progression * 100)}%</Text>
           </ProgressCircle>
-
           <Text style={[styles.subText, { color: colors.textSecondary }]}>
             {`Bu : ${displayForUnit(completed)} / ${displayForUnit(dailyGoal)}`}
           </Text>
         </View>
-
-        <View
-          style={[styles.divider, { backgroundColor: colors.border }]}
-        />
-
-        {/* ACTIONS */}
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
         <View style={styles.actionSection}>
           <View style={styles.selectRow}>
-            <Select
-              options={options}
-              value={selectedOption}
-              onChange={setSelectedOption}
-            />
-            <Text style={{ color: colors.textSecondary }}>
-              une quantité d'eau
-            </Text>
+            <Select options={options} value={selectedOption} onChange={setSelectedOption} />
+            <Text style={{ color: colors.textSecondary }}>une quantité d'eau</Text>
           </View>
-
           <View style={styles.quickAddRow}>
             {[100, 250, 500].map((amt) => (
-              <QuickAddButton
-                key={String(amt)}
-                title={`${sign}${displayForUnit(amt)}`}
-                style={{
-                  opacity: !isAddMode && completed <= 0 ? 0.5 : 1,
-                  backgroundColor: actionColor,
-                }}
-                onPress={() => updateWaterProgress(amt)}
-              />
+              <QuickAddButton key={amt} title={`${sign}${displayForUnit(amt)}`} style={{ backgroundColor: actionColor }} onPress={() => updateWaterProgress(amt)} />
             ))}
           </View>
-
           <View style={styles.inputRow}>
-            <CustomInput
-              placeholder="Quantité"
-              width={220}
-              keyboardType="numeric"
-              value={customAmount}
-              onChangeText={setCustomAmount}
-              onFocus={() =>
-                setMargin(Platform.OS === "ios" ? -150 : 0)
-              }
-              onBlur={() => setMargin(0)}
-              onSubmitEditing={handleCustomSubmit}
-            />
-            <Text
-              style={{
-                color: colors.text,
-                fontSize: 16,
-                fontWeight: "bold",
-              }}
-            >
-              {unit}
-            </Text>
+            <CustomInput placeholder="Quantité" width={150} keyboardType="numeric" value={customAmount} onChangeText={setCustomAmount}
+                onFocus={() => setMargin(Platform.OS === "ios" ? -150 : 0)} onBlur={() => setMargin(0)} onSubmitEditing={handleCustomSubmit} />
+            <Text style={{ color: colors.text, fontWeight: "bold" }}>{unit}</Text>
           </View>
-
-          <View
-            style={{
-              width: "100%",
-              paddingHorizontal: 20,
-              marginTop: 10,
-            }}
-          >
-            <CustomButton
-              title={selectedOption}
-              backgroundColor={actionColor}
-              onPress={handleCustomSubmit}
-              style={{ paddingVertical: 12 }}
-            />
+          <View style={{ width: "90%" }}>
+            <CustomButton title={selectedOption} backgroundColor={actionColor} onPress={handleCustomSubmit} />
           </View>
         </View>
-
-        <View
-          style={[styles.divider, { backgroundColor: colors.border }]}
-        />
-
-        {/* CALENDRIER */}
-        <WeeklyCalendar
-          weeklyData={weeklyData}
-          dailyGoal={dailyGoal}
-          colors={colors}
-        />
-
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
+        <WeeklyCalendar weeklyData={weeklyData} dailyGoal={dailyGoal} colors={colors} />
         <View style={{ height: 100 }} />
       </ScrollView>
     </View>
   );
 }
 
-// --- STYLES ---
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height:
-      Platform.OS === "android"
-        ? StatusBar.currentHeight + 80
-        : 120,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingTop:
-      Platform.OS === "android"
-        ? StatusBar.currentHeight
-        : 40,
-    zIndex: 10,
-  },
-  settingsButton: {
-    position: "absolute",
-    right: 20,
-    top:
-      Platform.OS === "android"
-        ? StatusBar.currentHeight + 20
-        : 45,
-    zIndex: 11,
-  },
-  headerTitle: {
-    color: "white",
-    fontSize: 22,
-    fontFamily: fonts.bricolageGrotesque,
-    fontWeight: "700",
-  },
-  content: {
-    padding: 20,
-    paddingTop:
-      Platform.OS === "android"
-        ? StatusBar.currentHeight + 110
-        : 140,
-    alignItems: "center",
-  },
+  header: { height: Platform.OS === "android" ? StatusBar.currentHeight + 80 : 120, flexDirection: "row", alignItems: "center", justifyContent: "center", paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 40, zIndex: 10 },
+  settingsButton: { position: "absolute", right: 20, top: Platform.OS === "android" ? StatusBar.currentHeight + 20 : 45 },
+  headerTitle: { color: "white", fontSize: 24, fontWeight: "900", fontFamily: fonts.bricolageGrotesque },
+  content: { padding: 20, alignItems: "center" },
   progressContainer: { marginTop: 20, alignItems: "center" },
-  bottleIcon: {
-    width: 60,
-    height: 80,
-    resizeMode: "contain",
-  },
-  percentage: {
-    fontSize: 40,
-    fontWeight: "bold",
-    fontFamily: fonts.bricolageGrotesque,
-  },
-  subText: {
-    marginTop: 12,
-    fontFamily: fonts.inter,
-    fontSize: 16,
-  },
-  divider: {
-    width: "90%",
-    height: 1,
-    marginVertical: 25,
-  },
-  actionSection: {
-    width: "100%",
-    alignItems: "center",
-    gap: 15,
-  },
-  selectRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  quickAddRow: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  inputRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  calendarContainer: {
-    width: "100%",
-    paddingHorizontal: 20,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 15,
-    fontFamily: fonts.bricolageGrotesque,
-  },
-  daysRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-    height: 100,
-  },
+  bottleIcon: { width: 60, height: 80, resizeMode: "contain" },
+  percentage: { fontSize: 44, fontWeight: "900" },
+  subText: { marginTop: 12, fontSize: 16 },
+  divider: { width: "90%", height: 1, marginVertical: 30 },
+  actionSection: { width: "100%", alignItems: "center", gap: 15 },
+  selectRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  quickAddRow: { flexDirection: "row", gap: 10 },
+  inputRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  calendarContainer: { width: "100%", paddingHorizontal: 10 },
+  sectionTitle: { fontSize: 20, fontWeight: "800", marginBottom: 20 },
+  daysRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", height: 80 },
   dayColumn: { alignItems: "center", flex: 1 },
-  barBackground: {
-    width: 14,
-    height: 60,
-    borderRadius: 7,
-    overflow: "hidden",
-    justifyContent: "flex-end",
-  },
-  barFill: { width: "100%", borderRadius: 7 },
-  dayLabel: {
-    fontSize: 11,
-    marginTop: 8,
-    fontFamily: fonts.inter,
-  },
+  barBackground: { width: 16, height: 60, borderRadius: 8, overflow: "hidden", justifyContent: "flex-end" },
+  barFill: { width: "100%", borderRadius: 8 },
+  dayLabel: { fontSize: 12, marginTop: 10 },
 });
