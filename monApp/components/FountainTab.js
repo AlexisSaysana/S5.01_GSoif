@@ -18,7 +18,7 @@ export default function FountainTab({
   nearest,
   isAvailable,
   motif,
-  avis,
+  avis = [],
   onPress,
 }) {
   const { colors } = useContext(ThemeContext);

@@ -150,10 +150,7 @@ export default function FontainesScreen() {
 
   // --- FONCTION POUR ENVOYER UN AVIS ---
   const envoyerAvis = async () => {
-    if (!commentText.trim()) {
-      Alert.alert("Erreur", "Veuillez écrire un commentaire.");
-      return;
-    }
+
     setSubmitting(true);
     try {
       const response = await fetch("https://s5-01-gsoif.onrender.com/commentaires", {
@@ -305,7 +302,7 @@ export default function FontainesScreen() {
                   <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
                     {[1, 2, 3, 4, 5].map(num => (
                       <TouchableOpacity key={num} onPress={() => setRating(num)}>
-                        <Text style={{ fontSize: 24 }}>{num <= rating ? "💧" : "⚪"}</Text>
+                        <Text style={{ fontSize: 24 }}>{num <= rating ? "💧" : " "}</Text>
                       </TouchableOpacity>
                     ))}
                   </View>
