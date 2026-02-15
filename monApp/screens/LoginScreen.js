@@ -1,10 +1,9 @@
-import { useState ,useContext } from 'react';
+import { useState } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles';
 import { fonts } from '../styles/fonts';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ThemeContext } from '../context/ThemeContext';
 
 import CustomInput from '../components/CustomInput';
 import CustomButton from '../components/CustomButton';
@@ -12,8 +11,7 @@ import CustomButton from '../components/CustomButton';
 const BASE_URL = "https://s5-01-gsoif.onrender.com";
 
 const LoginScreen = ({ navigation, onLogin  }) => {
-// 1. On récupère la fonction de sauvegarde du context
-    const { saveUserSession } = useContext(ThemeContext);
+
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
@@ -62,9 +60,7 @@ const LoginScreen = ({ navigation, onLogin  }) => {
         const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 
         const fullName = `${capitalize(user.prenom)} ${capitalize(user.nom)}`;
-        // 2. SAUVEGARDE GLOBALE via le Context
-        // Cela va mettre à jour le token et le userId partout dans l'app
-        await saveUserSession(data.token, user.id);
+
         // 🔒 A01:2025 - Broken Access Control : Stockage JWT sécurisé
         await AsyncStorage.setItem("authToken", data.token);
         await AsyncStorage.setItem("userId", user.id.toString());
