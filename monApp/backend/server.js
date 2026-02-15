@@ -109,7 +109,7 @@ app.get('/utilisateurs', async (req, res) => {
 // --------------------------------------
 // 👤 INSCRIPTION
 // --------------------------------------
-app.post('/utilisateurs',
+app.post('/utilisateurs', 
     authLimiter,
     // 🔒 A05:2025 - Injection : Validation des entrées
     [
@@ -125,9 +125,9 @@ app.post('/utilisateurs',
     // Vérifier les erreurs de validation
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        return res.status(400).json({
-            error: 'Données invalides',
-            details: errors.array().map(e => e.msg)
+        return res.status(400).json({ 
+            error: 'Données invalides', 
+            details: errors.array().map(e => e.msg) 
         });
     }
 
@@ -160,7 +160,7 @@ app.post('/utilisateurs',
 // --------------------------------------
 // 🔐 LOGIN
 // --------------------------------------
-app.post('/login',
+app.post('/login', 
     authLimiter,
     // 🔒 A05:2025 - Injection : Validation
     [
@@ -193,9 +193,9 @@ app.post('/login',
 
         // 🔒 A01:2025 - Broken Access Control : Génération JWT
         const token = jwt.sign(
-            {
-                id: utilisateur.id_utilisateur,
-                email: utilisateur.email
+            { 
+                id: utilisateur.id_utilisateur, 
+                email: utilisateur.email 
             },
             JWT_SECRET,
             { expiresIn: '24h' }
@@ -811,7 +811,7 @@ app.post("/hydration/add", authenticateToken, checkUserOwnership, async (req, re
 // 🔒 A01:2025 - Broken Access Control : Route protégée
 app.get("/hydration/today/:id", authenticateToken, async (req, res) => {
     const id = req.params.id;
-
+    
     // Vérifier que l'utilisateur accède à ses propres données
     if (parseInt(id) !== parseInt(req.user.id)) {
         return res.status(403).json({ error: "Accès refusé" });
@@ -878,6 +878,9 @@ app.put("/hydration/goal-reached", async (req, res) => {
         return res.status(500).json({ error: "Server error" });
     }
 });
+
+
+
 // --------------------------------------
 // 💬 NOUVELLES ROUTES : COMMENTAIRES / AVIS
 // --------------------------------------
@@ -925,6 +928,8 @@ app.post('/commentaires', async (req, res) => {
         res.status(500).json({ error: "Erreur lors de l'ajout de l'avis" });
     }
 });
+
+
 // --------------------------------------
 // 🚀 LANCEMENT SERVEUR
 // --------------------------------------
@@ -934,5 +939,3 @@ console.log("PORT utilisé :", PORT);
 app.listen(PORT, () => {
     console.log("🚀 Serveur lancé sur le port " + PORT);
 });
-
-
