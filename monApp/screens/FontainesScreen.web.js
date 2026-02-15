@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useContext } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import {
   View,
   StyleSheet,
@@ -6,22 +6,10 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Platform,
   TextInput,
-  Alert
 } from "react-native";
 
-// Import conditionnel pour react-native-maps
-let MapView, Marker;
-if (Platform.OS !== 'web') {
-  const MapModule = require("react-native-maps");
-  MapView = MapModule.default;
-  Marker = MapModule.Marker;
-}
-
 import * as Location from "expo-location";
-import { showLocation } from "react-native-map-link";
-import { fonts } from "../styles/fonts";
 import { ThemeContext } from "../context/ThemeContext";
 
 import CustomInput from "../components/CustomInput";
@@ -50,8 +38,6 @@ export default function FontainesScreen() {
   const [commentText, setCommentText] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const mapRef = useRef(null);
-
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371;
     const dLat = (lat2 - lat1) * (Math.PI / 180);
@@ -63,23 +49,17 @@ export default function FontainesScreen() {
     return R * c;
   };
 
-  // --- FONCTION DE RÉCUPÉRATION DES AVIS ---
   const fetchAvis = async (fountainId) => {
     try {
       const response = await fetch(`https://s5-01-gsoif.onrender.com/commentaires/${fountainId}`);
-
-      // Sécurité si le serveur renvoie du HTML (Erreur)
       const contentType = response.headers.get("content-type");
       if (!response.ok || !contentType || !contentType.includes("application/json")) {
-        console.error("Le serveur n'a pas renvoyé de JSON valide");
         setAvis([]);
         return;
       }
-
       const data = await response.json();
       setAvis(data);
     } catch (err) {
-      console.error("Erreur avis:", err);
       setAvis([]);
     }
   };
@@ -148,9 +128,8 @@ export default function FontainesScreen() {
     setFilteredPoints(filtered);
   };
 
-  // --- FONCTION POUR ENVOYER UN AVIS ---
   const envoyerAvis = async () => {
-
+    if (!commentText.trim()) return alert("Veuillez écrire un commentaire.");
     setSubmitting(true);
     try {
       const response = await fetch("https://s5-01-gsoif.onrender.com/commentaires", {
@@ -167,13 +146,13 @@ export default function FontainesScreen() {
       if (response.ok) {
         setCommentText("");
         setShowForm(false);
-        fetchAvis(selectedPoint.id); // Rafraîchir la liste
-        Alert.alert("Succès", "Votre avis a été ajouté !");
+        fetchAvis(selectedPoint.id);
+        alert("Succès : Votre avis a été ajouté !");
       } else {
-        Alert.alert("Erreur", "Le serveur a refusé l'avis.");
+        alert("Erreur : Le serveur a refusé l'avis.");
       }
     } catch (e) {
-      Alert.alert("Erreur", "Impossible d'envoyer l'avis.");
+      alert("Erreur : Impossible d'envoyer l'avis.");
     } finally {
       setSubmitting(false);
     }
@@ -182,7 +161,6 @@ export default function FontainesScreen() {
   const openExternalMaps = async () => {
     if (!selectedPoint) return;
     try {
-      // Log historique
       await fetch("https://s5-01-gsoif.onrender.com/historique", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -195,44 +173,29 @@ export default function FontainesScreen() {
           date: new Date().toISOString()
         })
       });
-
-      if (Platform.OS === 'web') {
-        window.open(`https://www.google.com/maps?q=${selectedPoint.coords[0]},${selectedPoint.coords[1]}`, '_blank');
-      } else {
-        showLocation({
-          latitude: selectedPoint.coords[0],
-          longitude: selectedPoint.coords[1],
-          title: selectedPoint.name,
-        });
-      }
+      const url = `https://www.google.com/maps/dir/?api=1&destination=${selectedPoint.coords[0]},${selectedPoint.coords[1]}`;
+      window.open(url, '_blank');
     } catch (e) { console.log(e); }
   };
+
+  // URL dynamique pour l'iframe (centrée sur le point sélectionné ou Paris)
+  const mapUrl = selectedPoint
+    ? `https://www.openstreetmap.org/export/embed.html?bbox=${selectedPoint.coords[1]-0.005},${selectedPoint.coords[0]-0.005},${selectedPoint.coords[1]+0.005},${selectedPoint.coords[0]+0.005}&layer=mapnik&marker=${selectedPoint.coords[0]},${selectedPoint.coords[1]}`
+    : `https://www.openstreetmap.org/export/embed.html?bbox=2.25,48.82,2.42,48.90&layer=mapnik`;
+
+  if (loading) return <View style={styles.center}><ActivityIndicator size="large" color={colors.primary} /></View>;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.primary }}>
       <View style={styles.topBlue}>
-        {Platform.OS === 'web' ? (
-          <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#cbd5e1', justifyContent: 'center', alignItems: 'center' }]}>
-             <Text style={{ fontWeight: '600', color: '#475569' }}>Carte indisponible sur PC</Text>
-          </View>
-        ) : (
-          <MapView
-            ref={mapRef}
-            style={StyleSheet.absoluteFillObject}
-            showsUserLocation={true}
-            initialRegion={{ latitude: 48.8566, longitude: 2.3522, latitudeDelta: 0.05, longitudeDelta: 0.05 }}
-            onPress={() => setSelectedPoint(null)}
-          >
-            {filteredPoints.map((p) => (
-              <Marker
-                key={p.id}
-                coordinate={{ latitude: p.coords[0], longitude: p.coords[1] }}
-                pinColor={!p.isAvailable ? '#B0B0B0' : (p.type === 'fontaine' ? colors.primary : '#4CAF50')}
-                onPress={() => setSelectedPoint(p)}
-              />
-            ))}
-          </MapView>
-        )}
+        <iframe
+          width="100%"
+          height="100%"
+          frameBorder="0"
+          title="Fountain Map"
+          src={mapUrl}
+          style={{ backgroundColor: '#cbd5e1' }}
+        />
       </View>
 
       <View style={[styles.bottomWhite, { backgroundColor: colors.background }]}>
@@ -253,7 +216,6 @@ export default function FontainesScreen() {
                     isAvailable={p.isAvailable}
                     motif={p.motif}
                     nearest={index === 0 && !searchText}
-                    avis={[]}
                     onPress={() => { setSelectedPoint(p); }}
                   />
                 </View>
@@ -278,7 +240,7 @@ export default function FontainesScreen() {
               style={[styles.mainButton, { backgroundColor: selectedPoint.isAvailable ? colors.primary : colors.border, marginBottom: 10 }]}
               onPress={openExternalMaps}
             >
-              <Text style={[styles.mainButtonText, { color: 'white' }]}>Itinéraire</Text>
+              <Text style={[styles.mainButtonText, { color: 'white' }]}>Itinéraire (Google Maps)</Text>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => setSelectedPoint(null)}>
@@ -302,14 +264,15 @@ export default function FontainesScreen() {
                   <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
                     {[1, 2, 3, 4, 5].map(num => (
                       <TouchableOpacity key={num} onPress={() => setRating(num)}>
-                        <Text style={{ fontSize: 24 }}>{num <= rating ? "💧" : " "}</Text>
+                        <Text style={{ fontSize: 24 }}>{num <= rating ? "💧" : "⚪"}</Text>
                       </TouchableOpacity>
                     ))}
                   </View>
                   <TextInput
-                    style={{ backgroundColor: '#f0f0f0', borderRadius: 10, padding: 10, height: 60, textAlignVertical: 'top' }}
+                    style={{ backgroundColor: '#f0f0f0', borderRadius: 10, padding: 10, outlineStyle: 'none' }}
                     placeholder="Votre avis..."
                     multiline
+                    numberOfLines={3}
                     value={commentText}
                     onChangeText={setCommentText}
                   />
@@ -318,7 +281,7 @@ export default function FontainesScreen() {
                     disabled={submitting}
                     style={{ backgroundColor: colors.primary, marginTop: 10, padding: 12, borderRadius: 10, alignItems: 'center' }}
                   >
-                    {submitting ? <ActivityIndicator color={WHITE} /> : <Text style={{ color: WHITE, fontWeight: '700' }}>Envoyer</Text>}
+                    {submitting ? <ActivityIndicator color={WHITE} /> : <Text style={{ color: WHITE, fontWeight: '700' }}>Envoyer l'avis</Text>}
                   </TouchableOpacity>
                 </View>
               )}
@@ -342,6 +305,7 @@ export default function FontainesScreen() {
 }
 
 const styles = StyleSheet.create({
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   topBlue: { height: "50%" },
   bottomWhite: { height: "55%", padding: 20, borderTopLeftRadius: 40, borderTopRightRadius: 40, marginTop: -40 },
   listContainer: { paddingBottom: 100, gap: 20 },
