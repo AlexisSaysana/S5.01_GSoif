@@ -71,7 +71,10 @@ const db = mysql.createPool({
     database: process.env.DB_NAME,
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: 0
+    queueLimit: 0,
+    authPlugins: {
+        mysql_native_password: () => require('mysql2/lib/auth_plugins/mysql_native_password')
+    }
 }).promise();
 
 // Test de connexion
