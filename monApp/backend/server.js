@@ -11,9 +11,6 @@ const helmet = require('helmet');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
-// 🔒 Middleware d'authentification JWT
-const { authenticateToken, checkUserOwnership } = require('./middleware/auth');
-
 // 🔒 A02:2025 - Security Misconfiguration : Clé API sécurisée
 const WEATHER_API_KEY = process.env.WEATHER_API_KEY;
 const JWT_SECRET = process.env.JWT_SECRET || 'changez_cette_valeur_en_production';
@@ -771,10 +768,9 @@ app.post('/profile/calculate', async (req, res) => {
 });
 
 // --------------------------------------
-// 💧 Ajouter une quantité d’eau
+// 💧 Ajouter une quantité d'eau
 // --------------------------------------
-// 🔒 A01:2025 - Broken Access Control : Route protégée
-app.post("/hydration/add", authenticateToken, checkUserOwnership, async (req, res) => {
+app.post("/hydration/add", async (req, res) => {
     const { id_utilisateur, amount_ml } = req.body;
 
     if (id_utilisateur == null || amount_ml == null) {
@@ -811,14 +807,8 @@ app.post("/hydration/add", authenticateToken, checkUserOwnership, async (req, re
 // --------------------------------------
 // 💧 Récupérer la progression du jour
 // --------------------------------------
-// 🔒 A01:2025 - Broken Access Control : Route protégée
-app.get("/hydration/today/:id", authenticateToken, async (req, res) => {
+app.get("/hydration/today/:id", async (req, res) => {
     const id = req.params.id;
-    
-    // Vérifier que l'utilisateur accède à ses propres données
-    if (parseInt(id) !== parseInt(req.user.id)) {
-        return res.status(403).json({ error: "Accès refusé" });
-    }
     const today = new Date().toISOString().split("T")[0];
 
     try {
