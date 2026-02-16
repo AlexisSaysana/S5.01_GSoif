@@ -7,7 +7,7 @@
     "icon": "./assets/icon-light-filled.png",
     "userInterfaceStyle": "light",
     "experiments": {
-      "reactNativeNewArchitecture": true
+      "reactNativeNewArchitecture": "true"
     },
     "splash": {
       "image": "./assets/icon-light-filled.png",
@@ -41,7 +41,8 @@
       }
     },
     "web": {
-      "favicon": "./assets/icon-light-filled.png"
+      "favicon": "./assets/icon-light-filled.png",
+      "bundler": "metro"
     },
     "plugins": [
       "react-native-map-link",

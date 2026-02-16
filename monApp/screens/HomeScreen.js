@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Settings } from "lucide-react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { fonts } from "../styles/fonts";
 import { ThemeContext } from "../context/ThemeContext";
 import ProgressCircle from "../components/ProgressCircle";
@@ -110,15 +111,43 @@ export default function HomeScreen({ navigation, userId, userEmail, userName }) 
  // --- CHARGER OBJECTIF IA + PROGRESSION + HISTORIQUE ---
  const initData = useCallback(async () => {
    console.log("🔄 initData() lancé…");
+   
+   const today = new Date().toISOString().slice(0, 10);
+   
+   // MODE INVITÉ : Charger depuis AsyncStorage local
+   if (!userId) {
+     console.log("⚠️ Mode invité : chargement local");
+     try {
+       const localCompleted = await AsyncStorage.getItem('local_completed');
+       const localGoal = await AsyncStorage.getItem('local_dailyGoal');
+       const localWeekly = await AsyncStorage.getItem('local_weeklyData');
+       
+       if (localCompleted) setCompleted(parseInt(localCompleted));
+       if (localGoal) setDailyGoal(parseInt(localGoal));
+       if (localWeekly) setWeeklyData(JSON.parse(localWeekly));
+     } catch (e) {
+       console.log("❌ Erreur chargement local:", e);
+     }
+     return;
+   }
 
+   // MODE CONNECTÉ : Charger depuis le backend
    try {
-     const today = new Date().toISOString().slice(0, 10);
+     // 🔒 Récupérer le token JWT
+     const token = await AsyncStorage.getItem('authToken');
+     const headers = {
+       'Content-Type': 'application/json',
+     };
+     
+     if (token) {
+       headers['Authorization'] = `Bearer ${token}`;
+     }
 
      // -------------------------
      // 1) Objectif IA
      // -------------------------
      console.log("➡️ Fetch profil :", `${BASE_URL}/profile/${userId}`);
-     const resProfile = await fetch(`${BASE_URL}/profile/${userId}`);
+     const resProfile = await fetch(`${BASE_URL}/profile/${userId}`, { headers });
      const profile = await resProfile.json();
      console.log("📥 Profil reçu :", profile);
 
@@ -130,7 +159,7 @@ export default function HomeScreen({ navigation, userId, userEmail, userName }) 
      // 2) Progression du jour
      // -------------------------
      console.log("➡️ Fetch today :", `${BASE_URL}/hydration/today/${userId}`);
-     const resToday = await fetch(`${BASE_URL}/hydration/today/${userId}`);
+     const resToday = await fetch(`${BASE_URL}/hydration/today/${userId}`, { headers });
      const todayData = await resToday.json();
      console.log("📥 Today reçu :", todayData);
 
@@ -141,7 +170,7 @@ export default function HomeScreen({ navigation, userId, userEmail, userName }) 
      // 3) Historique complet
      // -------------------------
      console.log("➡️ Fetch history :", `${BASE_URL}/hydration/history/${userId}`);
-     const resHistory = await fetch(`${BASE_URL}/hydration/history/${userId}`);
+     const resHistory = await fetch(`${BASE_URL}/hydration/history/${userId}`, { headers });
      const historyData = await resHistory.json();
      console.log("📥 Historique reçu :", historyData);
 
@@ -203,22 +232,56 @@ export default function HomeScreen({ navigation, userId, userEmail, userName }) 
 
   // --- MISE À JOUR PROGRESSION ---
   const updateWaterProgress = async (amountMl) => {
+    const delta = isAddMode ? amountMl : -amountMl;
+    const today = new Date().toISOString().slice(0, 10);
+    
+    // MODE INVITÉ : Gestion locale uniquement
     if (!userId) {
-      console.log("❌ Aucun userId, impossible d’envoyer au backend");
+      console.log("⚠️ Mode invité : mise à jour locale");
+      try {
+        const newVal = Math.max(0, completed + delta);
+        setCompleted(newVal);
+        
+        // Mettre à jour le mini calendrier
+        const updatedWeekly = { ...weeklyData, [today]: newVal };
+        setWeeklyData(updatedWeekly);
+        
+        // Sauvegarder localement
+        await AsyncStorage.setItem('local_completed', newVal.toString());
+        await AsyncStorage.setItem('local_weeklyData', JSON.stringify(updatedWeekly));
+        
+        // Objectif atteint ?
+        if (newVal >= dailyGoal && dailyGoal > 0 && !hasGoalBeenReachedToday) {
+          console.log("🏆 Objectif atteint (mode local)");
+          setHasGoalBeenReachedToday(true);
+        }
+      } catch (e) {
+        console.log("❌ Erreur maj locale:", e);
+      }
       return;
     }
 
-    const delta = isAddMode ? amountMl : -amountMl;
+    // MODE CONNECTÉ : Synchronisation avec backend
     console.log("➡️ Envoi au backend :", {
       id_utilisateur: userId,
       amount_ml: delta,
     });
 
     try {
+      // 🔒 Récupérer le token JWT
+      const token = await AsyncStorage.getItem('authToken');
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
       // 1) Envoi au backend
       const resAdd = await fetch(`${BASE_URL}/hydration/add`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           id_utilisateur: Number(userId),
           amount_ml: Number(delta),
@@ -226,9 +289,17 @@ export default function HomeScreen({ navigation, userId, userEmail, userName }) 
       });
 
       console.log("⬅️ Réponse /hydration/add :", resAdd.status);
+      
+      // Vérifier si erreur d'authentification
+      if (resAdd.status === 401 || resAdd.status === 403) {
+        const error = await resAdd.json();
+        console.log("❌ Erreur auth:", error);
+        alert("Session expirée. Veuillez vous reconnecter.");
+        return;
+      }
 
       // 2) Recharger la progression du jour
-      const resToday = await fetch(`${BASE_URL}/hydration/today/${userId}`);
+      const resToday = await fetch(`${BASE_URL}/hydration/today/${userId}`, { headers });
       const todayData = await resToday.json();
 
       console.log("📥 Données du jour reçues :", todayData);

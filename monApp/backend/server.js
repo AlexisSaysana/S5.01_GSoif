@@ -68,7 +68,10 @@ const db = mysql.createPool({
     database: process.env.DB_NAME,
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: 0
+    queueLimit: 0,
+    authPlugins: {
+        mysql_native_password: () => require('mysql2/lib/auth_plugins/mysql_native_password')
+    }
 }).promise();
 
 // Test de connexion
@@ -765,7 +768,7 @@ app.post('/profile/calculate', async (req, res) => {
 });
 
 // --------------------------------------
-// 💧 Ajouter une quantité d’eau
+// 💧 Ajouter une quantité d'eau
 // --------------------------------------
 app.post("/hydration/add", async (req, res) => {
     const { id_utilisateur, amount_ml } = req.body;
@@ -869,6 +872,57 @@ app.put("/hydration/goal-reached", async (req, res) => {
     }
 });
 
+
+
+// --------------------------------------
+// 💬 NOUVELLES ROUTES : COMMENTAIRES / AVIS
+// --------------------------------------
+
+// 1. Récupérer les avis d'une fontaine (Public)
+app.get('/commentaires/:fountain_id', async (req, res) => {
+    const { fountain_id } = req.params;
+    const sql = `
+        SELECT u.prenom as user, a.note as rating, a.commentaire as comment, a.created_at
+        FROM avis a
+        JOIN utilisateur u ON a.id_utilisateur = u.id_utilisateur
+        WHERE a.fountain_id = ?
+        ORDER BY a.created_at DESC
+    `;
+    try {
+        const [rows] = await db.query(sql, [fountain_id]);
+        res.json(rows);
+    } catch (err) {
+        console.error("Erreur GET avis:", err);
+        res.status(500).json({ error: "Erreur lors de la récupération des avis" });
+    }
+});
+
+// 2. Ajouter un avis (Nécessite d'être connecté)
+app.post('/commentaires', async (req, res) => {
+    const { fountain_id, email, rating, comment } = req.body;
+
+    if (!fountain_id || !email || !rating) {
+        return res.status(400).json({ error: "Champs obligatoires manquants" });
+    }
+
+    try {
+        // Trouver l'ID utilisateur à partir de l'email
+        const [userRows] = await db.query("SELECT id_utilisateur FROM utilisateur WHERE email = ?", [email]);
+        if (userRows.length === 0) return res.status(404).json({ error: "Utilisateur non trouvé" });
+
+        const id_utilisateur = userRows[0].id_utilisateur;
+
+        const sql = "INSERT INTO avis (fountain_id, id_utilisateur, note, commentaire) VALUES (?, ?, ?, ?)";
+        await db.query(sql, [fountain_id, id_utilisateur, rating, comment]);
+
+        res.status(201).json({ message: "Avis ajouté avec succès" });
+    } catch (err) {
+        console.error("Erreur POST avis:", err);
+        res.status(500).json({ error: "Erreur lors de l'ajout de l'avis" });
+    }
+});
+
+
 // --------------------------------------
 // 🚀 LANCEMENT SERVEUR
 // --------------------------------------
@@ -878,5 +932,3 @@ console.log("PORT utilisé :", PORT);
 app.listen(PORT, () => {
     console.log("🚀 Serveur lancé sur le port " + PORT);
 });
-
-
