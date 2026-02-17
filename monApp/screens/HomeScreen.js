@@ -11,7 +11,7 @@ import {
   Platform,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
-import { Settings } from "lucide-react-native";
+import { Settings, Cpu } from "lucide-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { fonts } from "../styles/fonts";
 import { ThemeContext } from "../context/ThemeContext";
@@ -362,13 +362,13 @@ export default function HomeScreen({ navigation, userId, userEmail, userName }) 
       {/* HEADER */}
       <View style={[styles.header, { backgroundColor: colors.primary }]}>
         <Text style={styles.headerTitle}>Votre progression</Text>
-        <TouchableOpacity
-          testID="settings-button"
-          style={styles.settingsButton}
-          onPress={() => navigation.getParent()?.navigate("Setting")}
-        >
-          <Settings color="white" size={30} />
-        </TouchableOpacity>
+          <TouchableOpacity
+            testID="settings-button"
+            style={styles.settingsButton}
+            onPress={() => navigation.getParent()?.navigate("Setting")}
+          >
+            <Settings color="white" size={30} />
+          </TouchableOpacity>
       </View>
 
       {/* CONTENU */}
@@ -402,8 +402,38 @@ export default function HomeScreen({ navigation, userId, userEmail, userName }) 
           <Text style={[styles.subText, { color: colors.textSecondary }]}>
             {`Bu : ${displayForUnit(completed)} / ${displayForUnit(dailyGoal)}`}
           </Text>
+          <TouchableOpacity
+            style={{}}
+            onPress={() => navigation.getParent()?.navigate("ProfilIA")}
+          >
+            <View
+              style={
+                {
+                  marginTop: 20,
+                  display: 'flex',
+                  flexDirection: 'row',
+                  gap: 5,
+                  justifyContent: 'center',
+                  alignItems: 'center'
+                }
+              }
+            >
+              <Cpu color={colors.primary} size={16} />
+              <Text
+                style={
+                  {
+                    color: colors.primary,
+                    fontFamily: fonts.inter,
+                    fontSize: 12,
+                    textDecorationLine: 'underline'
+                  }
+                }
+              >
+                Définir un objectif avec l'IA
+              </Text>
+            </View>
+          </TouchableOpacity>
         </View>
-
         <View
           style={[styles.divider, { backgroundColor: colors.border }]}
         />
@@ -503,7 +533,7 @@ const styles = StyleSheet.create({
     height:
       Platform.OS === "android"
         ? StatusBar.currentHeight + 80
-        : 120,
+          : 120,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",

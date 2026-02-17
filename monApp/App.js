@@ -79,17 +79,6 @@ function TabNavigator({ onLogout, userEmail, userId, userName }) {
         component={QuestsScreen}
         options={{ tabBarIcon: ({ color }) => <Search color={color} size={28} /> }}
       />
-      <Tab.Screen
-        name="IA"
-        options={{ tabBarIcon: ({ color }) => <Cpu color={color} size={28} /> }}
-      >
-        {(props) => (
-          <ProfilIAScreen
-            {...props}
-            userId={userId}
-          />
-        )}
-      </Tab.Screen>
 
 
 

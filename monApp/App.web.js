@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Map, User, Home, Search, Cpu, Droplet, Menu, X } from 'lucide-react-native';
+import { Map, User, Home, Search, Cpu, Droplet, Menu, X, Settings } from 'lucide-react-native';
 
 // Context & Theme
 import { ThemeProvider, ThemeContext } from './context/ThemeContext';
@@ -40,7 +40,6 @@ function WebHeader({ navigation, state }) {
     { name: 'Accueil', icon: Home, route: 'Accueil' },
     { name: 'Rechercher', icon: Map, route: 'Rechercher' },
     { name: 'Quêtes', icon: Search, route: 'Quêtes' },
-    { name: 'IA', icon: Cpu, route: 'IA' },
     { name: 'Profil', icon: User, route: 'Profil' },
   ];
 
@@ -55,36 +54,50 @@ function WebHeader({ navigation, state }) {
         <TouchableOpacity onPress={() => navigation.navigate('Accueil')}>
           <Droplet color={colors.primary || '#2196F3'} size={32} />
         </TouchableOpacity>
-
-        <TouchableOpacity onPress={() => setIsMenuOpen(true)} style={styles.hamburgerButton}>
-          <Menu color={colors.text || '#333'} size={32} />
-        </TouchableOpacity>
-
-        <Modal visible={isMenuOpen} transparent animationType="fade">
-          <TouchableOpacity
-            style={styles.menuOverlay}
-            activeOpacity={1}
-            onPress={() => setIsMenuOpen(false)}
+        <View
+          style={
+            {
+              display: 'flex',
+              flexDirection: 'row',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: 10
+            }
+          }
+        >
+          <TouchableOpacity onPress={() => navigation.getParent()?.navigate("Setting")}
           >
-            <View style={[styles.menuContent, { backgroundColor: colors.surface || '#FFF' }]}>
-              <View style={styles.menuHeader}>
-                <TouchableOpacity onPress={() => setIsMenuOpen(false)}>
-                  <X color={colors.text || '#333'} size={32} />
-                </TouchableOpacity>
-              </View>
-              {navItems.map((item) => (
-                <TouchableOpacity
-                  key={item.name}
-                  onPress={() => handleNavigate(item.route)}
-                  style={[styles.menuItem, currentRoute === item.route && { backgroundColor: colors.primary + '20' }]}
-                >
-                  <item.icon color={currentRoute === item.route ? colors.primary : '#888'} size={24} />
-                  <Text style={[styles.menuText, { color: colors.text }]}>{item.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <Settings color={colors.text || '#333'} size={32} />
           </TouchableOpacity>
-        </Modal>
+          <TouchableOpacity onPress={() => setIsMenuOpen(true)} style={styles.hamburgerButton}>
+            <Menu color={colors.text || '#333'} size={32} />
+          </TouchableOpacity>
+          <Modal visible={isMenuOpen} transparent animationType="fade">
+            <TouchableOpacity
+              style={styles.menuOverlay}
+              activeOpacity={1}
+              onPress={() => setIsMenuOpen(false)}
+            >
+              <View style={[styles.menuContent, { backgroundColor: colors.surface || '#FFF' }]}>
+                <View style={styles.menuHeader}>
+                  <TouchableOpacity onPress={() => setIsMenuOpen(false)}>
+                    <X color={colors.text || '#333'} size={32} />
+                  </TouchableOpacity>
+                </View>
+                {navItems.map((item) => (
+                  <TouchableOpacity
+                    key={item.name}
+                    onPress={() => handleNavigate(item.route)}
+                    style={[styles.menuItem, currentRoute === item.route && { backgroundColor: colors.primary + '20' }]}
+                  >
+                    <item.icon color={currentRoute === item.route ? colors.primary : '#888'} size={24} />
+                    <Text style={[styles.menuText, { color: colors.text }]}>{item.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </TouchableOpacity>
+          </Modal>
+        </View>
       </View>
     </View>
   );
@@ -256,5 +269,5 @@ const styles = StyleSheet.create({
   menuContent: { width: 280, height: '100%', padding: 20 },
   menuHeader: { alignItems: 'flex-end', marginBottom: 30 },
   menuItem: { flexDirection: 'row', alignItems: 'center', padding: 15, borderRadius: 10, marginBottom: 5 },
-  menuText: { marginLeft: 15, fontSize: 16, fontWeight: '600' }
+  menuText: { marginLeft: 15, fontSize: 16, fontWeight: '600' },
 });
