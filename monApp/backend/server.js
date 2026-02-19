@@ -45,7 +45,7 @@ app.use(bodyParser.json());
 // 🔒 A07:2025 - Authentication Failures : Rate limiting global
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 1000, // 1000 requêtes max (utilisation normale)
+    max: 10000, // 10000 requêtes max (utilisation normale)
     message: 'Trop de requêtes, veuillez réessayer plus tard.'
 });
 app.use(globalLimiter);

@@ -232,7 +232,7 @@ c) **bcrypt avec seulement 10 rounds**
    // Rate limiting global
    const globalLimiter = rateLimit({
        windowMs: 15 * 60 * 1000, // 15 minutes
-       max: 1000 // 1000 requêtes max (utilisation normale)
+       max: 10000 // 10000 requêtes max (utilisation normale)
    });
    app.use(globalLimiter);
    

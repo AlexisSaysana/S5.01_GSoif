@@ -34,7 +34,7 @@
 ### ✅ **3. A07:2025 - Authentication Failures**
 **Problème** : Pas de rate limiting, mots de passe faibles
 **Corrections** :
-- ✓ Rate limiting global (1000 req/15min)
+- ✓ Rate limiting global (10000 req/15min)
 - ✓ Rate limiting auth (100 tentatives/15min)
 - ✓ Politique mot de passe : 8+ caractères, majuscule, minuscule, chiffre, spécial
 - ✓ bcrypt rounds augmenté à 12
