@@ -67,10 +67,10 @@ function WebHeader({ navigation, state }) {
         >
           <TouchableOpacity onPress={() => navigation.getParent()?.navigate("Setting")}
           >
-            <Settings color={colors.text || '#333'} size={32} />
+            <Settings color={colors.primary || '#2196F3'} size={32} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setIsMenuOpen(true)} style={styles.hamburgerButton}>
-            <Menu color={colors.text || '#333'} size={32} />
+            <Menu color={colors.primary || '#2196F3'} size={32} />
           </TouchableOpacity>
           <Modal visible={isMenuOpen} transparent animationType="fade">
             <TouchableOpacity
@@ -217,6 +217,7 @@ function AppContent() {
             <Stack.Screen name="Welcome">{(props) => <WelcomeScreen {...props} onLogin={handleLogin} />}</Stack.Screen>
             <Stack.Screen name="Login">{(props) => <LoginScreen {...props} onLogin={handleLogin} />}</Stack.Screen>
             <Stack.Screen name="Inscription">{(props) => <SignupScreen {...props} onLogin={handleLogin} />}</Stack.Screen>
+            <Stack.Screen name="ProfilIA" component={ProfilIAScreen} initialParams={{ userId: userId }}/>
           </Stack.Group>
         ) : (
           <Stack.Group>
@@ -238,6 +239,7 @@ function AppContent() {
             <Stack.Screen name="History" component={HistoryScreen} />
             <Stack.Screen name="Terms" component={TermsScreen} />
             <Stack.Screen name="Privacy" component={PrivacyScreen} />
+            <Stack.Screen name="ProfilIA" component={ProfilIAScreen} initialParams={{ userId: userId }}/>
           </Stack.Group>
         )}
       </Stack.Navigator>

@@ -230,6 +230,12 @@ function AppContent() {
             <Stack.Screen name="History" component={HistoryScreen} />
             <Stack.Screen name="Terms" component={TermsScreen} />
             <Stack.Screen name="Privacy" component={PrivacyScreen} />
+            <Stack.Screen
+              name="ProfilIA"
+              component={ProfilIAScreen}
+              initialParams={{ userId: userId }}
+            />
+
           </Stack.Group>
         )}
       </Stack.Navigator>
