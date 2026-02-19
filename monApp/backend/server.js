@@ -45,7 +45,7 @@ app.use(bodyParser.json());
 // 🔒 A07:2025 - Authentication Failures : Rate limiting global
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // 100 requêtes max
+    max: 1000, // 1000 requêtes max (utilisation normale)
     message: 'Trop de requêtes, veuillez réessayer plus tard.'
 });
 app.use(globalLimiter);
@@ -53,7 +53,7 @@ app.use(globalLimiter);
 // 🔒 A07:2025 - Authentication Failures : Rate limiting authentification
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 300, // 300 tentatives max
+    max: 100, // 100 tentatives max
     skipSuccessfulRequests: true,
     message: 'Trop de tentatives de connexion. Réessayez dans 15 minutes.'
 });

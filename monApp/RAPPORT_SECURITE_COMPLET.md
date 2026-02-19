@@ -232,14 +232,14 @@ c) **bcrypt avec seulement 10 rounds**
    // Rate limiting global
    const globalLimiter = rateLimit({
        windowMs: 15 * 60 * 1000, // 15 minutes
-       max: 100 // 100 requêtes max
+       max: 1000 // 1000 requêtes max (utilisation normale)
    });
    app.use(globalLimiter);
    
    // Rate limiting spécial pour authentification
    const authLimiter = rateLimit({
        windowMs: 15 * 60 * 1000,
-       max: 5, // Seulement 5 tentatives
+       max: 100, // 100 tentatives max (protection brute force)
        skipSuccessfulRequests: true
    });
    app.post('/login', authLimiter, ...);
@@ -294,7 +294,7 @@ c) **bcrypt avec seulement 10 rounds**
 - 📦 `package.json` - Dépendance express-rate-limit
 
 **Tests effectués :**
-- ✅ 5 tentatives login incorrectes → Blocage 15 minutes
+- ✅ 100 tentatives login incorrectes → Blocage 15 minutes
 - ✅ Mot de passe "azerty" → Refusé
 - ✅ Mot de passe "Azerty123!" → Accepté
 
@@ -413,7 +413,7 @@ npm install express-rate-limit express-validator helmet jsonwebtoken --save
 ### Test 1 : Rate Limiting ✅
 ```
 Action : 6 tentatives de login avec mauvais mot de passe
-Résultat attendu : Blocage après 5 tentatives
+Résultat attendu : Blocage après 100 tentatives
 Résultat obtenu : ✅ "Trop de tentatives. Réessayez dans 15 minutes."
 ```
 

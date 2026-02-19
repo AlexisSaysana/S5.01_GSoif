@@ -55,7 +55,7 @@
 **Tests manuels effectués :**
 - ✅ Injection SQL : Bloquée
 - ✅ XSS : Bloquée
-- ✅ Brute Force : Bloquée après 5 tentatives
+- ✅ Brute Force : Bloquée après 100 tentatives
 - ✅ Accès non autorisé : Bloqué par JWT
 
 ---
@@ -128,7 +128,7 @@ const rateLimit = require('express-rate-limit');
 
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // 5 tentatives max
+    max: 100, // 100 tentatives max
     skipSuccessfulRequests: true,
     message: 'Trop de tentatives. Réessayez dans 15 minutes.'
 });

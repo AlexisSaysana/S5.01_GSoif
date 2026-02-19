@@ -34,8 +34,8 @@
 ### ✅ **3. A07:2025 - Authentication Failures**
 **Problème** : Pas de rate limiting, mots de passe faibles
 **Corrections** :
-- ✓ Rate limiting global (100 req/15min)
-- ✓ Rate limiting auth (5 tentatives/15min)
+- ✓ Rate limiting global (1000 req/15min)
+- ✓ Rate limiting auth (100 tentatives/15min)
 - ✓ Politique mot de passe : 8+ caractères, majuscule, minuscule, chiffre, spécial
 - ✓ bcrypt rounds augmenté à 12
 - ✓ JWT avec expiration 24h
@@ -100,7 +100,7 @@
    - Envoyer le token dans header `Authorization: Bearer TOKEN`
 
 4. **Tester la sécurité** :
-   - Tester rate limiting (5 tentatives login)
+   - Tester rate limiting (100 tentatives login)
    - Tester mots de passe faibles (doit refuser)
    - Tester accès sans token (doit bloquer)
 

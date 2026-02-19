@@ -21,7 +21,7 @@ Ton application a été **sécurisée selon l'OWASP Top 10:2025** ! Voici tout c
 
 ### 3. 🚫 Protection brute-force (A07:2025)
 - **Avant** : Tentatives illimitées
-- **Après** : 5 tentatives max, puis blocage 15 min
+- **Après** : 100 tentatives max, puis blocage 15 min
 - **Package** : express-rate-limit
 - **Fichiers** : `backend/server.js`
 
@@ -116,7 +116,7 @@ Résultat : Compte créé
 
 #### Test brute-force ❌
 ```
-5 tentatives de login avec mauvais mot de passe
+100 tentatives de login avec mauvais mot de passe
 6ème tentative : "Trop de tentatives. Réessayez dans 15 minutes."
 ```
 
@@ -286,8 +286,9 @@ git status
    - En dev : ajouter `http://localhost:19006`
 
 4. **Rate limiting bloque tout**
-   - Attendre 15 minutes
-   - Ou redémarrer le serveur (en dev uniquement)
+   - Vérifier que `globalLimiter.max` est bien à 1000 (pas 100)
+   - Le `globalLimiter` limite TOUTES les requêtes (connexion, ajout d'eau, etc.)
+   - L'`authLimiter` (100) ne limite que les tentatives de connexion
 
 ### Fichiers de référence :
 

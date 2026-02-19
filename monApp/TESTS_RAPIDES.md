@@ -263,7 +263,7 @@ Avant la présentation :
 - [ ] Frontend démarre sans erreur
 - [ ] Test mot de passe faible → refusé ✅
 - [ ] Test mot de passe fort → accepté ✅
-- [ ] Test rate limiting → bloqué après 5 tentatives ✅
+- [ ] Test rate limiting → bloqué après 100 tentatives ✅
 - [ ] JWT token présent dans AsyncStorage ✅
 - [ ] Clé API dans .env (pas dans le code) ✅
 - [ ] .env dans .gitignore ✅
@@ -288,10 +288,18 @@ echo "WEATHER_API_KEY=703b002e3b8de955c0ff503db47e689a" >> .env
 ### Problème : "Rate limiting bloque tout"
 
 ```bash
-# Option 1 : Attendre 15 minutes
-# Option 2 : Redémarrer le serveur (en dev)
-cd backend
-npm start
+# Le problème : globalLimiter trop bas (100 au lieu de 1000)
+# Dans server.js, vérifier :
+const globalLimiter = rateLimit({
+    max: 1000, // Doit être élevé pour usage normal
+});
+
+# L'authLimiter (100) protège seulement contre brute force login
+const authLimiter = rateLimit({
+    max: 100, // OK pour protection connexion
+});
+
+# Si toujours bloqué : attendre 15 min ou redémarrer (dev)
 ```
 
 ### Problème : "Module not found"

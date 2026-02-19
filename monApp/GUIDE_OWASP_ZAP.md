@@ -201,8 +201,8 @@ nom: <script>alert('XSS')</script>
 ### Test 3 : Brute Force
 
 ```bash
-# Tenter 6 connexions avec mauvais mot de passe
-# Résultat attendu : Blocage après 5 tentatives
+# Tenter 101 connexions avec mauvais mot de passe
+# Résultat attendu : Blocage après 100 tentatives
 ```
 
 ### Test 4 : Broken Access Control
