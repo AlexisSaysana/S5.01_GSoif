@@ -1,0 +1,407 @@
+import { useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { View, Text, Image, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { PRIMARY_BLUE, WHITE } from '../styles/baseStyles';
+import { fonts } from '../styles/fonts';
+import { ChevronLeft, User, Mail, Lock, Eye, EyeOff, Square, CheckSquare } from 'lucide-react-native';
+
+import CustomInput from '../components/CustomInput';
+import CustomButton from '../components/CustomButton';
+
+const BASE_URL = "https://s5-01-gsoif.onrender.com";
+
+const SignupScreen = ({ navigation, onLogin }) => {
+
+  const [prenom, setPrenom] = useState("");
+  const [nom, setNom] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+
+const handleSignup = async () => {
+  if (!prenom.trim() || !nom.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
+    return Alert.alert("Erreur", "Veuillez remplir tous les champs");
+  }
+
+  if (password !== confirmPassword) {
+    return Alert.alert("Erreur", "Les mots de passe ne correspondent pas");
+  }
+
+  // 🔒 A07:2025 - Authentication Failures : Validation mot de passe fort
+  if (password.length < 8) {
+    return Alert.alert("Erreur", "Le mot de passe doit contenir au moins 8 caractères");
+  }
+  if (!/(?=.*[a-z])/.test(password)) {
+    return Alert.alert("Erreur", "Le mot de passe doit contenir au moins une minuscule");
+  }
+  if (!/(?=.*[A-Z])/.test(password)) {
+    return Alert.alert("Erreur", "Le mot de passe doit contenir au moins une majuscule");
+  }
+  if (!/(?=.*\d)/.test(password)) {
+    return Alert.alert("Erreur", "Le mot de passe doit contenir au moins un chiffre");
+  }
+  if (!/(?=.*[@$!%*?&])/.test(password)) {
+    return Alert.alert("Erreur", "Le mot de passe doit contenir au moins un caractère spécial (@$!%*?&)");
+  }
+
+  if (!acceptedTerms) {
+    return Alert.alert("Erreur", "Vous devez accepter les conditions d'utilisation pour continuer");
+  }
+
+  // Petite fonction utilitaire pour la majuscule
+  const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+
+  try {
+    const response = await fetch(`${BASE_URL}/utilisateurs`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: email,
+        nom: nom,
+        prenom: prenom,
+        mot_de_passe: password
+      })
+    });
+
+    const textData = await response.text();
+    const data = JSON.parse(textData);
+
+    if (!response.ok) {
+      if (data.error === "Données invalides") {
+        return Alert.alert("Erreur", data.details.join("\n"));
+      }
+      if (data.error === "Email déjà utilisé") {
+        return Alert.alert("Erreur", "Cet email est déjà utilisé");
+      }
+      return Alert.alert("Erreur", data.error || "Une erreur est survenue");
+    }
+
+    // --- LOGIQUE DE SUCCÈS ---
+    const user = data.utilisateur || data;
+
+    const formattedPrenom = capitalize(user.prenom);
+    const formattedNom = capitalize(user.nom);
+    const fullName = `${formattedPrenom} ${formattedNom}`;
+
+    Alert.alert("Succès", `Bienvenue ${formattedPrenom} !`);
+
+    // 🔒 A01:2025 - Broken Access Control : Stockage JWT sécurisé
+    if (data.token) {
+      await AsyncStorage.setItem("authToken", data.token);
+    }
+    await AsyncStorage.setItem("userId", user.id.toString());
+    await AsyncStorage.setItem("userEmail", user.email);
+    await AsyncStorage.setItem("userName", fullName);
+
+    // 🔥 Connexion automatique et redirection vers l'accueil via App.js
+    onLogin(user.email, user.id, fullName);
+
+  } catch (error) {
+    Alert.alert("Erreur", "Impossible de se connecter au serveur");
+  }
+};
+
+  return (
+    <View style={{ flex: 1, backgroundColor: PRIMARY_BLUE }}>
+
+      {/* TOP BLUE */}
+      <View style={styles.topBlue}>
+        <TouchableOpacity 
+          style={styles.backButton} 
+          onPress={() => navigation.goBack()}
+        >
+          <ChevronLeft color="white" size={32} />
+        </TouchableOpacity>
+
+        <Image
+          style={styles.icon}
+          source={require('../assets/icon-light.png')}
+        />
+      </View>
+
+      {/* BOTTOM WHITE */}
+      <View style={styles.bottomWhite}>
+
+        <ScrollView
+          style={{ width: '100%' }}
+          contentContainerStyle={{
+            alignItems: 'center',
+            gap: 60,
+            paddingBottom: 80
+          }}
+          showsVerticalScrollIndicator={false}
+        >
+
+          <Text style={styles.title}>
+            S'inscrire
+          </Text>
+
+          <View
+            style={{
+              width: '100%',
+              fontFamily: fonts.inter,
+              display: 'flex',
+              gap: 60
+            }}
+          >
+            {/* INPUTS */}
+            <View
+              style={{
+                width: '100%',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: 30,
+              }}
+            >
+              <View style={styles.inputContainer}>
+                <User size={20} color="#999" style={styles.inputIcon} />
+                <CustomInput
+                  placeholder="Prénom"
+                  value={prenom}
+                  onChangeText={setPrenom}
+                  style={styles.inputWithIcon}
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <User size={20} color="#999" style={styles.inputIcon} />
+                <CustomInput
+                  placeholder="Nom"
+                  value={nom}
+                  onChangeText={setNom}
+                  style={styles.inputWithIcon}
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Mail size={20} color="#999" style={styles.inputIcon} />
+                <CustomInput
+                  placeholder="E-mail"
+                  keyboardType="email-address"
+                  value={email}
+                  onChangeText={setEmail}
+                  style={styles.inputWithIcon}
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Lock size={20} color="#999" style={styles.inputIcon} />
+                <CustomInput
+                  placeholder="Mot de passe"
+                  secureTextEntry={!showPassword}
+                  value={password}
+                  onChangeText={setPassword}
+                  style={styles.inputWithIcon}
+                />
+                <TouchableOpacity 
+                  testID='eye-icon'
+                  style={styles.eyeIcon}
+                  onPress={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff size={20} color="#999" /> : <Eye size={20} color="#999" />}
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Lock size={20} color="#999" style={styles.inputIcon} />
+                <CustomInput
+                  placeholder="Confirmer le mot de passe"
+                  secureTextEntry={!showConfirmPassword}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  style={styles.inputWithIcon}
+                />
+                <TouchableOpacity 
+                  testID='eye-icon-confirm'
+                  style={styles.eyeIcon}
+                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? <EyeOff size={20} color="#999" /> : <Eye size={20} color="#999" />}
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* CHECKBOX CGU */}
+            <View style={styles.termsContainer}>
+              <TouchableOpacity 
+                style={styles.checkboxContainer}
+                onPress={() => setAcceptedTerms(!acceptedTerms)}
+              >
+                {acceptedTerms ? (
+                  <CheckSquare size={24} color={PRIMARY_BLUE} />
+                ) : (
+                  <Square size={24} color="#999" />
+                )}
+              </TouchableOpacity>
+              <View style={styles.termsTextContainer}>
+                <Text style={styles.termsText}>J'accepte les </Text>
+                <TouchableOpacity onPress={() => navigation.navigate('Terms', { fromSignup: true })}>
+                  <Text style={styles.termsLink}>conditions d'utilisation</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* BUTTONS */}
+            <View
+              style={{
+                width: '100%',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: 30,
+              }}
+            >
+              <CustomButton title="S'inscrire" onPress={handleSignup} testID="s-inscrire"/>
+
+              <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+                <Text style={styles.smallLink}>
+                  J'ai déjà un compte
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={() => onLogin(null, null)}>
+                <Text style={styles.smallLink}>Poursuivre en tant qu'invité</Text>
+              </TouchableOpacity>
+
+            </View>
+          </View>
+
+        </ScrollView>
+
+      </View>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  topBlue: {
+      height: '30%',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+  backButton: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    zIndex: 10,
+  },
+  bottomWhite: {
+        height: '60%',
+        width: '50%',
+        backgroundColor: WHITE,
+        padding: 30,
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+        alignSelf: 'center',
+        gap: 60,
+        borderRadius: 50,
+        paddingTop: 50,
+    },
+  title: {
+    fontFamily: fonts.bricolageGrotesque,
+    fontSize: 28,
+    fontWeight: '900',
+  },
+  text: {
+    fontFamily: fonts.Inter,
+    fontSize: 16,
+    color: '#575757',
+    textAlign: 'center',
+  },
+  bottomNav: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'white',
+    paddingHorizontal: 20,
+  },
+  dotsContainer: {
+    position: 'absolute',
+    flexDirection: 'row',
+    bottom: 20,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 50,
+    backgroundColor: PRIMARY_BLUE,
+    marginHorizontal: 4,
+  },
+  dotActive: {
+    opacity: 1
+  },
+  dotInactive: {
+    opacity: 0.3,
+  },
+  arrowButton: {
+    backgroundColor: PRIMARY_BLUE,
+    display: 'flex',
+    height: 65,
+    width: 65,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  icon: {
+    width: 90,
+    height: 90,
+    marginTop: 40,
+  },
+  smallLink: {
+    color: PRIMARY_BLUE,
+    fontSize: 14,
+    marginTop: 5,
+    fontWeight: '600'
+  },
+  inputContainer: {
+    width: '100%',
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  inputIcon: {
+    position: 'absolute',
+    left: 15,
+    zIndex: 1,
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: 15,
+    zIndex: 1,
+  },
+  inputWithIcon: {
+    paddingLeft: 45,
+  },
+  termsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    paddingHorizontal: 10,
+    marginTop: -20,
+  },
+  checkboxContainer: {
+    marginRight: 10,
+  },
+  termsTextContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    flex: 1,
+    alignItems: 'center',
+  },
+  termsText: {
+    fontSize: 14,
+    color: '#575757',
+    fontFamily: fonts.inter,
+  },
+  termsLink: {
+    fontSize: 14,
+    color: PRIMARY_BLUE,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+    fontFamily: fonts.inter,
+  },
+});
+
+export default SignupScreen;

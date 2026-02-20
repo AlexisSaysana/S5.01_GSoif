@@ -108,10 +108,10 @@ export default function ProfileScreen({ navigation, userEmail, onLogout, route }
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <Text style={[styles.headerTitle, { color: colors.text }]}>Mon profil</Text>
       <View
-        style={{display: 'flex', flexDirection: 'row', gap: 100 }}
+        style={{display: 'flex', flexDirection: 'row', gap: 120 }}
       >
       <View
-        style={{width: 360}}
+        style={{width: 360, gap: 30}}
       >
         {/* SECTION INFO UTILISATEUR */}
         <View style={styles.profileSection}>
@@ -172,7 +172,7 @@ export default function ProfileScreen({ navigation, userEmail, onLogout, route }
           style={{width: 360}}
         >
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Historique récent</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text, textAlign: 'center' }]}>Historique récent</Text>
         </View>
 
         {history.length > 0 ? (

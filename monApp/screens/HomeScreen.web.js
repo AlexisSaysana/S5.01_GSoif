@@ -366,11 +366,14 @@ export default function HomeScreen({ navigation, userId, userEmail, userName }) 
         keyboardShouldPersistTaps="handled"
       >
         <Text style={[styles.headerTitle, { color: colors.text }]}>Votre progression</Text>
+        <View 
+          style={{flexDirection: 'column', justifyContent: 'center', alignItems: "center", width: "70%", gap: 60}}
+        >
         <View
-          style={{flexDirection:"row", gap: 100 }}
+          style={{flexDirection: 'row', justifyContent: 'center', alignItems: "center", gap: 60}}
         >
         {/* PROGRESSION */}
-        <View style={[styles.progressContainer, {width: 360}]}>
+        <View style={[styles.progressContainer]}>
           <ProgressCircle
             size={210}
             strokeWidth={12}
@@ -429,9 +432,7 @@ export default function HomeScreen({ navigation, userId, userEmail, userName }) 
         <View
           style={[styles.dividerVertical, { backgroundColor: colors.border }]}
         />
-        <View
-          style={{gap: 50, width: 360}}
-        >
+        
         {/* ACTIONS */}
         <View style={styles.actionSection}>
           <View style={styles.selectRow}>
@@ -498,7 +499,7 @@ export default function HomeScreen({ navigation, userId, userEmail, userName }) 
             />
           </View>
         </View>
-
+        </View>
         <View
           style={[styles.dividerHorizontal, { backgroundColor: colors.border }]}
         />
@@ -509,10 +510,8 @@ export default function HomeScreen({ navigation, userId, userEmail, userName }) 
           dailyGoal={dailyGoal}
           colors={colors}
         />
-
+        </View>
         <View style={{ height: 100 }} />
-        </View>
-        </View>
       </ScrollView>
     </View>
   );
@@ -535,9 +534,9 @@ const styles = StyleSheet.create({
         : 140,
     alignItems: "center",
   },
-  progressContainer: { marginTop: 20, alignItems: "center" },
+  progressContainer: { width: "60%", marginTop: 20, alignItems: "center" },
   bottleIcon: {
-    width: 60,
+    width: 160,
     height: 80,
     resizeMode: "contain",
   },
@@ -562,7 +561,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 25,
   },
   actionSection: {
-    width: "100%",
+    width: "60%",
     alignItems: "center",
     gap: 15,
   },
@@ -583,12 +582,14 @@ const styles = StyleSheet.create({
   calendarContainer: {
     width: "100%",
     paddingHorizontal: 20,
+    gap: 20
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "700",
     marginBottom: 15,
     fontFamily: fonts.bricolageGrotesque,
+    alignSelf: "center"
   },
   daysRow: {
     flexDirection: "row",

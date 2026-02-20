@@ -16,7 +16,6 @@ import { ThemeContext } from "../context/ThemeContext";
 import { fonts } from "../styles/fonts";
 
 import {
-  ChevronLeft,
   ChevronRight,
   Settings,
   Calendar,
@@ -173,13 +172,14 @@ export default function ProfilIAScreen({ route, userId, navigation }) {
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
       <View style={[styles.header, { backgroundColor: colors.primary }]}>
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={() => navigation.goBack()}
-        >
-          <ChevronLeft color="white" size={32} />
-        </TouchableOpacity>
         <Text style={styles.headerTitle}>IA</Text>
+
+        <TouchableOpacity
+          style={styles.settingsButton}
+          onPress={() => navigation.getParent()?.navigate("Setting")}
+        >
+          <Settings size={28} color="white" />
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -380,12 +380,7 @@ function renderModal(title, list, value, setter, visible, setVisible, colors, is
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  backButton: {
-    position: 'absolute',
-    top: 50,
-    left: 20,
-    zIndex: 10,
-  },
+
   header: {
     position: "absolute",
     top: 0,

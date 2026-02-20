@@ -186,7 +186,7 @@ export default function FontainesScreen() {
   if (loading) return <View style={styles.center}><ActivityIndicator size="large" color={colors.primary} /></View>;
 
   return (
-    <View style={{ flex: 1, flexDirection: "row", backgroundColor: colors.primary, marginTop: 70 }}>
+    <View style={{ flex: 1, flexDirection: "row-reverse", backgroundColor: colors.primary, marginTop: 70 }}>
       <View style={styles.topBlue}>
         <iframe
           width="100%"
@@ -306,8 +306,8 @@ export default function FontainesScreen() {
 
 const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  topBlue: { width: "60%" },
-  bottomWhite: { width: "42.5%", padding: 20, borderTopLeftRadius: 40, borderBottomLeftRadius: 40, marginLeft: -40},
+  topBlue: { width: "65%" },
+  bottomWhite: { width: "40%", padding: 20, borderTopRightRadius: 40, borderBottomRightRadius: 40, marginRight: "-5%"},
   listContainer: { paddingBottom: 100, gap: 20 },
   itemWrapper: { width: '100%' },
   badge: { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginBottom: -12, marginLeft: 15, zIndex: 10 },
